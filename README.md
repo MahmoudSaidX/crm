@@ -49,7 +49,10 @@ under CRM-107. `src/frontend/` is populated by CRM-104; see
 -   **Git**.
 -   **Node.js >= 22.12** --- pinned by CRM-104 (developed against v22.21.1).
 -   **.NET SDK** --- exact version pinned by CRM-105.
--   **Docker Desktop** (or a compatible engine) --- used by CRM-197.
+-   **Docker Engine + Compose v2 or newer** --- **required** to run the
+    local infrastructure (`docker compose up -d`). Developed against
+    Docker 29.7.2 and Docker Compose v5.5.0. Docker Desktop or any
+    compatible engine works.
 
 Only Git is required to work on this story; the remaining versions are
 pinned by the sibling Sprint 0 stories that introduce them.
@@ -62,9 +65,11 @@ pinned by the sibling Sprint 0 stories that introduce them.
 4.  Edit both files with local values. They are git-ignored and must never
     be committed.
 5.  Install the frontend workspace: `cd src/frontend && npm ci`.
-6.  .NET restore/build (CRM-105) and the Docker Compose infrastructure
-    (CRM-197) become available when those stories land; this README is
-    updated at that time.
+6.  Start the local infrastructure from the repository root:
+    `export COMPOSE_ENV_FILES=env/backend.env && docker compose up -d`
+    (see [Local infrastructure](#local-infrastructure-docker-compose)).
+7.  .NET restore/build (CRM-105) becomes available when that story lands;
+    this README is updated at that time.
 
 ### Angular frontend
 
@@ -82,6 +87,92 @@ Then `npm run start:agent-crm` (port 4200) or `npm run start:customer-portal`
 configuration contract and the localization/direction foundation are
 documented in [`src/frontend/README.md`](src/frontend/README.md).
 
+## Local infrastructure (Docker Compose)
+
+`docker-compose.yml` at the repository root provides the single local
+dependency Squad CRM needs today: **PostgreSQL**. It is pinned to the
+concrete, verified image tag `postgres:18.6-alpine3.24` --- an `-alpine`
+variant for image size, and a fixed patch/base tag so two developers
+pulling on different days get the same server. No locally installed
+PostgreSQL server is required.
+
+Compose reads values from `env/backend.env` (git-ignored). Every variable
+also has a developer-safe default, so a fresh clone starts without that
+file --- but step 1 below is still the documented first step, because
+CRM-106 will need the file to exist.
+
+```bash
+# 1. Prepare local environment values (once per clone)
+cp env/backend.env.example env/backend.env
+
+# 2. Start infrastructure (from the repository root)
+export COMPOSE_ENV_FILES=env/backend.env   # PowerShell: $env:COMPOSE_ENV_FILES="env/backend.env"
+docker compose up -d
+
+# 3. Check status and health
+docker compose ps
+docker compose logs -f postgres
+
+# 4. Stop, preserving all data
+docker compose down
+```
+
+Instead of the environment variable you may pass the env file per command:
+`docker compose --env-file env/backend.env up -d`. **Compose v2 or newer is
+required** --- `COMPOSE_ENV_FILES` and the top-level `name:` key do not
+exist in the hyphenated Compose v1.
+
+```bash
+# DESTRUCTIVE — deletes the squadcrm-pgdata volume and every local database row.
+# There is no undo. Only use this to start from a clean database.
+docker compose down -v
+```
+
+### Configuration contract
+
+| Compose / env variable | Meaning | ASP.NET Core configuration it will feed (CRM-106) |
+|---|---|---|
+| `POSTGRES_HOST` | Host-side hostname; always `localhost` for host-run apps | `Host=` in the Npgsql connection string |
+| `POSTGRES_PORT` | Published host port; container always listens on `5432` | `Port=` |
+| `POSTGRES_DB` | Database created on first start | `Database=` |
+| `POSTGRES_USER` | Superuser created on first start | `Username=` |
+| `POSTGRES_PASSWORD` | Local developer password only | `Password=` |
+
+**The connection string itself is not built in CRM-197.** The mapping above
+is documented so that CRM-106 --- which owns EF Core, the schemas and the
+migrations --- stays compatible with these coordinates. **No production
+credential is required or accepted in `env/backend.env`;** the committed
+`env/backend.env.example` holds developer-safe local defaults only.
+
+### Operational notes
+
+-   **Port 5432 already in use** (a locally installed PostgreSQL, or another
+    project): set `POSTGRES_PORT` in `env/backend.env` to a free port, e.g.
+    `POSTGRES_PORT=55432`, and run `docker compose up -d` again. The container
+    still listens on `5432` internally; only the published host port moves.
+-   **Loopback only.** The port is published on `127.0.0.1`, so the database is
+    reachable from applications on this machine but not from the local network.
+    Verify with `docker compose port postgres 5432`.
+-   **Data lives in the named volume `squadcrm-pgdata`,** mounted at
+    `/var/lib/postgresql` (PostgreSQL 18+ images require the mount at that
+    level and store data in a major-version subdirectory below it).
+    `docker compose down` preserves the volume; only `docker compose down -v`
+    destroys it.
+-   **Changing credentials after the first start has no effect.** PostgreSQL
+    applies `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB` only when it
+    initialises an empty data directory. To change them you must run the
+    destructive `docker compose down -v` and then `docker compose up -d`.
+-   **No restart policy is configured.** After a Docker Engine or machine
+    restart, PostgreSQL does not come back by itself --- run
+    `docker compose up -d` again. The named volume means no data is lost.
+-   **Health.** The service reports `healthy` once
+    `pg_isready -U <user> -d <db>` succeeds inside the container. First start
+    runs `initdb`, which the 30s `start_period` absorbs. If the service stays
+    unhealthy, `docker compose logs postgres` is the diagnostic.
+-   Commands address the Compose **service** name (`postgres`), never a
+    container name --- no `container_name:` is set, so Compose generates names
+    that cannot collide across clones or git worktrees.
+
 ## Common commands
 
 | Command | What it does | Story that adds it |
@@ -95,7 +186,10 @@ documented in [`src/frontend/README.md`](src/frontend/README.md).
 | `cd src/frontend && npm run build` | Production build of both frontend applications | available today |
 | `cd src/frontend && npm run lint` | Lint the workspace, including dependency boundaries | available today |
 | Backend restore / run | Restore and run the modular monolith | CRM-105 |
-| Infrastructure up / down | Start PostgreSQL and friends via Docker Compose | CRM-197 |
+| `docker compose up -d` | Start the local PostgreSQL infrastructure | available today |
+| `docker compose ps` | Show infrastructure status and health | available today |
+| `docker compose down` | Stop the infrastructure, preserving all data | available today |
+| `docker compose down -v` | **DESTRUCTIVE** --- stop and delete the `squadcrm-pgdata` volume | available today |
 | `scripts/bootstrap`, `scripts/dev`, `scripts/test`, `scripts/migrate`, `scripts/reset` | Automation entry points | CRM-203 |
 
 Rows marked with a story id are previews --- nothing in the repository

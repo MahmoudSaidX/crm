@@ -1,0 +1,42 @@
+# Squad CRM — local development infrastructure (CRM-197).
+#
+# PostgreSQL only. EF Core, schemas, migrations and application persistence
+# are owned by CRM-106; Hangfire by CRM-199; observability by CRM-201.
+#
+# Values are substituted from `env/backend.env` (git-ignored):
+#   export COMPOSE_ENV_FILES=env/backend.env   # or: --env-file env/backend.env
+# Every variable has a developer-safe default, so plain `docker compose up -d`
+# also works on a fresh clone. Never put a production credential here.
+
+name: squadcrm
+
+services:
+  postgres:
+    # Concrete, non-floating tag verified with `docker pull` (CRM-197 Task 1).
+    # Never a floating tag, never derived from PG_VERSION.
+    image: postgres:18.6-alpine3.24
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-squadcrm}
+      POSTGRES_USER: ${POSTGRES_USER:-squadcrm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    ports:
+      # Loopback-only: reachable from host-run apps, not from the local network.
+      # The container always listens on 5432; POSTGRES_PORT only moves the host port.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # PostgreSQL 18+ images require a single mount at /var/lib/postgresql;
+      # the server places its data in a major-version subdirectory below it.
+      # See https://github.com/docker-library/postgres/pull/1259
+      - squadcrm-pgdata:/var/lib/postgresql
+    healthcheck:
+      # `$${...}` is intentional: the doubled `$` escapes Compose substitution so
+      # the variables expand inside the container from `environment:` above.
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  squadcrm-pgdata:
+    name: squadcrm-pgdata
