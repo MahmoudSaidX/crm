@@ -1,0 +1,57 @@
+{
+  "runId": "0mt93dc6d-f0be0a4dd842ec17",
+  "provider": "anthropic",
+  "model": "claude-opus-4-7",
+  "feature": "crm-105-aspnet-core-modular-monolith",
+  "storyId": "crm-105-aspnet-core-modular-monolith",
+  "startedAt": "2026-08-25T20:02:34.597Z",
+  "completedAt": "2026-08-25T20:06:49.971Z",
+  "success": true,
+  "partial": false,
+  "planFile": ".squad/plans/crm-105-aspnet-core-modular-monolith/02-story-crm-105-aspnet-core-modular-monolith.md",
+  "stats": {
+    "turns": 34,
+    "inputTokens": 3978,
+    "outputTokens": 20085,
+    "cacheCreationTokens": 29700,
+    "cacheReadTokens": 106210,
+    "cacheHitRatio": 0.96,
+    "durationMs": 198751
+  },
+  "cacheEnabled": true,
+  "durationMs": 255372,
+  "scout": {
+    "enabled": true,
+    "selectedCount": 12,
+    "tokensUsed": 9366,
+    "durationMs": 56590
+  },
+  "validation": {
+    "enabled": true,
+    "issuesCount": 27,
+    "issuesByKind": {
+      "missing_path": 16,
+      "line_range_too_large": 2,
+      "symbol_not_found": 9
+    },
+    "durationMs": 25
+  },
+  "plannerRuntime": {
+    "kind": "agent-sdk",
+    "provider": "anthropic"
+  },
+  "authMode": "subscription",
+  "providerOptionsSnapshot": {
+    "anthropic": {
+      "draft": {
+        "thinking": "adaptive",
+        "effort": "medium"
+      },
+      "scout": {
+        "thinking": "adaptive",
+        "effort": "minimal"
+      }
+    }
+  },
+  "version": 1
+}

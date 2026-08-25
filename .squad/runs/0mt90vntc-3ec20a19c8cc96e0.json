@@ -1,0 +1,57 @@
+{
+  "runId": "0mt90vntc-3ec20a19c8cc96e0",
+  "provider": "anthropic",
+  "model": "claude-opus-4-7",
+  "feature": "angular-workspace-agent-crm-customer",
+  "storyId": "angular-workspace-agent-crm-customer-portal",
+  "startedAt": "2026-08-25T18:52:50.640Z",
+  "completedAt": "2026-08-25T18:56:52.181Z",
+  "success": true,
+  "partial": false,
+  "planFile": ".squad/plans/angular-workspace-agent-crm-customer/02-story-angular-workspace-agent-crm-customer-portal.md",
+  "stats": {
+    "turns": 39,
+    "inputTokens": 29,
+    "outputTokens": 18997,
+    "cacheCreationTokens": 27073,
+    "cacheReadTokens": 93688,
+    "cacheHitRatio": 1,
+    "durationMs": 194051
+  },
+  "cacheEnabled": true,
+  "durationMs": 241539,
+  "scout": {
+    "enabled": true,
+    "selectedCount": 12,
+    "tokensUsed": 4419,
+    "durationMs": 47462
+  },
+  "validation": {
+    "enabled": true,
+    "issuesCount": 21,
+    "issuesByKind": {
+      "missing_path": 15,
+      "line_range_too_large": 2,
+      "symbol_not_found": 4
+    },
+    "durationMs": 22
+  },
+  "plannerRuntime": {
+    "kind": "agent-sdk",
+    "provider": "anthropic"
+  },
+  "authMode": "subscription",
+  "providerOptionsSnapshot": {
+    "anthropic": {
+      "draft": {
+        "thinking": "adaptive",
+        "effort": "medium"
+      },
+      "scout": {
+        "thinking": "adaptive",
+        "effort": "minimal"
+      }
+    }
+  },
+  "version": 1
+}

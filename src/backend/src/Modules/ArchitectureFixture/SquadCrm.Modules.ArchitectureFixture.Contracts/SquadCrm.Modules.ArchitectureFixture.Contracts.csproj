@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>SquadCrm.Modules.ArchitectureFixture.Contracts</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Public contract surface. Intentionally has NO project references
+       (enforced by SquadCrm.ArchitectureTests). -->
+
+</Project>

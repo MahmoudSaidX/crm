@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>SquadCrm.Modules.ArchitectureFixture</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../SquadCrm.Modules.ArchitectureFixture.Contracts/SquadCrm.Modules.ArchitectureFixture.Contracts.csproj" />
+    <ProjectReference Include="../../../BuildingBlocks/SquadCrm.BuildingBlocks/SquadCrm.BuildingBlocks.csproj" />
+  </ItemGroup>
+
+</Project>
