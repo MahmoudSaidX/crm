@@ -1,0 +1,57 @@
+{
+  "runId": "0mt8zumwg-cdff46395869f3b3",
+  "provider": "anthropic",
+  "model": "claude-opus-4-7",
+  "feature": "repository-and-developer-workflow",
+  "storyId": "repository-developer-workflow",
+  "startedAt": "2026-08-25T18:24:03.184Z",
+  "completedAt": "2026-08-25T18:27:48.499Z",
+  "success": true,
+  "partial": false,
+  "planFile": ".squad/plans/repository-and-developer-workflow/01-story-repository-developer-workflow.md",
+  "stats": {
+    "turns": 27,
+    "inputTokens": 3256,
+    "outputTokens": 18311,
+    "cacheCreationTokens": 25957,
+    "cacheReadTokens": 63409,
+    "cacheHitRatio": 0.95,
+    "durationMs": 146970
+  },
+  "cacheEnabled": true,
+  "durationMs": 225313,
+  "scout": {
+    "enabled": true,
+    "selectedCount": 12,
+    "tokensUsed": 11053,
+    "durationMs": 78333
+  },
+  "validation": {
+    "enabled": true,
+    "issuesCount": 4,
+    "issuesByKind": {
+      "missing_path": 2,
+      "line_range_too_large": 1,
+      "symbol_not_found": 1
+    },
+    "durationMs": 5
+  },
+  "plannerRuntime": {
+    "kind": "agent-sdk",
+    "provider": "anthropic"
+  },
+  "authMode": "subscription",
+  "providerOptionsSnapshot": {
+    "anthropic": {
+      "draft": {
+        "thinking": "adaptive",
+        "effort": "medium"
+      },
+      "scout": {
+        "thinking": "adaptive",
+        "effort": "minimal"
+      }
+    }
+  },
+  "version": 1
+}
