@@ -639,37 +639,37 @@ in the PR description with justification "no runtime code in CRM-107".
 
 ## Done Criteria
 
-- [ ] Top-level directories `src/frontend/`, `src/backend/`,
+- [x] Top-level directories `src/frontend/`, `src/backend/`,
 `tests/`, `scripts/`, `env/` exist with placeholder files and are
 tracked by Git.
 
-- [ ] `.editorconfig` committed with rules for TypeScript (2-space)
+- [x] `.editorconfig` committed with rules for TypeScript (2-space)
 and C# (4-space) and LF line endings.
 
-- [ ] `.gitignore` extended (below the squad-kit fence) with
+- [x] `.gitignore` extended (below the squad-kit fence) with
 Node/Angular, .NET, OS/editor, environment-secret and Docker ignore
 rules; the squad-kit-managed block is untouched.
 
-- [ ] `env/backend.env.example` and `env/frontend.env.example`
+- [x] `env/backend.env.example` and `env/frontend.env.example`
 committed; no real `.env` file committed.
 
-- [ ] `docs/development/branching-and-commits.md` committed and
+- [x] `docs/development/branching-and-commits.md` committed and
 linked from `README.md`.
 
-- [ ] `README.md` documents repository layout, prerequisites,
+- [x] `README.md` documents repository layout, prerequisites,
 fresh-clone setup, common commands (accurately labelled per owning
 story), migrations/tests deferral note, contributing links, architecture
 links and the Squad Kit / Claude Code note. Existing "Source of truth"
 and "Stack" blocks are preserved verbatim.
 
-- [ ] A reviewer can complete Verification step 6 (fresh-clone
+- [x] A reviewer can complete Verification step 6 (fresh-clone
 rehearsal) with no manual fixes.
 
-- [ ]
+- [x]
 `.squad/plans/repository-and-developer-workflow/00-overview.md` lists
 this story with its Linear id and blocked-by/blocks metadata.
 
-- [ ] No CRM business module, Angular workspace, .NET solution, EF
+- [x] No CRM business module, Angular workspace, .NET solution, EF
 migration, Docker Compose file, CI workflow or observability code is
 introduced by this PR.
 
