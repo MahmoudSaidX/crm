@@ -30,7 +30,7 @@ subject to Linear blockers.
 ```
 .
 ├── src/
-│   ├── frontend/   Angular workspace (populated by CRM-104)
+│   ├── frontend/   Angular workspace: Agent CRM + Customer Portal (CRM-104)
 │   └── backend/    ASP.NET Core solution (populated by CRM-105)
 ├── tests/          Cross-cutting / integration tests (populated by CRM-202)
 ├── scripts/        Automation entry points: bootstrap, dev, test, migrate, reset (CRM-203)
@@ -40,13 +40,14 @@ subject to Linear blockers.
 └── .claude/        Claude Code configuration (tool-managed)
 ```
 
-`src/frontend/` and `src/backend/` currently hold only placeholders --- do
-not add code there under CRM-107.
+`src/backend/` currently holds only a placeholder --- do not add code there
+under CRM-107. `src/frontend/` is populated by CRM-104; see
+[`src/frontend/README.md`](src/frontend/README.md).
 
 ## Prerequisites
 
 -   **Git**.
--   **Node.js LTS** --- exact version pinned by CRM-104.
+-   **Node.js >= 22.12** --- pinned by CRM-104 (developed against v22.21.1).
 -   **.NET SDK** --- exact version pinned by CRM-105.
 -   **Docker Desktop** (or a compatible engine) --- used by CRM-197.
 
@@ -60,9 +61,26 @@ pinned by the sibling Sprint 0 stories that introduce them.
 3.  `cp env/frontend.env.example env/frontend.env`
 4.  Edit both files with local values. They are git-ignored and must never
     be committed.
-5.  Frontend dependency install (CRM-104), .NET restore/build (CRM-105) and
-    the Docker Compose infrastructure (CRM-197) become available when those
-    stories land; this README is updated at that time.
+5.  Install the frontend workspace: `cd src/frontend && npm ci`.
+6.  .NET restore/build (CRM-105) and the Docker Compose infrastructure
+    (CRM-197) become available when those stories land; this README is
+    updated at that time.
+
+### Angular frontend
+
+The Angular workspace lives at `src/frontend/` and hosts both the **Agent
+CRM** and **Customer Portal** applications plus the shared
+`@squad-crm/*` libraries. Smoke check from a fresh clone:
+
+```bash
+cd src/frontend
+npm ci && npm run build
+```
+
+Then `npm run start:agent-crm` (port 4200) or `npm run start:customer-portal`
+(port 4300). Workspace layout, dependency boundaries, the runtime
+configuration contract and the localization/direction foundation are
+documented in [`src/frontend/README.md`](src/frontend/README.md).
 
 ## Common commands
 
@@ -71,8 +89,12 @@ pinned by the sibling Sprint 0 stories that introduce them.
 | `cp env/backend.env.example env/backend.env` | Create the local backend env file | available today |
 | `cp env/frontend.env.example env/frontend.env` | Create the local frontend env file | available today |
 | `git check-ignore -v env/backend.env` | Confirm local env files are ignored | available today |
-| Frontend install / serve | Install deps and run the Angular dev server | CRM-104 |
-| Backend restore / run | Restore and run the modular monolith | available today |
+| `cd src/frontend && npm ci` | Install the Angular workspace dependencies | available today |
+| `cd src/frontend && npm run start:agent-crm` | Run the Agent CRM dev server (port 4200) | available today |
+| `cd src/frontend && npm run start:customer-portal` | Run the Customer Portal dev server (port 4300) | available today |
+| `cd src/frontend && npm run build` | Production build of both frontend applications | available today |
+| `cd src/frontend && npm run lint` | Lint the workspace, including dependency boundaries | available today |
+| Backend restore / run | Restore and run the modular monolith | CRM-105 |
 | Infrastructure up / down | Start PostgreSQL and friends via Docker Compose | CRM-197 |
 | `scripts/bootstrap`, `scripts/dev`, `scripts/test`, `scripts/migrate`, `scripts/reset` | Automation entry points | CRM-203 |
 

@@ -1,0 +1,14 @@
+/* Global styles. Design tokens and brand theming are owned by later design work;
+   the PrimeNG theme itself is configured in @squad-crm/shared-ui. */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}

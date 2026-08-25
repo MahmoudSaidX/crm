@@ -1,0 +1,12 @@
+<main class="home">
+  <h1>Squad CRM — Customer Portal</h1>
+  <p data-testid="surface">{{ config.appSurface }}</p>
+  <p data-testid="direction">{{ locale() }} / {{ direction() }}</p>
+
+  <p-button
+    icon="pi pi-globe"
+    [label]="locale() === 'en' ? 'العربية' : 'English'"
+    data-testid="locale-toggle"
+    (onClick)="toggleLocale()"
+  />
+</main>
