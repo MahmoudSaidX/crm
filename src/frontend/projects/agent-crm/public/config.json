@@ -1,0 +1,6 @@
+{
+  "apiBaseUrl": "http://localhost:5080",
+  "defaultLocale": "en",
+  "supportedLocales": ["en", "ar"],
+  "appSurface": "agent-crm"
+}
