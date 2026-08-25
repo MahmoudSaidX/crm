@@ -72,7 +72,7 @@ pinned by the sibling Sprint 0 stories that introduce them.
 | `cp env/frontend.env.example env/frontend.env` | Create the local frontend env file | available today |
 | `git check-ignore -v env/backend.env` | Confirm local env files are ignored | available today |
 | Frontend install / serve | Install deps and run the Angular dev server | CRM-104 |
-| Backend restore / run | Restore and run the modular monolith | CRM-105 |
+| Backend restore / run | Restore and run the modular monolith | available today |
 | Infrastructure up / down | Start PostgreSQL and friends via Docker Compose | CRM-197 |
 | `scripts/bootstrap`, `scripts/dev`, `scripts/test`, `scripts/migrate`, `scripts/reset` | Automation entry points | CRM-203 |
 
