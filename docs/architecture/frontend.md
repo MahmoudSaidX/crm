@@ -16,3 +16,12 @@
     squeeze desktop tables.
 -   Agent CRM and Customer Portal share only genuinely reusable
     libraries.
+
+The Angular workspace implementing these rules lives at `src/frontend/`. It
+hosts the Agent CRM and Customer Portal applications plus the
+`@squad-crm/platform` and `@squad-crm/shared-ui` libraries, whose dependency
+boundaries are enforced by ESLint. The two libraries are siblings: neither may
+depend on the other, and neither may depend on an application. See
+[`src/frontend/README.md`](../../src/frontend/README.md) for the workspace
+layout, the runtime configuration contract and the localization/direction
+foundation.

@@ -1,0 +1,56 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "paths": {
+      "@squad-crm/platform": ["./projects/platform/src/public-api.ts"],
+      "@squad-crm/shared-ui": ["./projects/shared-ui/src/public-api.ts"]
+    },
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve"
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "typeCheckHostBindings": true,
+    "strictTemplates": true
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./projects/agent-crm/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/agent-crm/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/customer-portal/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/customer-portal/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/platform/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/platform/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/shared-ui/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/shared-ui/tsconfig.spec.json"
+    }
+  ]
+}
