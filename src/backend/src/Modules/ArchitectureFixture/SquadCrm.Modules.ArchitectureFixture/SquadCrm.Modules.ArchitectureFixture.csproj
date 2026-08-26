@@ -15,8 +15,13 @@
   <ItemGroup>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <!-- Design-time only: enables `dotnet ef` against this module.
-         PrivateAssets keeps it out of consumers. -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
+         PrivateAssets keeps it out of consumers.
+         Held at the same 10.0.4 EF Core version the Npgsql provider 10.0.3
+         resolves, so the EF Core family is one version everywhere. A higher
+         Design version silently lifts EF Core here but not in
+         SquadCrm.ArchitectureTests (PrivateAssets hides Design from it), and
+         the two then disagree at assembly-unification time. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
