@@ -98,8 +98,8 @@ PostgreSQL server is required.
 
 Compose reads values from `env/backend.env` (git-ignored). Every variable
 also has a developer-safe default, so a fresh clone starts without that
-file --- but step 1 below is still the documented first step, because
-CRM-106 will need the file to exist.
+file --- but step 1 below is still the documented first step, because the
+backend and `dotnet ef` read these values from the process environment.
 
 ```bash
 # 1. Prepare local environment values (once per clone)
@@ -130,7 +130,7 @@ docker compose down -v
 
 ### Configuration contract
 
-| Compose / env variable | Meaning | ASP.NET Core configuration it will feed (CRM-106) |
+| Compose / env variable | Meaning | ASP.NET Core configuration it feeds |
 |---|---|---|
 | `POSTGRES_HOST` | Host-side hostname; always `localhost` for host-run apps | `Host=` in the Npgsql connection string |
 | `POSTGRES_PORT` | Published host port; container always listens on `5432` | `Port=` |
@@ -138,11 +138,18 @@ docker compose down -v
 | `POSTGRES_USER` | Superuser created on first start | `Username=` |
 | `POSTGRES_PASSWORD` | Local developer password only | `Password=` |
 
-**The connection string itself is not built in CRM-197.** The mapping above
-is documented so that CRM-106 --- which owns EF Core, the schemas and the
-migrations --- stays compatible with these coordinates. **No production
-credential is required or accepted in `env/backend.env`;** the committed
-`env/backend.env.example` holds developer-safe local defaults only.
+These five keys are the **only** database configuration an operator ever
+sets. The backend derives one Npgsql connection string from them **once at
+composition time** and publishes it internally as
+`ConnectionStrings:SquadCrmPostgres`; that name is application-internal and
+is never read from a file or the environment. Missing or invalid values fail
+fast at startup with a message naming the offending keys --- never their
+values, and never the password or the assembled connection string. The same
+single implementation serves `dotnet ef`, so design time and runtime cannot
+disagree. See [`src/backend/README.md`](src/backend/README.md) (**Persistence**)
+for the schema-per-module details. **No production credential is required or
+accepted in `env/backend.env`;** the committed `env/backend.env.example` holds
+developer-safe local defaults only.
 
 ### Operational notes
 
@@ -186,6 +193,8 @@ credential is required or accepted in `env/backend.env`;** the committed
 | `cd src/frontend && npm run build` | Production build of both frontend applications | available today |
 | `cd src/frontend && npm run lint` | Lint the workspace, including dependency boundaries | available today |
 | Backend restore / run | Restore and run the modular monolith | CRM-105 |
+| `cd src/backend && dotnet tool restore` | Restore the pinned `dotnet-ef` local tool | available today |
+| `cd src/backend && dotnet ef database update --project … --context …` | Apply one module's migrations | available today |
 | `docker compose up -d` | Start the local PostgreSQL infrastructure | available today |
 | `docker compose ps` | Show infrastructure status and health | available today |
 | `docker compose down` | Stop the infrastructure, preserving all data | available today |
@@ -197,10 +206,47 @@ provides them yet.
 
 ## Migrations and tests
 
-EF Core migrations arrive with CRM-106 and the automated test scaffolding
-with CRM-202. There is no runtime code, database schema or test runner in
-the repository yet. Both stories update this section when they land, per the
-docs update rule below.
+EF Core migrations are live. Each module owns its own schema and its own
+migrations; there is no shared `DbContext` and nothing is applied at
+application startup. Automated test orchestration in CI remains CRM-202's.
+
+```bash
+# 1. Infrastructure up (from the repository root)
+export COMPOSE_ENV_FILES=env/backend.env
+docker compose up -d
+
+# 2. Load the operator values into the shell (from src/backend/)
+cd src/backend
+set -a && . ../../env/backend.env && set +a
+
+# 3. Restore the pinned tooling and apply the module's migrations
+dotnet tool restore
+dotnet ef database update \
+  --project src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture \
+  --startup-project src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture \
+  --context ArchitectureFixtureDbContext
+
+# 4. Verify what was created
+docker compose exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+  -c '\dt architecture_fixture.*'
+```
+
+```bash
+# DESTRUCTIVE — deletes the squadcrm-pgdata volume and every local database row.
+# There is no undo. Run it to prove the database recreates from migrations alone,
+# then repeat steps 1-4 above.
+docker compose down -v
+```
+
+Every `dotnet ef` command needs those `POSTGRES_*` values in the process
+environment: the application never reads `env/backend.env` itself. Without
+them the command fails fast naming the missing keys and printing no value.
+
+The full backend test run **requires** the database to be up --- the
+persistence suite fails, rather than skipping, without it. The
+architecture and API suites run with no database:
+`cd src/backend && dotnet test tests/SquadCrm.ArchitectureTests` and
+`dotnet test tests/SquadCrm.Api.Tests`.
 
 ## Contributing
 

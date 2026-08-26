@@ -30,13 +30,16 @@ public sealed class CorsTests
     }
 
     /// <summary>
-    /// Outside Development no origins are configured, so the allow-list is empty and
-    /// every cross-origin request — including one that Development would permit — is blocked.
+    /// An empty allow-list blocks every cross-origin request — including one that
+    /// Development would permit. The allow-list is pinned empty here rather than
+    /// inherited: environment variables legitimately override <c>appsettings</c>,
+    /// so the subject of this test must be stated, not assumed. That the shipped
+    /// Development value flows through is proven by the two tests above.
     /// </summary>
     [Fact]
     public async Task Preflight_WithEmptyAllowList_HasNoAllowOrigin()
     {
-        using var factory = new SquadCrmApiFactory("Production");
+        using SquadCrmApiFactory factory = SquadCrmApiFactory.WithEmptyCorsAllowList("Production");
         using HttpClient client = factory.CreateClient();
 
         using HttpResponseMessage response = await SendPreflightAsync(client, AllowedOrigin);

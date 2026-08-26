@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SquadCrm.BuildingBlocks.Modules;
+using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Modules.ArchitectureFixture.Contracts;
+using SquadCrm.Modules.ArchitectureFixture.Persistence;
 
 namespace SquadCrm.Modules.ArchitectureFixture;
 
@@ -14,7 +16,11 @@ namespace SquadCrm.Modules.ArchitectureFixture;
 /// The minimum representative module fixture. Its only purpose is to prove
 /// explicit module registration, the contracts-vs-implementation split, module
 /// endpoint composition and the dependency rules asserted by
-/// <c>SquadCrm.ArchitectureTests</c>.
+/// <c>SquadCrm.ArchitectureTests</c>. It additionally proves <b>module-owned
+/// persistence</b> — its own <see cref="ArchitectureFixtureDbContext"/>, schema,
+/// table, migrations and migration-history table — and is removable on exactly
+/// the same terms as the rest of the fixture, together with its schema and
+/// migrations.
 /// </para>
 /// <para>
 /// It must not grow into a business module, nor into a cross-cutting "Platform"
@@ -42,6 +48,14 @@ public sealed class ArchitectureFixtureModule : IModule
         // Internal abstraction + internal implementation: the host composes the
         // module but cannot resolve or depend on the module's internals.
         services.AddSingleton<IModuleInfoProvider, ModuleInfoProvider>();
+
+        // The module registers its OWN DbContext, using the connection string the
+        // composition root derived from the POSTGRES_* contract. The host never
+        // sees this type, and no other module may reference it
+        // (SquadCrm.ArchitectureTests enforces this).
+        services.AddDbContext<ArchitectureFixtureDbContext>(options =>
+            ArchitectureFixtureDbContextOptions.Apply(
+                options, configuration.GetSquadCrmPostgresConnectionString()));
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)

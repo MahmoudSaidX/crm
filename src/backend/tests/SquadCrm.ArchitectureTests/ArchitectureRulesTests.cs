@@ -22,14 +22,18 @@ namespace SquadCrm.ArchitectureTests;
 public sealed class ArchitectureRulesTests
 {
     /// <summary>
-    /// Packages that belong to downstream stories. CRM-106 (persistence), CRM-198
-    /// (events/outbox) and CRM-204/CRM-110 (auth) must update this list when they
-    /// legitimately introduce one of these.
+    /// Packages that belong to downstream stories. CRM-198 (events/outbox) and
+    /// CRM-204/CRM-110 (auth) must update this list when they legitimately
+    /// introduce one of these.
+    /// <para>
+    /// EF Core and Npgsql are deliberately <b>absent</b>: persistence
+    /// legitimately introduces both, but only in specific projects. That is a
+    /// narrower rule than a solution-wide ban, and it lives in
+    /// <see cref="PersistenceArchitectureRulesTests"/>.
+    /// </para>
     /// </summary>
     private static readonly string[] ForbiddenAssemblyPrefixes =
     [
-        "Microsoft.EntityFrameworkCore",
-        "Npgsql",
         "Hangfire",
         "MediatR",
         "FluentValidation",
