@@ -20,6 +20,12 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
     private const string GenericTitle = "An unexpected error occurred.";
     private const string ProblemType = "https://datatracker.ietf.org/doc/html/rfc9110#section-15.6.1";
 
+    /// <summary>
+    /// Fixed, generic code for every unhandled exception — not module-owned, since
+    /// this handler runs before any module-specific error is distinguishable.
+    /// </summary>
+    private const string GenericCode = "unexpected-error";
+
     private readonly IProblemDetailsService _problemDetailsService;
     private readonly ILogger<GlobalExceptionHandler> _logger;
 
@@ -65,6 +71,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 Title = GenericTitle,
                 Status = StatusCodes.Status500InternalServerError,
                 Instance = httpContext.Request.Path.Value,
+                Extensions = { [ProblemDetailsExtensions.CodeExtensionName] = GenericCode },
             },
         }).ConfigureAwait(false);
     }

@@ -70,6 +70,10 @@ JSON document. Adding an interactive UI is a separate decision for a later story
 The `v1` segment is the built-in document name — it is **not** an API-versioning
 decision, which CRM-105 does not make.
 
+See [`docs/api-conventions.md`](../../docs/api-conventions.md) for the shared
+success/error/pagination/validation/security/versioning contract every module
+endpoint follows (CRM-204).
+
 ## Layout
 
 ```
@@ -377,7 +381,7 @@ stories must update when they legitimately introduce a dependency:
 | File storage adapters | CRM-200 |
 | OpenTelemetry observability pipeline | CRM-201 |
 | Broader testing infrastructure | CRM-202 |
-| Authentication / authorization / sessions | CRM-204, CRM-110 |
+| Authentication / session implementation (extension point ready) | CRM-110 |
 | External integrations | CRM-192 |
 | Hangfire, HTTPS/deployment, API versioning | later stories |
 
