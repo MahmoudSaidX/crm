@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>SquadCrm.Infrastructure.Postgres</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Provider-specific adapter at the composition/infrastructure boundary.
+       ADO-level Npgsql ONLY: this project reads and validates the POSTGRES_*
+       operator contract and assembles a connection string. It holds no
+       DbContext, no entity, no repository and no migration — EF Core belongs to
+       module implementation projects — and SquadCrm.BuildingBlocks stays
+       provider-neutral. Both facts are enforced by SquadCrm.ArchitectureTests. -->
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+  </ItemGroup>
+
+  <!-- Hosting abstractions only, for the composition-root extension method. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

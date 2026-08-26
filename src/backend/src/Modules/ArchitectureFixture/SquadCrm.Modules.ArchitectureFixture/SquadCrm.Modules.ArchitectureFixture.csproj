@@ -8,8 +8,23 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <!-- EF Core lives ONLY in module implementation projects. Neither the API
+       host, nor SquadCrm.BuildingBlocks, nor the PostgreSQL configuration
+       adapter, nor any *.Contracts project may reference it
+       (SquadCrm.ArchitectureTests enforces this). -->
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <!-- Design-time only: enables `dotnet ef` against this module.
+         PrivateAssets keeps it out of consumers. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="../SquadCrm.Modules.ArchitectureFixture.Contracts/SquadCrm.Modules.ArchitectureFixture.Contracts.csproj" />
+    <ProjectReference Include="../../../Infrastructure/SquadCrm.Infrastructure.Postgres/SquadCrm.Infrastructure.Postgres.csproj" />
     <ProjectReference Include="../../../BuildingBlocks/SquadCrm.BuildingBlocks/SquadCrm.BuildingBlocks.csproj" />
   </ItemGroup>
 

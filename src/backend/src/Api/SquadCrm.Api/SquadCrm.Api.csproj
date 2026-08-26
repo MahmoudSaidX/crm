@@ -8,10 +8,12 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
   </ItemGroup>
 
-  <!-- Composition root: references BuildingBlocks and the module (implementation
-       + contracts) purely to wire them up. No business rules live here. -->
+  <!-- Composition root: references BuildingBlocks, the PostgreSQL configuration
+       adapter and the module (implementation + contracts) purely to wire them
+       up. No business rules and no EF Core live here. -->
   <ItemGroup>
     <ProjectReference Include="../../BuildingBlocks/SquadCrm.BuildingBlocks/SquadCrm.BuildingBlocks.csproj" />
+    <ProjectReference Include="../../Infrastructure/SquadCrm.Infrastructure.Postgres/SquadCrm.Infrastructure.Postgres.csproj" />
     <ProjectReference Include="../../Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture.csproj" />
     <ProjectReference Include="../../Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture.Contracts/SquadCrm.Modules.ArchitectureFixture.Contracts.csproj" />
   </ItemGroup>

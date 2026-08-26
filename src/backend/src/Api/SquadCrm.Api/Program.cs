@@ -5,6 +5,7 @@ using SquadCrm.Api;
 using SquadCrm.BuildingBlocks.Correlation;
 using SquadCrm.BuildingBlocks.Errors;
 using SquadCrm.BuildingBlocks.Modules;
+using SquadCrm.Infrastructure.Postgres;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +51,13 @@ if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddOpenApi();
 }
+
+// PostgreSQL coordinates, read once from the POSTGRES_* operator contract
+// (CRM-197), validated fail-fast, and published internally as
+// ConnectionStrings:SquadCrmPostgres for each module's own DbContext.
+// No migration runs here: schema changes are applied by an explicit
+// `dotnet ef database update`.
+builder.AddSquadCrmPostgres();
 
 // Liveness only. No database/storage/provider probes (owned by later stories).
 builder.Services.AddHealthChecks();

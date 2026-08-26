@@ -8,3 +8,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | angular-workspace-agent-crm-customer | [`angular-workspace-agent-crm-customer/00-overview.md`](angular-workspace-agent-crm-customer/00-overview.md) | 02 |
 | crm-105-aspnet-core-modular-monolith | [`crm-105-aspnet-core-modular-monolith/00-overview.md`](crm-105-aspnet-core-modular-monolith/00-overview.md) | 03 |
 | crm-197-docker-compose-local-infrastructure | [`crm-197-docker-compose-local-infrastructure/00-overview.md`](crm-197-docker-compose-local-infrastructure/00-overview.md) | 04 |
+| crm-106-postgresql-ef-core-schema-per-module | [`crm-106-postgresql-ef-core-schema-per-module/00-overview.md`](crm-106-postgresql-ef-core-schema-per-module/00-overview.md) | 05 |
