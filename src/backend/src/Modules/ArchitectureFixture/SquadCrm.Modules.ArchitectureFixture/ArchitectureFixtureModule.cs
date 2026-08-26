@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Modules;
+using SquadCrm.BuildingBlocks.Validation;
 using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Modules.ArchitectureFixture.Contracts;
 using SquadCrm.Modules.ArchitectureFixture.Persistence;
@@ -37,6 +39,13 @@ public sealed class ArchitectureFixtureModule : IModule
 
     /// <summary>Infrastructure/demo-only route. Not a product surface.</summary>
     public const string ModuleInfoRoute = "/internal/architecture-fixture/module-info";
+
+    /// <summary>
+    /// Infrastructure/demo-only route. Not a product surface. Proves the shared
+    /// <see cref="PagedResult{TItem}"/> envelope and <see cref="ValidationEndpointFilter{TArgument}"/>
+    /// end to end, under the <c>/api/v1</c> route-prefix convention (D5).
+    /// </summary>
+    public const string ModuleInfoPageRoute = "/api/v1/internal/architecture-fixture/module-info-page";
 
     public string Name => ModuleName;
 
@@ -72,5 +81,23 @@ public sealed class ArchitectureFixtureModule : IModule
             .WithDescription(
                 "Architecture scaffolding, not a CRM capability. Removed once real business "
                 + "modules provide equivalent architecture-rule coverage.");
+
+        // Proves ValidationEndpointFilter<T> attached to a real endpoint boundary
+        // (CRM-105 declared the filter but attached it to no endpoint) and the
+        // shared PagedResult<T> envelope, together, at a live boundary.
+        // PaginationRequest is a reference type, so [AsParameters] is required —
+        // without it, minimal APIs would try to bind this GET request as a JSON body.
+        endpoints.MapGet(ModuleInfoPageRoute, static ([AsParameters] PaginationRequest request, IModuleInfoProvider provider) =>
+                TypedResults.Ok(new PagedResult<ModuleInfoResponse>(
+                    Items: [provider.Describe()],
+                    Page: request.Page,
+                    PageSize: request.PageSize,
+                    TotalCount: 1)))
+            .WithName("ArchitectureFixtureModuleInfoPage")
+            .WithSummary("Infrastructure/demo-only: proves the shared PagedResult<T> envelope and ValidationEndpointFilter<T> end to end.")
+            .WithDescription(
+                "Architecture scaffolding, not a CRM capability. Removed once a real business "
+                + "module's paged endpoint provides equivalent coverage.")
+            .ValidatesDataAnnotations<PaginationRequest>();
     }
 }

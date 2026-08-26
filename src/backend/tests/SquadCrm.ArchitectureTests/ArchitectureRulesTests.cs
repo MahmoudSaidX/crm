@@ -23,8 +23,13 @@ public sealed class ArchitectureRulesTests
 {
     /// <summary>
     /// Packages that belong to downstream stories. CRM-198 (events/outbox) and
-    /// CRM-204/CRM-110 (auth) must update this list when they legitimately
-    /// introduce one of these.
+    /// CRM-110 (authentication) must update this list when they legitimately
+    /// introduce one of these. CRM-204 already resolved the authorization half:
+    /// <c>Microsoft.AspNetCore.Authorization.</c> is unblocked because this
+    /// story registers the inert authorization extension point
+    /// (<c>services.AddAuthorization()</c>, zero policies, no scheme). No
+    /// authentication scheme exists yet, so <c>Microsoft.AspNetCore.Authentication.</c>
+    /// stays forbidden until CRM-110 introduces one.
     /// <para>
     /// EF Core and Npgsql are deliberately <b>absent</b>: persistence
     /// legitimately introduces both, but only in specific projects. That is a
@@ -38,7 +43,6 @@ public sealed class ArchitectureRulesTests
         "MediatR",
         "FluentValidation",
         "Microsoft.AspNetCore.Authentication.",
-        "Microsoft.AspNetCore.Authorization.",
         "Swashbuckle.",
         "Scalar.",
         "NSwag.",

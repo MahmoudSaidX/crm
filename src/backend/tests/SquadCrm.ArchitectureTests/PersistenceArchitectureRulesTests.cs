@@ -55,6 +55,11 @@ public sealed class PersistenceArchitectureRulesTests
     /// PostgreSQL is one such provider. "Just one little Npgsql helper" in
     /// BuildingBlocks must fail here rather than be discovered later, when every
     /// module already depends on it.
+    /// <para>
+    /// This whole-assembly rule already covers CRM-204's new <c>Http/</c> and
+    /// <c>Security/</c> folders — they live in the same <c>SquadCrm.BuildingBlocks</c>
+    /// assembly — so CRM-204 deliberately adds no duplicate rule for them.
+    /// </para>
     /// </summary>
     [Fact]
     public void BuildingBlocks_MustNotDependOnEfCoreOrNpgsql()

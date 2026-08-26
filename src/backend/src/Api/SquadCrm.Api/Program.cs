@@ -5,6 +5,7 @@ using SquadCrm.Api;
 using SquadCrm.BuildingBlocks.Correlation;
 using SquadCrm.BuildingBlocks.Errors;
 using SquadCrm.BuildingBlocks.Modules;
+using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Infrastructure.Postgres;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,12 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSquadCrmProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHttpContextAccessor();
+
+// Authorization extension point for CRM-110. No scheme, no policy, no
+// [Authorize] endpoint, no ICurrentUserAccessor registration yet — this only
+// gives CRM-110 one place to plug in. Resolving ICurrentUserAccessor before
+// CRM-110 registers an implementation fails DI resolution by design.
+builder.Services.AddSquadCrmAuthorizationExtensionPoint();
 
 // CORS, driven entirely by configuration.
 CorsOptions corsOptions =
@@ -74,6 +81,10 @@ builder.Services.RegisterModules(builder.Configuration, modules);
 WebApplication app = builder.Build();
 
 app.UseExceptionHandler();
+
+// Registered first, right after the exception handler, so 500 responses
+// carry the header baseline too — not after UseCors(), which would skip them.
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseCors();
 
