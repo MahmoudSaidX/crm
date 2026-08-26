@@ -31,30 +31,72 @@ Do not modify `.squad/config.yaml`.
 `/next-story`'s **Token discipline** section applies here unchanged, including
 its rule that no gate is ever skipped or shortened to save tokens.
 
+## Model routing
+
+`/next-story`'s **Model routing** section applies here unchanged and is the only
+mechanism for model selection — slash-command `model:` frontmatter is ignored
+and must never be relied on. This interactive main thread is the **CONTROLLER**:
+it sequences steps, owns every stop point, preserves workflow state, receives
+compact agent results, classifies, presents `DECISION REQUIRED`, requests
+publication approval, and dispatches the next step. It does not perform large
+repository reads, implementation, planning, debugging or repetitive verification
+itself.
+
+| Step | Routed to | Model |
+|---|---|---|
+| 1 — tracker read | `repo-scout` | haiku |
+| 2 — reconciliation sweep | `repo-scout` | haiku |
+| 3 — task-matrix evidence | `repo-scout` (controller assigns the statuses) | haiku |
+| 4 — conflict review of partial work | `arch-reviewer` | opus |
+| 5 — Linear write | controller | — |
+| 6 — implement the remainder | `story-engineer` | sonnet |
+| 7 — full verification | `verify-runner` | haiku |
+| 8 — independent review | `story-reviewer` | sonnet |
+| 9 — report + publication | controller (after user approval) | — |
+
+Escalation is unchanged: **Haiku → Sonnet** when code meaning must be reasoned
+about, a failure cause is non-obvious, multiple behaviors interact, or findings
+conflict; **Sonnet → Opus** when architecture boundaries may change, approved-plan
+assumptions are challenged, multiple architectural options exist, or an ADR /
+security / product / persistence / transaction / integration decision is
+required. Every agent uses the `ESCALATION REQUIRED` brief from `/next-story`.
+The controller forwards the brief plus the relevant anchors — investigation
+already established is never redone. Gate authority is never delegated: agents
+give evidence and recommendations, the controller decides whether a gate passes,
+and the user decides architectural/product decisions and publication.
+
 ## Step 1 — Read the tracker
 
-Linear MCP `get_issue` with `includeRelations: true`: status and history,
-description, Acceptance Criteria, Business Rules, `blockedBy` and `blocks` with
-their statuses, attachments/PRs.
+Dispatch **`repo-scout`** (haiku, read-only): Linear MCP `get_issue` with
+`includeRelations: true` — status and history, description, Acceptance Criteria,
+Business Rules, `blockedBy` and `blocks` with their statuses, attachments/PRs,
+returned as compact structured evidence.
 
 Fetch this **once** here and reuse it through Steps 2–4; refresh only
 immediately before a tracker write (Step 5) or the Publication Gate.
 
 ## Step 2 — Reconcile again (read-only, before any modification)
 
-Re-run the `/next-story` Phase 2 evidence sweep in full — Linear state, git
+Dispatch **`repo-scout`** (haiku) to re-run the `/next-story` Phase 2 evidence
+sweep in full — Linear state, git
 history, current branch, working tree, Squad Kit intake, approved plan,
 implementation evidence. Evidence from a previous invocation is stale; gather it
 fresh. By the entry conditions, prior work exists here, so Phase 2's deep
 implementation inspection is always required — but it is the *same single sweep*
 that produces the Step 3 matrix: read the approved plan completely once, verify
 each named artifact with targeted `grep`/`test -f`/`git log --stat` rather than
-whole-file dumps, and do not repeat the sweep per step. If the class has changed to **E. COMPLETED** or **F. CONFLICTED**, stop
-and report instead of resuming.
+whole-file dumps, and do not repeat the sweep per step. The scout reports presence and absence
+only; the **controller** classifies, exactly as in `/next-story` Phase 2. If the
+scout escalates because existing code's meaning must be reasoned about, route
+that brief to **`story-engineer`** (sonnet) — and on to **`arch-reviewer`**
+(opus) if it becomes architectural. If the class has changed to
+**E. COMPLETED** or **F. CONFLICTED**, stop and report instead of resuming.
 
 ## Step 3 — Task matrix
 
-Walk the approved plan task by task and emit:
+The `repo-scout` sweep from Step 2 supplies the per-task evidence. The
+**controller** assigns each status — an agent never does. Emit, task by task
+through the approved plan:
 
 ```
 Plan task | Status | Evidence
@@ -69,20 +111,25 @@ acceptable row.
 
 Build this matrix **once**, from the Step 2 sweep. Treat COMPLETE rows as
 trusted evidence for the rest of the run: do not re-inspect their implementation
-while executing the remaining tasks. Revisit COMPLETE work only if Step 7
-verification or the Step 8 review exposes a regression or contradiction — and
-then correct the matrix row with fresh evidence.
+while executing the remaining tasks, and tell `story-engineer` which tasks are
+COMPLETE so it does not re-investigate them either. Revisit COMPLETE work only
+if Step 7 verification or the Step 8 review exposes a regression or
+contradiction — and then correct the matrix row with fresh evidence.
 
 ## Step 4 — Conflict review of the existing partial work
 
-Before continuing, review what already exists against the *currently approved*
-plan and against `docs/adr/` and `CLAUDE.md`: does the committed code contradict
-the approved architecture (wrong boundary, inverted dependency, persistence
-ownership elsewhere, a contract the plan does not sanction)?
+Dispatch **`arch-reviewer`** (opus, read-only) with the Step 3 matrix, the plan
+path and the concrete anchors — not a fresh investigation — to review what
+already exists against the *currently approved* plan and against `docs/adr/` and
+`CLAUDE.md`: does the committed code contradict the approved architecture (wrong
+boundary, inverted dependency, persistence ownership elsewhere, a contract the
+plan does not sanction)?
 
-If yes: **STOP** with the `DECISION REQUIRED` block from `/next-story` Phase 6.
-Never silently rewrite committed architecture — reconciling committed code with
-an approved plan is the user's decision.
+`arch-reviewer` recommends and supplies the `DECISION REQUIRED` substance; it
+decides nothing. If a contradiction stands: the **controller STOPS** and presents
+the `DECISION REQUIRED` block from `/next-story` Phase 6 to the user. Never
+silently rewrite committed architecture — reconciling committed code with an
+approved plan is the user's decision.
 
 ## Step 5 — Linear
 
@@ -91,47 +138,64 @@ If reconciliation is safe and this is not a dry run, move the issue to
 
 ## Step 6 — Continue the remainder
 
-Implement only the PARTIAL and NOT_STARTED tasks, in plan order, via the
-Superpowers workflow named in `/next-story` Phase 7. Work from the current
-task's plan section — the plan was read in full in Step 2 and need not be
-reloaded or restated. Run only the checks relevant to each changed task here;
-the full verification is Step 7. Scope rules from
-`/next-story` still bind: current story only, no downstream stories, no silent
-scope expansion. Implementation-level defects are yours to fix autonomously;
-any architectural or product question re-enters the same hard Decision Gate
-(`/next-story` Phase 6) with no exceptions for work already committed.
+Dispatch **`story-engineer`** (sonnet) to implement only the PARTIAL and
+NOT_STARTED tasks, in plan order, via the Superpowers workflow named in
+`/next-story` Phase 7. Hand it the plan path, the current task, the approved
+architectural decisions and the list of COMPLETE tasks it must **not**
+re-investigate; take back a compact result and dispatch the next task. The plan
+was read in full in Step 2 and is not reloaded or restated. Only the checks
+relevant to each changed task run here; the full verification is Step 7. Scope
+rules from `/next-story` still bind: current story only, no downstream stories,
+no silent scope expansion. Implementation-level defects are the engineer's to fix
+autonomously; any architectural or product question comes back as an
+`ESCALATION REQUIRED` brief, is routed to **`arch-reviewer`** (opus), and
+re-enters the same hard Decision Gate (`/next-story` Phase 6) with no exceptions
+for work already committed.
 
 ## Step 7 — Verify the whole story
 
-Once the implementation is stable, run — exactly once — every verification the
+The controller enumerates the complete check list and dispatches
+**`verify-runner`** (haiku) to run — exactly once — every verification the
 approved plan requires, plus the `/next-story` Phase 8 checklist, over the
 **entire** story, including work that existed before this invocation.
-Pre-existing code is not exempt from verification. Never claim a command passed
-without having run it and read its output.
+Pre-existing code is not exempt from verification, and COMPLETE Step 3 tasks are
+verified here like everything else. Never claim a command passed without having
+run it and read its output. The controller decides whether this gate passes.
 
-Record passes as `<command> → PASS (<key counts/evidence>)`; keep failure output
-in full while debugging. After a fix, rerun the affected checks, and rerun the
-full suite when the fix could affect broader behavior or to produce the final
-completion evidence.
+Passes come back as `<command> → PASS (<key counts/evidence>)`; failure output is
+preserved in full. `verify-runner` never interprets a non-obvious failure — it
+returns an `ESCALATION REQUIRED` brief, which the controller routes to
+**`story-engineer`** together with the preserved output. After a fix,
+re-dispatch the affected checks, and re-dispatch the full suite when the fix
+could affect broader behavior or to produce the final completion evidence.
 
 ## Step 8 — Review the whole story
 
-One fresh review — not several of the same unchanged code — of the complete
-final implementation and diff (`git diff main...` plus the working tree; this is
-the gate where full diffs are read) against: the Linear story, Acceptance Criteria, Business
-Rules, the approved plan, ADRs, architecture boundaries, and scope exclusions.
-Fix implementation-level findings autonomously and rerun the affected
-verification.
+Dispatch **`story-reviewer`** (sonnet, read-only) for one fresh review from
+fresh context — not several of the same unchanged code — of the **entire final
+story state**, implementation and diff (`git diff main...` plus the working
+tree; this is the gate where full diffs are read), including work that predates
+this invocation, against: the Linear story, Acceptance Criteria, Business Rules,
+the approved plan, ADRs, architecture boundaries, security and scope exclusions.
+Implementation-level findings are routed to **`story-engineer`** to fix, then
+the affected verification is re-dispatched to `verify-runner`. An architectural
+concern is returned for **`arch-reviewer`** (opus) escalation and, if it is a
+real architectural/product decision, re-enters `/next-story` Phase 6 — the
+reviewer never resolves it. This review is mandatory and independent; the
+controller decides whether the gate passes.
 
 ## Step 9 — Completion Gate and Publication Gate
 
-Emit the same 13-point completion report as `/next-story` Phase 10, under its
+The **controller** emits the same 13-point completion report as `/next-story`
+Phase 10 directly from workflow state and the agents' compact returns, under its
 compact reporting rules (`PASS — <evidence>` for successes; detail only for
 failures, deviations, architecture decisions, security concerns, technical debt,
 or on request), then **STOP
 before any commit, push or PR**. Publication follows `/next-story` Phase 11
 unchanged: explicit approval, stage only current-story files, inspect the staged
 diff, `feat/crm-<n>-<slug>` branch, no force-push, `gh pr create`, reference the
-PR in Linear, move to **In Review** — never Done because a PR exists.
+PR in Linear, move to **In Review** — never Done because a PR exists. The
+controller performs the publication itself; no agent may commit, push, open a PR
+or write to Linear.
 
 **STOP after one story.** Never start another automatically.

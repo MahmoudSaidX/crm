@@ -21,6 +21,68 @@ Git or `.squad/`. Never begin implementation solely because a Linear issue says
 Todo. Reconciliation (Phase 2) is mandatory and comes before any write of any
 kind.
 
+## Model routing (do not use slash-command `model:`)
+
+Slash-command `model:` frontmatter is ignored — it inherits the session model.
+Model selection happens **only** through subagent routing, which is verified to
+work for Haiku, Sonnet and Opus with no observed restriction or fallback.
+
+**This interactive main thread is the CONTROLLER.** It sequences phases, owns
+every human stop point, preserves workflow state, receives compact agent
+results, classifies reconciliation results, presents `DECISION REQUIRED`,
+requests publication approval, and dispatches the next phase.
+
+The controller does **not** itself perform large repository reads,
+implementation, planning, debugging, or repetitive verification when a routed
+agent owns that work. It does perform small mechanical operations directly
+(Linear status writes, the completion report, staging/commit/push/PR after
+approval) — there is no reporter agent and no linear-publisher agent.
+
+| Agent | Model | Effort | Owns | Mode |
+|---|---|---|---|---|
+| `repo-scout` | haiku | low | Linear discovery, dependency/status inspection, git history/status/branch evidence, Squad Kit artifact discovery, reconciliation evidence, resume task-matrix evidence | read-only |
+| `story-engineer` | sonnet | medium | intake prep needing interpretation, Squad Kit plan generation, implementation, refactoring, debugging, task-relevant incremental verification | writes code |
+| `arch-reviewer` | opus | high | approved-plan architecture review, ADR consistency, module/dependency boundaries, persistence/transaction/integration, security architecture, Decision Gate analysis | read-only |
+| `verify-runner` | haiku | low | the final plan-required build/test/lint/migration verification, concise PASS evidence, preserved failure output | no fixes |
+| `story-reviewer` | sonnet | medium | independent final review of the whole final story state from fresh context | read-only |
+
+### Authority is never delegated
+
+Agents supply **evidence and recommendations**. The **controller** decides
+whether a gate passes. The **user** decides every architectural/product
+decision and every publication. An agent may never classify a reconciliation
+class, declare a gate passed, approve a plan, or publish.
+
+### Escalation
+
+Every agent returns, instead of guessing:
+
+```
+ESCALATION REQUIRED
+Current phase:
+Question:
+Evidence:
+- file:line / command / exact error
+Already established:
+Why higher-level reasoning is required:
+Recommended next model:
+- Sonnet | Opus
+```
+
+**Haiku → Sonnet** (`repo-scout`/`verify-runner` → `story-engineer`) when code
+meaning must be reasoned about, a failure cause is non-obvious, multiple
+behaviors interact, or findings conflict.
+
+**Sonnet → Opus** (`story-engineer`/`story-reviewer` → `arch-reviewer`) when
+architecture boundaries may change, approved-plan assumptions are challenged,
+multiple architectural options exist, or an ADR / security / product /
+persistence / transaction / integration decision is required.
+
+On escalation the controller passes **the compact brief plus the relevant
+anchors only**. Investigation already done is never redone. Delegate only when
+the read-set is substantially larger than the return-set; keep a one-file check
+or a single git command in the controller.
+
 ## Token discipline (never at the cost of a gate)
 
 Efficiency is about *how much you read and print*, never about which gate you
@@ -45,8 +107,9 @@ Within that constraint:
   `<command> → PASS (<key counts/evidence>)`. Keep failure output in full while
   debugging.
 - **No duplicate work.** One review per unchanged code state; no parallel agents
-  or extra skills that redo an investigation already done. Use a subagent only
-  when isolation or genuinely parallel investigation adds value.
+  or extra skills that redo an investigation already done. Route work to the
+  agent that owns it (see **Model routing**), and delegate only when the
+  read-set is substantially larger than the compact return-set.
 - **Working summary.** Maintain a compact running state: current story,
   approved architectural decisions, current task, completed task statuses,
   unresolved findings, verification state. Do not restate conversation history
@@ -69,8 +132,14 @@ Within that constraint:
 
 ## Phase 1 — Discover
 
-Use Linear MCP (`list_issues`, `get_issue` with `includeRelations: true`) on the
-Squad CRM project. Order candidates by:
+Dispatch **`repo-scout`** (haiku) to collect the discovery evidence read-only:
+Linear MCP (`list_issues`, `get_issue` with `includeRelations: true`) on the
+Squad CRM project, returning per candidate the status/statusType, milestone,
+priority, position and every `blockedBy`/`blocks` relation with its status. The
+controller does the ranking and the selection from that compact evidence — the
+scout never selects a story.
+
+Order candidates by:
 
 1. dependency readiness — **every** `blockedBy` issue is Done;
 2. Sprint/milestone order (`projectMilestone`, lowest sprint first);
@@ -84,6 +153,10 @@ Rank from Linear metadata and relations alone — this is a metadata pass. Do
 **not** inspect implementation for every candidate; deep inspection happens in
 Phase 2 for the selected story only.
 
+If the scout escalates (ambiguous or conflicting tracker evidence), the
+controller resolves the question or presents it to the user — it does not lower
+the eligibility bar.
+
 Report the ranked shortlist and the one you selected, with its blockers and
 their statuses.
 
@@ -91,6 +164,15 @@ their statuses.
 
 Before writing to Linear or the repository, gather evidence **progressively**.
 The gate itself is never skipped — only the depth of inspection adapts.
+
+**Routing.** Dispatch **`repo-scout`** (haiku, read-only) to gather both passes
+below and return compact structured evidence with an anchor per item. The
+controller does **not** run the sweep itself and does not read the repository
+broadly here. The controller then performs the classification — the scout
+reports presence/absence only and never names a class. Escalate a scout finding
+to **`story-engineer`** (sonnet) when the meaning of existing code must be
+reasoned about, and from there to **`arch-reviewer`** (opus) when committed code
+may contradict approved architecture.
 
 **Pass 1 — cheap signals (always, for the selected story only):**
 
@@ -120,7 +202,8 @@ If Pass 1 shows no plan, no intake, no commit, no branch, no PR and a clean
 tree, that is itself sufficient evidence for class A — say so explicitly rather
 than enumerating a per-task matrix of a plan that does not exist.
 
-Then classify as exactly one of:
+Then the **controller** classifies — from the scout's evidence, on its own
+judgment — as exactly one of:
 
 | Class | Meaning |
 |---|---|
@@ -156,6 +239,12 @@ If no valid intake exists, create it with the repository's installed workflow �
 `/squad-new-story` (which runs `squad new-story`). Do not hand-roll an intake
 format.
 
+**Routing.** Mechanical scaffolding and a straight copy of Linear content stay
+with the controller. As soon as the intake needs **interpretation** — enriching
+from repository architecture, reconciling an existing intake against Linear,
+mapping prerequisite-story outputs — dispatch **`story-engineer`** (sonnet) with
+the Linear content and the intake path, and take back a compact result.
+
 Populate it from Linear MCP data: story title, full description, Acceptance
 Criteria, Business Rules, Fields Dictionary (when present), `blockedBy` and
 `blocks` relations with their statuses, and relevant metadata (milestone,
@@ -174,16 +263,26 @@ prerequisite stories.
 
 ## Phase 5 — Squad Kit planning
 
-Generate the plan with the installed planner: `/squad-plan <intake-path>`.
-Do not substitute a custom planning system, and do not regenerate an existing
-approved plan without the user's explicit go-ahead.
+Dispatch **`story-engineer`** (sonnet) to generate the plan with the installed
+planner: `/squad-plan <intake-path>`. Do not substitute a custom planning
+system, and do not regenerate an existing approved plan without the user's
+explicit go-ahead.
 
-Read the generated plan completely, once. Then review it against: the story, Acceptance Criteria,
-Business Rules, dependencies, `docs/adr/`, current architecture, prior
-foundation-story decisions, this story's scope, and downstream-story
-boundaries. Report review findings before proceeding.
+Then dispatch **`arch-reviewer`** (opus, read-only) to review the generated plan
+in full against: the story, Acceptance Criteria, Business Rules, dependencies,
+`docs/adr/`, current architecture, prior foundation-story decisions, this
+story's scope, and downstream-story boundaries. The reviewer recommends; it
+approves nothing. The controller does not read the whole plan itself here — it
+keeps the plan path, the task list and the returned findings as workflow state,
+and reports the review findings before proceeding.
 
 ## Phase 6 — Architecture Decision Gate
+
+**Routing.** The `arch-reviewer` (opus) analysis from Phase 5 — extended with a
+further dispatch if new items appeared — supplies the substance. The
+**controller** classifies each item and owns the gate; the **user** owns the
+decision. `IMPLEMENTATION_CHOICE` items are handed to `story-engineer`;
+`ARCHITECTURAL_PRODUCT_DECISION` items stop the workflow here.
 
 Classify every unresolved item from the plan review as exactly one of:
 
@@ -220,14 +319,23 @@ Reason:
 Impact on current plan:
 ```
 
-Implement nothing until explicitly approved. After approval, reconcile the plan
-through the Squad Kit workflow before implementing.
+Implement nothing until explicitly approved. The controller presents this block
+and waits for the user; it never resolves an `ARCHITECTURAL_PRODUCT_DECISION`
+itself and never lets an agent resolve one. After approval, reconcile the plan
+through the Squad Kit workflow (`story-engineer`) before implementing.
 
 ## Phase 7 — Implementation
 
-The **approved** Squad Kit plan is the source of truth; you have already read
-it in full, so work from the current task/section and re-read other parts only
-when evidence forces a re-evaluation. Invoke the relevant
+**Routing.** Implementation, refactoring and debugging are dispatched to
+**`story-engineer`** (sonnet). The controller does not implement or debug: it
+hands over the current task (or a contiguous group of tasks) plus the approved
+plan path, the approved architectural decisions, and the anchors already
+established; it receives a compact result and dispatches the next task.
+
+The **approved** Squad Kit plan is the source of truth; the plan has already
+been read in full, so the engineer works from the current task/section and
+re-reads other parts only when evidence forces a re-evaluation. The engineer
+invokes the relevant
 installed Superpowers skills rather than a duplicate methodology — typically
 `superpowers:using-git-worktrees` or a `feat/crm-<n>-<slug>` branch,
 `superpowers:test-driven-development`, `superpowers:executing-plans`, and
@@ -235,13 +343,19 @@ installed Superpowers skills rather than a duplicate methodology — typically
 
 Implement only the current story. Never implement a downstream story early —
 if the plan's non-goals name it, it stays unimplemented. Implementation-level
-failures are yours to fix autonomously; a newly surfaced architectural or
-product question sends you back to Phase 6.
+failures are the engineer's to fix autonomously; an `ESCALATION REQUIRED` brief
+recommending Opus sends the controller back to Phase 6 with that brief and its
+anchors — the investigation behind it is not redone.
 
-While implementing, run only the tests/checks relevant to the task you just
-changed — the complete plan-required verification runs once at Phase 8.
+While implementing, the engineer runs only the tests/checks relevant to the task
+it just changed — the complete plan-required verification runs once at Phase 8.
 
 ## Phase 8 — Verification (Completion Gate)
+
+**Routing.** The controller enumerates the complete required check list from the
+approved plan and dispatches **`verify-runner`** (haiku) to execute it. The
+controller does not run the suite itself and does not re-run checks the runner
+already ran. The controller decides whether this gate passes.
 
 Once the implementation is stable, run the **complete** required verification
 exactly once — every verification the approved plan specifies, plus, as
@@ -253,32 +367,47 @@ debug/temp code left; `git diff` and `git status`. Use targeted git commands
 during implementation; read the full diff here and at the Publication Gate,
 where it matters.
 
-Follow `superpowers:verification-before-completion`: **never state that a
-command passed unless you actually ran it and read its output.** Record a pass
-compactly as `<command> → PASS (<key counts/evidence>)`; keep failure output in
-full while debugging.
+`superpowers:verification-before-completion` binds the runner and the
+controller alike: **never state that a command passed unless it was actually run
+and its output read.** A pass is recorded compactly as
+`<command> → PASS (<key counts/evidence>)`; failure output is preserved in full.
+The runner never interprets a non-obvious failure — it returns an
+`ESCALATION REQUIRED` brief recommending Sonnet.
 
-An implementation defect: fix, then rerun the affected checks. Rerun the full
-suite when the fix could affect broader behavior, and always for the final
-completion evidence — the story is never reported complete on partial reruns.
-A fix that would require changing approved architecture: stop at Phase 6.
+An implementation defect: the controller routes the failure brief and its
+preserved output to **`story-engineer`** to fix, then re-dispatches
+`verify-runner` for the affected checks. Rerun the full suite when the fix could
+affect broader behavior, and always for the final completion evidence — the
+story is never reported complete on partial reruns. A fix that would require
+changing approved architecture: `story-engineer` escalates to `arch-reviewer`
+and the controller stops at Phase 6.
 
 ## Phase 9 — Independent review
+
+**Routing.** Dispatch **`story-reviewer`** (sonnet, read-only) from fresh
+context. It reviews the **entire final story state**, not only the latest
+changes, and reads the full final diff — the controller does not perform this
+review itself. An architectural concern comes back as an `ESCALATION REQUIRED`
+brief for **`arch-reviewer`** (opus) and, if it is a real architectural/product
+decision, re-enters Phase 6; the reviewer never resolves it.
 
 Review the finished work fresh (`superpowers:requesting-code-review`) against:
 (1) the Linear story, (2) Acceptance Criteria, (3) Business Rules, (4) the
 approved plan, (5) ADRs, (6) architecture boundaries, (7) scope exclusions,
 (8) security/secrets, (9) dependency direction, (10) tests and verification
-evidence. Fix implementation-level findings autonomously and rerun the affected
-verification. Apply `superpowers:receiving-code-review` — verify a finding
-before acting on it.
+evidence. Implementation-level findings are routed to **`story-engineer`** to
+fix, then the affected verification is re-dispatched to `verify-runner`. Apply
+`superpowers:receiving-code-review` — verify a finding before acting on it.
 
 This independent review is mandatory and happens once over the final code
-state; do not run duplicate reviews of the same unchanged code.
+state; do not run duplicate reviews of the same unchanged code. The controller
+decides whether the review gate passes.
 
 ## Phase 10 — Completion report
 
-Before any Git publication, report — concisely. Successful items are one line:
+The **controller** writes this report directly from the workflow state and the
+agents' compact returns — it is a small mechanical operation, so there is no
+reporter agent. Before any Git publication, report — concisely. Successful items are one line:
 `PASS — <evidence>`. Expand into detail only for failures, deviations,
 architecture decisions, security concerns, technical debt, or detail the user
 asked for. Never repeat information already stated elsewhere in the report.
@@ -294,6 +423,10 @@ plan; 10. warnings/technical debt; 11. scope-creep check;
 
 **Do not publish automatically.** STOP before commit/push/PR and request
 approval, showing the completion report and proposed commit message.
+
+The controller requests this approval and performs the publication itself —
+staging, commit, push, PR and the Linear write are small mechanical operations,
+so there is no linear-publisher agent, and no agent may publish.
 
 After explicit approval:
 
@@ -320,7 +453,10 @@ partial implementation; regenerate an approved plan unnecessarily; change
 architecture silently; expand scope silently; rewrite an ADR unless the
 approved plan explicitly requires it; include unrelated working-tree changes;
 commit generated or runtime artifacts; force-push; mark an issue Done because
-implementation exists; continue automatically to another story.
+implementation exists; continue automatically to another story; rely on
+slash-command `model:` frontmatter for model selection; let an agent decide a
+gate, an architectural/product decision or a publication; redo an investigation
+that an escalation brief already established.
 
 ## Reconciliation regression case — CRM-106
 
