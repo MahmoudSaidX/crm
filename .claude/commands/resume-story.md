@@ -29,7 +29,11 @@ command are orchestration, Superpowers is the implementation methodology.
 Do not modify `.squad/config.yaml`.
 
 `/next-story`'s **Token discipline** section applies here unchanged, including
-its rule that no gate is ever skipped or shortened to save tokens.
+its rule that no gate is ever skipped or shortened to save tokens, and its
+**Proportional plans** and **Compact returns** rules.
+
+`/next-story`'s **Phase 2c YAGNI Gate** applies here unchanged, to the remaining
+implementation and to the review of what already exists.
 
 ## Model routing
 
@@ -47,7 +51,8 @@ itself.
 | 1 — tracker read | `repo-scout` | haiku |
 | 2 — reconciliation sweep | `repo-scout` | haiku |
 | 3 — task-matrix evidence | `repo-scout` (controller assigns the statuses) | haiku |
-| 4 — conflict review of partial work | `arch-reviewer` | opus |
+| 3b — risk classification | controller | — |
+| 4 — conflict review of partial work | `arch-reviewer` (ARCHITECTURE / HIGH_RISK, or an escalated question) | opus |
 | 5 — Linear write | controller | — |
 | 6 — implement the remainder | `story-engineer` | sonnet |
 | 7 — full verification | `verify-runner` | haiku |
@@ -116,20 +121,48 @@ COMPLETE so it does not re-investigate them either. Revisit COMPLETE work only
 if Step 7 verification or the Step 8 review exposes a regression or
 contradiction — and then correct the matrix row with fresh evidence.
 
+## Step 3b — Risk classification
+
+The **controller** classifies this story with the same rules and the same
+printed output as `/next-story` **Phase 2b** — STANDARD, ARCHITECTURE or
+HIGH_RISK, escalating only on the concrete evidence Phase 2b requires — and
+routes Steps 4, 6, 7 and 8
+accordingly. Print:
+
+```
+RISK: STANDARD | ARCHITECTURE | HIGH_RISK
+Reason: <one concise sentence>
+```
+
 ## Step 4 — Conflict review of the existing partial work
 
-Dispatch **`arch-reviewer`** (opus, read-only) with the Step 3 matrix, the plan
-path and the concrete anchors — not a fresh investigation — to review what
-already exists against the *currently approved* plan and against `docs/adr/` and
-`CLAUDE.md`: does the committed code contradict the approved architecture (wrong
-boundary, inverted dependency, persistence ownership elsewhere, a contract the
-plan does not sanction)?
+Whether Opus reviews the existing partial work here is **risk-routed**:
+
+- **STANDARD** — no automatic `arch-reviewer` dispatch. The controller checks
+  the Step 3 matrix against the approved plan itself and proceeds. If a genuine
+  architectural or product contradiction surfaces, escalate **that specific
+  question** to `arch-reviewer` with the established anchors — never the whole
+  story.
+- **ARCHITECTURE** — dispatch `arch-reviewer` (opus) for a **targeted**
+  architecture-only review of the existing work.
+- **HIGH_RISK** — the existing full conflict review is retained.
+
+When dispatched, hand **`arch-reviewer`** (opus, read-only) the Step 3 matrix,
+the plan path and the concrete anchors — not a fresh investigation — to review
+what already exists against the *currently approved* plan and against
+`docs/adr/` and `CLAUDE.md`: does the committed code contradict the approved
+architecture (wrong boundary, inverted dependency, persistence ownership
+elsewhere, a contract the plan does not sanction)? Do not ask it to repeat
+repository discovery, implementation planning, acceptance criteria or routine
+code review.
 
 `arch-reviewer` recommends and supplies the `DECISION REQUIRED` substance; it
 decides nothing. If a contradiction stands: the **controller STOPS** and presents
-the `DECISION REQUIRED` block from `/next-story` Phase 6 to the user. Never
-silently rewrite committed architecture — reconciling committed code with an
-approved plan is the user's decision.
+the `DECISION REQUIRED` block from `/next-story` Phase 6 to the user. If no
+unresolved architectural or product decision exists, continue automatically —
+do **not** present an empty Decision Gate. Never silently rewrite committed
+architecture — reconciling committed code with an approved plan is the user's
+decision.
 
 ## Step 5 — Linear
 
@@ -137,6 +170,10 @@ If reconciliation is safe and this is not a dry run, move the issue to
 **In Progress** if it is not already. Touch no other issue.
 
 ## Step 6 — Continue the remainder
+
+Resume from the **first PARTIAL or NOT_STARTED task**. Never regenerate the
+intake or the plan, and do not re-investigate COMPLETE plan tasks unless Step 7
+verification or the Step 8 review exposes a contradiction.
 
 Dispatch **`story-engineer`** (sonnet) to implement only the PARTIAL and
 NOT_STARTED tasks, in plan order, via the Superpowers workflow named in
@@ -171,6 +208,11 @@ could affect broader behavior or to produce the final completion evidence.
 
 ## Step 8 — Review the whole story
 
+Review depth follows the Step 3b classification exactly as in `/next-story`
+Phase 9: **STANDARD** — one Sonnet final review; **ARCHITECTURE** — the Step 4
+Opus architecture review plus one Sonnet final code review; **HIGH_RISK** — the
+existing full review behavior. Never review an unchanged code state twice.
+
 Dispatch **`story-reviewer`** (sonnet, read-only) for one fresh review from
 fresh context — not several of the same unchanged code — of the **entire final
 story state**, implementation and diff (`git diff main...` plus the working
@@ -197,5 +239,8 @@ diff, `feat/crm-<n>-<slug>` branch, no force-push, `gh pr create`, reference the
 PR in Linear, move to **In Review** — never Done because a PR exists. The
 controller performs the publication itself; no agent may commit, push, open a PR
 or write to Linear.
+
+`/next-story`'s **Gates that are never removed** section applies here in full:
+risk routing may reduce ceremony, never a gate.
 
 **STOP after one story.** Never start another automatically.

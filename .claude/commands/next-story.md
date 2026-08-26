@@ -2,11 +2,17 @@
 description: Pick, reconcile, plan, implement and publish the next Ready Squad CRM story from Linear — one story only, with mandatory stop gates.
 ---
 
-Orchestrate one Squad CRM story end to end:
+Orchestrate one Squad CRM story end to end, on the **risk-routed Workflow V2**
+path:
 
-Linear MCP → repository reconciliation → Squad Kit intake → Squad Kit plan →
-plan review → Architecture Decision Gate → Superpowers implementation →
-verification → independent review → completion report → Git/PR → Linear.
+Linear MCP → repository reconciliation → **risk classification** → Squad Kit
+intake → Squad Kit plan → (architecture review only when the risk level calls
+for it) → Decision Gate (only when a real decision exists) → Superpowers
+implementation → verification → independent review → completion report →
+Git/PR → Linear.
+
+Ceremony scales with risk. Safety gates do not: the gates listed under
+**Gates that are never removed** run at every risk level.
 
 `$ARGUMENTS` may name a specific issue (e.g. `CRM-106`) or add flags:
 
@@ -100,6 +106,16 @@ Within that constraint:
 - **Read once, reuse.** Read the approved plan completely once when you start
   the story; afterwards work from the current task/section. Do not reload or
   restate the whole plan unless new evidence contradicts it.
+- **Proportional plans.** Plan size follows story complexity, not habit. For a
+  STANDARD story prefer a concise implementation plan with exactly: scope;
+  dependencies; relevant existing patterns; implementation steps;
+  acceptance-criteria verification; out of scope. Do not expand a routine story
+  into an architecture document, and do not restate the Linear description
+  verbatim more than once.
+- **Compact returns.** Agents return summaries, not full file dumps, full
+  command output or repeated evidence, when a `path:line` anchor or a concise
+  result is sufficient. Keep full output only for failures or when a decision
+  depends on it.
 - **Fetch Linear once per phase** where freshness matters (Phase 1/2 discovery,
   and again immediately before a tracker write). Do not re-fetch unchanged
   metadata.
@@ -227,6 +243,80 @@ start. Continuing partial work is a decision for the user, not for you.
 
 Stop here and report if invoked with `--dry-run`.
 
+## Phase 2b — Story Risk Classification (controller, mandatory)
+
+After reconciliation, and before any intake or plan work, the **controller**
+classifies the selected story into exactly one level. This classification
+selects the workflow route for every later phase. It is never delegated to an
+agent.
+
+**STANDARD** — typical business implementation: CRUD; forms; tables/lists;
+normal Angular screens; normal module endpoints; straightforward business rules;
+implementation that follows an already-established project pattern.
+
+**ARCHITECTURE** — cross-cutting or structural work: shared infrastructure; new
+module boundaries; provider/integration foundations; persistence architecture
+changes; shared API conventions; observability/platform foundations; changes to
+boundaries or contracts shared across multiple modules. A normal business
+workflow touching multiple modules is **not** automatically ARCHITECTURE if it
+follows already-established contracts and patterns.
+
+**HIGH_RISK** — security- or correctness-sensitive work: authentication;
+authorization/permissions; secrets; security boundaries; transaction
+boundaries; financial or data-integrity-sensitive behavior; sensitive external
+integrations.
+
+Choose the higher risk level **only** when there is concrete evidence that the
+story changes a shared architectural boundary/contract, introduces a security or
+data-integrity concern, or materially affects an established cross-cutting
+convention. Mere uncertainty or implementation complexity alone is not
+sufficient to escalate.
+
+Print exactly, and nothing else, for this phase:
+
+```
+RISK: STANDARD | ARCHITECTURE | HIGH_RISK
+Reason: <one concise sentence>
+```
+
+### Route selected by the classification
+
+| Level | Route |
+|---|---|
+| **STANDARD** | `repo-scout` → `story-engineer` (plan + implement) → `verify-runner` → `story-reviewer` → Publication Gate. **No automatic `arch-reviewer`.** No separate architecture review before implementation. |
+| **ARCHITECTURE** | `repo-scout` → `story-engineer` planning → `arch-reviewer` (opus) **targeted plan review** → Decision Gate *only if* unresolved architectural/product decisions exist → `story-engineer` implementation → `verify-runner` → `story-reviewer` → Publication Gate. |
+| **HIGH_RISK** | The full workflow and every gate, unchanged: `repo-scout` → `story-engineer` planning → `arch-reviewer` full review → Decision Gate → implementation → `verify-runner` → `story-reviewer` (with the existing full review behavior) → Publication Gate. Use Opus wherever architecture or security judgment is materially useful. |
+
+At **no** level may security, authorization, transaction, secret-management or
+data-integrity verification be weakened to save tokens or time.
+
+**STANDARD escalation, not blanket review.** If a genuine architectural or
+product decision surfaces during STANDARD planning or implementation, stop that
+path and escalate **the specific question** to `arch-reviewer` (opus) with the
+established anchors. Never ask Opus to review the whole story when one decision
+needs review.
+
+## Phase 2c — YAGNI Gate (all risk levels)
+
+This gate binds planning, architecture review, implementation and review alike.
+
+Do not add an abstraction, extension point, framework, generic infrastructure,
+configuration mechanism, provider interface, registry or future-proofing
+structure solely because a future story might need it.
+
+New structural complexity must have at least one of:
+
+1. a requirement in the current story;
+2. a current consumer;
+3. an existing ADR requiring it;
+4. evidence that changing it later would cause a significant breaking change.
+
+Otherwise **defer it**.
+
+Prefer extending an established project pattern over creating a new pattern. Do
+not solve requirements owned by downstream stories. The controller rejects a
+plan, an implementation or a review recommendation that violates this gate.
+
 ## Phase 3 — Linear start
 
 Only after Phase 2 returns A or B: move the selected issue to **In Progress**
@@ -268,18 +358,41 @@ planner: `/squad-plan <intake-path>`. Do not substitute a custom planning
 system, and do not regenerate an existing approved plan without the user's
 explicit go-ahead.
 
-Then dispatch **`arch-reviewer`** (opus, read-only) to review the generated plan
-in full against: the story, Acceptance Criteria, Business Rules, dependencies,
-`docs/adr/`, current architecture, prior foundation-story decisions, this
-story's scope, and downstream-story boundaries. The reviewer recommends; it
-approves nothing. The controller does not read the whole plan itself here — it
-keeps the plan path, the task list and the returned findings as workflow state,
-and reports the review findings before proceeding.
+Keep the plan proportional to the story (see **Proportional plans**) and apply
+the **Phase 2c YAGNI Gate** to it.
 
-## Phase 6 — Architecture Decision Gate
+Architecture review of the plan is **risk-routed**:
 
-**Routing.** The `arch-reviewer` (opus) analysis from Phase 5 — extended with a
-further dispatch if new items appeared — supplies the substance. The
+- **STANDARD** — no `arch-reviewer` dispatch, and no separate architecture
+  review before implementation. Proceed straight to Phase 7. Escalate only a
+  specific architectural/product question if one genuinely surfaces.
+- **ARCHITECTURE** — dispatch **`arch-reviewer`** (opus, read-only) for a
+  **targeted** plan review: architecture only. It reviews module/dependency
+  boundaries, persistence/transaction/integration decisions, ADR consistency,
+  shared-conventions impact and security architecture. Do **not** ask it to
+  repeat repository discovery, redo implementation planning, restate acceptance
+  criteria, or perform routine code review.
+- **HIGH_RISK** — dispatch **`arch-reviewer`** (opus, read-only) for the full
+  plan review against: the story, Acceptance Criteria, Business Rules,
+  dependencies, `docs/adr/`, current architecture, prior foundation-story
+  decisions, this story's scope, and downstream-story boundaries.
+
+In all cases the reviewer recommends; it approves nothing. The controller does
+not read the whole plan itself here — it keeps the plan path, the task list and
+the returned findings as workflow state, and reports the findings before
+proceeding.
+
+## Phase 6 — Architecture Decision Gate (only when a real decision exists)
+
+This gate is entered when there is an unresolved item to decide. If the
+architecture review found **no** unresolved architectural or product decision,
+continue automatically to Phase 7 — do **not** present an empty Decision Gate.
+For a STANDARD story with no escalation, this phase does not run at all; it
+still opens on demand for any escalated question, at any risk level.
+
+**Routing.** The `arch-reviewer` (opus) analysis from Phase 5 — or the single
+escalated question from a STANDARD run, or a further dispatch if new items
+appeared — supplies the substance. The
 **controller** classifies each item and owns the gate; the **user** owns the
 decision. `IMPLEMENTATION_CHOICE` items are handed to `story-engineer`;
 `ARCHITECTURAL_PRODUCT_DECISION` items stop the workflow here.
@@ -374,6 +487,11 @@ and its output read.** A pass is recorded compactly as
 The runner never interprets a non-obvious failure — it returns an
 `ESCALATION REQUIRED` brief recommending Sonnet.
 
+Required correctness verification is never reduced. During implementation only
+targeted checks run; here the complete story-required verification runs **once**
+against the stable final state. Do not re-run the entire suite after every
+small change.
+
 An implementation defect: the controller routes the failure brief and its
 preserved output to **`story-engineer`** to fix, then re-dispatches
 `verify-runner` for the affected checks. Rerun the full suite when the fix could
@@ -399,9 +517,18 @@ evidence. Implementation-level findings are routed to **`story-engineer`** to
 fix, then the affected verification is re-dispatched to `verify-runner`. Apply
 `superpowers:receiving-code-review` — verify a finding before acting on it.
 
-This independent review is mandatory and happens once over the final code
-state; do not run duplicate reviews of the same unchanged code. The controller
-decides whether the review gate passes.
+Review depth is risk-routed, and the review itself is mandatory at every level:
+
+- **STANDARD** — one `story-reviewer` (sonnet) final review.
+- **ARCHITECTURE** — the Phase 5 Opus architecture review before
+  implementation, plus one `story-reviewer` (sonnet) final code review here.
+- **HIGH_RISK** — the existing full review behavior is retained, including Opus
+  involvement wherever architecture or security judgment is materially useful.
+
+This independent review happens once over the final code state; **never run
+multiple reviews against an unchanged code state**, and do not run duplicate
+reviews of the same unchanged code. The controller decides whether the review
+gate passes.
 
 ## Phase 10 — Completion report
 
@@ -446,6 +573,19 @@ the team's actual merge/completion workflow.
 
 ---
 
+## Gates that are never removed
+
+At every risk level, Workflow V2 preserves: dependency/blocker validation;
+reconciliation with existing implementation; never overwriting partial work;
+never regenerating an approved plan unnecessarily; Acceptance Criteria
+verification; Business Rules verification; the relevant architecture and
+security checks; the Completion Gate; an independent final review; explicit
+Publication approval; staged-diff inspection; no force push; never marking an
+issue Done merely because a PR exists; and **STOP after one story**.
+
+Risk routing may reduce ceremony — an automatic Opus pass, an empty Decision
+Gate, a duplicated review, an oversized plan. It may never reduce a gate above.
+
 ## Safety rules
 
 Never: trust Linear state without repository reconciliation; overwrite a
@@ -456,7 +596,10 @@ commit generated or runtime artifacts; force-push; mark an issue Done because
 implementation exists; continue automatically to another story; rely on
 slash-command `model:` frontmatter for model selection; let an agent decide a
 gate, an architectural/product decision or a publication; redo an investigation
-that an escalation brief already established.
+that an escalation brief already established; present an empty Decision Gate;
+review an unchanged code state twice; add structural complexity that fails the
+Phase 2c YAGNI Gate; weaken security, authorization, transaction,
+secret-management or data-integrity verification for speed or token cost.
 
 ## Reconciliation regression case — CRM-106
 
