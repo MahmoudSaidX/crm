@@ -199,10 +199,9 @@ developer-safe local defaults only.
 | `docker compose ps` | Show infrastructure status and health | available today |
 | `docker compose down` | Stop the infrastructure, preserving all data | available today |
 | `docker compose down -v` | **DESTRUCTIVE** --- stop and delete the `squadcrm-pgdata` volume | available today |
-| `scripts/bootstrap`, `scripts/dev`, `scripts/test`, `scripts/migrate`, `scripts/reset` | Automation entry points | CRM-203 |
-
-Rows marked with a story id are previews --- nothing in the repository
-provides them yet.
+| `scripts/migrate` | Apply every current module migration | available today |
+| `scripts/seed` | Idempotently add synthetic development/test fixture data | available today |
+| `scripts/reset --yes` | **DESTRUCTIVE:** recreate local PostgreSQL, migrate and seed | available today |
 
 ## Migrations and tests
 
@@ -238,6 +237,24 @@ docker compose exec postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
 docker compose down -v
 ```
 
+The repeatable CRM-203 workflow wraps those steps:
+
+```bash
+# Apply current module migrations, then idempotent synthetic fixture data.
+scripts/migrate
+scripts/seed
+
+# DESTRUCTIVE: delete only the Compose-managed local PostgreSQL volume,
+# recreate it, apply migrations and add the synthetic fixture row.
+scripts/reset --yes
+```
+
+`scripts/reset` refuses to run without `--yes`. The seed contains no customer,
+credential or production-derived data and is never run at application startup.
+The reset targets `POSTGRES_VOLUME_NAME` (default `squadcrm-pgdata`); an isolated
+verification stack can supply a separate env file through
+`SQUADCRM_BACKEND_ENV_FILE` without touching normal local data.
+
 Every `dotnet ef` command needs those `POSTGRES_*` values in the process
 environment: the application never reads `env/backend.env` itself. Without
 them the command fails fast naming the missing keys and printing no value.
@@ -255,6 +272,9 @@ The frontend unit/component baseline runs with
 `.github/workflows/tests.yml` executes these representative backend and
 frontend suites in CI. Comprehensive CI quality gates and seed/reset tooling
 remain CRM-203 scope.
+
+The completed quality-gate and emergency-bypass policy is documented in
+[`docs/development/ci-quality-gates.md`](docs/development/ci-quality-gates.md).
 
 ## Contributing
 

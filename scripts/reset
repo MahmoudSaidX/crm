@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$script_dir/.." && pwd)"
+backend_env_file="${SQUADCRM_BACKEND_ENV_FILE:-$repo_root/env/backend.env}"
+
+if [[ -f "$backend_env_file" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$backend_env_file"
+  set +a
+  export COMPOSE_ENV_FILES="$backend_env_file"
+fi
+
+postgres_volume_name="${POSTGRES_VOLUME_NAME:-squadcrm-pgdata}"
+
+if [[ "${1:-}" != "--yes" ]]; then
+  echo "Refusing destructive reset without --yes." >&2
+  echo "This deletes the local '$postgres_volume_name' volume and all rows in it." >&2
+  exit 2
+fi
+
+cd "$repo_root"
+docker compose down -v
+docker compose up -d --wait
+"$script_dir/migrate"
+"$script_dir/seed"

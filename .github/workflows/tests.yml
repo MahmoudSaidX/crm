@@ -1,4 +1,4 @@
-name: Tests
+name: Quality Gates
 
 on:
   pull_request:
@@ -37,7 +37,18 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - run: dotnet restore src/backend/SquadCrm.sln
-      - run: dotnet test src/backend/SquadCrm.sln --no-restore
+      - run: dotnet format src/backend/SquadCrm.sln --no-restore --verify-no-changes
+      - run: dotnet build src/backend/SquadCrm.sln --no-restore
+      - run: dotnet test src/backend/SquadCrm.sln --no-restore --no-build
+      - run: dotnet tool restore
+        working-directory: src/backend
+      - name: Validate ArchitectureFixture migrations
+        working-directory: src/backend
+        run: >-
+          dotnet ef migrations has-pending-model-changes
+          --project src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture
+          --startup-project src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture
+          --context ArchitectureFixtureDbContext
 
   frontend-tests:
     runs-on: ubuntu-latest
@@ -49,4 +60,7 @@ jobs:
           cache: npm
           cache-dependency-path: src/frontend/package-lock.json
       - run: npm ci --prefix src/frontend
+      - run: npm run format:check --prefix src/frontend
+      - run: npm run lint --prefix src/frontend
+      - run: npm run build --prefix src/frontend
       - run: npm test --prefix src/frontend -- --no-progress

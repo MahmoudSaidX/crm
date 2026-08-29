@@ -8,7 +8,7 @@
 # Every variable has a developer-safe default, so plain `docker compose up -d`
 # also works on a fresh clone. Never put a production credential here.
 
-name: squadcrm
+name: ${COMPOSE_PROJECT_NAME:-squadcrm}
 
 services:
   postgres:
@@ -39,4 +39,4 @@ services:
 
 volumes:
   squadcrm-pgdata:
-    name: squadcrm-pgdata
+    name: ${POSTGRES_VOLUME_NAME:-squadcrm-pgdata}
