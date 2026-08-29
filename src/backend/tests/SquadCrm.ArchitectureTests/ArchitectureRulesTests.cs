@@ -26,15 +26,8 @@ public sealed class ArchitectureRulesTests
     /// Hangfire to the API execution boundary, so Hangfire now has the narrower
     /// placement rule below instead of a solution-wide prohibition. MediatR
     /// remains absent: the fixture publication proof is explicit and in-process,
-    /// with no general event bus or handler registry. CRM-110 (authentication) must still
-    /// update this list when it legitimately introduces
-    /// <c>Microsoft.AspNetCore.Authentication.</c>. CRM-204 already resolved the
-    /// authorization half:
-    /// <c>Microsoft.AspNetCore.Authorization.</c> is unblocked because this
-    /// story registers the inert authorization extension point
-    /// (<c>services.AddAuthorization()</c>, zero policies, no scheme). No
-    /// authentication scheme exists yet, so <c>Microsoft.AspNetCore.Authentication.</c>
-    /// stays forbidden until CRM-110 introduces one.
+    /// with no general event bus or handler registry. CRM-110 now legitimately
+    /// owns the ASP.NET Core authentication dependency inside StaffIdentity.
     /// <para>
     /// EF Core and Npgsql are deliberately <b>absent</b>: persistence
     /// legitimately introduces both, but only in specific projects. That is a
@@ -46,7 +39,6 @@ public sealed class ArchitectureRulesTests
     [
         "MediatR",
         "FluentValidation",
-        "Microsoft.AspNetCore.Authentication.",
         "Swashbuckle.",
         "Scalar.",
         "NSwag.",

@@ -1,4 +1,4 @@
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpInterceptorFn, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { EnvironmentProviders } from '@angular/core';
 import { apiBaseUrlInterceptor } from './api-base-url.interceptor';
 
@@ -8,6 +8,8 @@ import { apiBaseUrlInterceptor } from './api-base-url.interceptor';
  * Applications call this instead of `provideHttpClient(...)` directly, so that every
  * surface gets the same interceptor chain.
  */
-export function provideHttpPlatform(): EnvironmentProviders {
-  return provideHttpClient(withInterceptors([apiBaseUrlInterceptor]));
+export function provideHttpPlatform(
+  interceptors: readonly HttpInterceptorFn[] = [],
+): EnvironmentProviders {
+  return provideHttpClient(withInterceptors([apiBaseUrlInterceptor, ...interceptors]));
 }

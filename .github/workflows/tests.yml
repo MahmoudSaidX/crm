@@ -31,6 +31,7 @@ jobs:
       POSTGRES_DB: squadcrm
       POSTGRES_USER: squadcrm
       POSTGRES_PASSWORD: test-only-password
+      Authentication__SigningKey: squadcrm-ci-only-signing-key-32chars
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -49,6 +50,13 @@ jobs:
           --project src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture
           --startup-project src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture
           --context ArchitectureFixtureDbContext
+      - name: Validate StaffIdentity migrations
+        working-directory: src/backend
+        run: >-
+          dotnet ef migrations has-pending-model-changes
+          --project src/Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity
+          --startup-project src/Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity
+          --context StaffIdentityDbContext
 
   frontend-tests:
     runs-on: ubuntu-latest

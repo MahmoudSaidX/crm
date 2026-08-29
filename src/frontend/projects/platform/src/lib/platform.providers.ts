@@ -4,6 +4,7 @@ import {
   makeEnvironmentProviders,
   provideAppInitializer,
 } from '@angular/core';
+import { HttpInterceptorFn } from '@angular/common/http';
 import { AppSurface } from './config/app-config';
 import { AppConfigStore } from './config/app-config.store';
 import { provideAppConfig } from './config/provide-app-config';
@@ -17,6 +18,8 @@ export interface PlatformOptions {
   readonly appSurface: AppSurface;
   /** Override the runtime configuration location. Defaults to `config.json`. */
   readonly configUrl?: string;
+  /** Application-specific interceptors appended after the shared API URL interceptor. */
+  readonly httpInterceptors?: readonly HttpInterceptorFn[];
 }
 
 /**
@@ -29,7 +32,7 @@ export interface PlatformOptions {
 export function providePlatform(options: PlatformOptions): EnvironmentProviders {
   return makeEnvironmentProviders([
     provideAppConfig(),
-    provideHttpPlatform(),
+    provideHttpPlatform(options.httpInterceptors),
     options.configUrl ? [{ provide: RUNTIME_CONFIG_URL, useValue: options.configUrl }] : [],
     provideAppInitializer(async () => {
       const store = inject(AppConfigStore);

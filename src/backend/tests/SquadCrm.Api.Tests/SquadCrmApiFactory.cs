@@ -113,6 +113,7 @@ public sealed class SquadCrmApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("POSTGRES_USER", "squadcrm-tests");
         builder.UseSetting("POSTGRES_PASSWORD", PlaceholderPassword);
         builder.UseSetting("BackgroundProcessing:Enabled", "false");
+        builder.UseSetting("Authentication:SigningKey", "not-a-real-signing-key-for-api-tests");
 
         if (_emptyCorsAllowList)
         {

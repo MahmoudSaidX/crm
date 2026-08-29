@@ -5,6 +5,7 @@ using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Infrastructure.FileStorage;
 using SquadCrm.Modules.ArchitectureFixture;
 using SquadCrm.Modules.ArchitectureFixture.Contracts;
+using SquadCrm.Modules.StaffIdentity;
 
 namespace SquadCrm.ArchitectureTests;
 
@@ -46,6 +47,8 @@ internal static class SquadCrmAssemblies
 
     public static Assembly ArchitectureFixtureContracts { get; } = typeof(ModuleInfoResponse).Assembly;
 
+    public static Assembly StaffIdentity { get; } = typeof(StaffIdentityModule).Assembly;
+
     public static Assembly ApiTests { get; } = typeof(SquadCrm.Api.Tests.HealthEndpointTests).Assembly;
 
     public static Assembly UnitTests { get; } = typeof(SquadCrm.UnitTests.DomainEventTests).Assembly;
@@ -60,6 +63,7 @@ internal static class SquadCrmAssemblies
         InfrastructureFileStorage,
         ArchitectureFixture,
         ArchitectureFixtureContracts,
+        StaffIdentity,
         ApiTests,
         UnitTests,
         typeof(SquadCrmAssemblies).Assembly,

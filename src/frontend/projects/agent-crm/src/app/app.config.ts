@@ -8,6 +8,7 @@ import { providePlatform } from '@squad-crm/platform';
 import { providePrimeNgPlatform } from '@squad-crm/shared-ui';
 
 import { routes } from './app.routes';
+import { authInterceptor } from './auth/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -15,7 +16,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
     // Runtime configuration + HTTP + locale/direction foundation.
-    providePlatform({ appSurface: 'agent-crm' }),
+    providePlatform({ appSurface: 'agent-crm', httpInterceptors: [authInterceptor] }),
     providePrimeNgPlatform(),
   ],
 };
