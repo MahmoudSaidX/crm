@@ -48,6 +48,8 @@ internal static class SquadCrmAssemblies
 
     public static Assembly ApiTests { get; } = typeof(SquadCrm.Api.Tests.HealthEndpointTests).Assembly;
 
+    public static Assembly UnitTests { get; } = typeof(SquadCrm.UnitTests.DomainEventTests).Assembly;
+
     /// <summary>Every first-party assembly, production and test.</summary>
     public static IReadOnlyList<Assembly> All { get; } =
     [
@@ -59,6 +61,7 @@ internal static class SquadCrmAssemblies
         ArchitectureFixture,
         ArchitectureFixtureContracts,
         ApiTests,
+        UnitTests,
         typeof(SquadCrmAssemblies).Assembly,
     ];
 

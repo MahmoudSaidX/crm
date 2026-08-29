@@ -32,7 +32,8 @@ Run from `src/backend/`:
 | `dotnet restore` | Restore NuGet packages |
 | `dotnet build` | Build the solution |
 | `dotnet run --project src/Api/SquadCrm.Api` | Run the API host |
-| `dotnet test` | Run architecture, API and persistence tests. The persistence suite **needs** `docker compose up -d` and the env values loaded — it fails, it does not skip |
+| `dotnet test` | Run unit, architecture, API and persistence tests. The persistence suite **needs** `docker compose up -d` and the env values loaded — it fails, it does not skip |
+| `dotnet test tests/SquadCrm.UnitTests` | Deterministic backend unit tests. **No database needed** |
 | `dotnet test tests/SquadCrm.ArchitectureTests` | Static architecture rules. **No database needed** |
 | `dotnet test tests/SquadCrm.Api.Tests` | API host tests. **No database needed** |
 | `dotnet ef migrations add <Name> --project <module> --startup-project <module> --context <ModuleDbContext> --output-dir Persistence/Migrations` | Scaffold a migration into the owning module. Requires the env values (below); PostgreSQL need not be running |
@@ -365,10 +366,20 @@ a row round-trips through the module's own context and transaction. It requires
 the CRM-197 PostgreSQL service and **fails loudly** when it is absent — it never
 skips, because a green run must mean the database was really exercised.
 
+The persistence suite creates a uniquely named `squadcrm_tests_*` database,
+applies module migrations, runs its tests serially, and drops that database at
+the end. It never resets or deletes the configured development database. The
+configured PostgreSQL user therefore needs create/drop database permission in
+local and CI test environments.
+
 So the full `dotnet test` **requires** `docker compose up -d`;
 `dotnet test tests/SquadCrm.Api.Tests` and
-`dotnet test tests/SquadCrm.ArchitectureTests` run without a database. **CI
-orchestration and test filtering are CRM-202's**, not designed here.
+`dotnet test tests/SquadCrm.ArchitectureTests` run without a database.
+
+CRM-202 supplies these deterministic commands and the minimal test-only
+`.github/workflows/tests.yml`. CRM-203 retains builds, lint, repository-wide
+format enforcement, broader migration validation, seed/reset tooling,
+branch/merge enforcement and CI hardening.
 
 A module issuing raw SQL against another module's schema remains a **coding
 convention**: nothing above can catch it. Enforcing it at the database level

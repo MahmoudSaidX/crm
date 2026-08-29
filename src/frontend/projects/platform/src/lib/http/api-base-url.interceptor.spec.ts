@@ -30,28 +30,33 @@ describe('apiBaseUrlInterceptor', () => {
   it('prefixes a relative URL with the runtime apiBaseUrl', () => {
     http.get('/agents').subscribe();
 
-    controller.expectOne('https://api.example.test/agents').flush({});
+    const request = controller.expectOne('https://api.example.test/agents');
+    expect(request.request.method).toBe('GET');
+    request.flush({});
   });
 
   it('normalises a relative URL that does not start with a slash', () => {
     http.get('agents').subscribe();
 
-    controller.expectOne('https://api.example.test/agents').flush({});
+    const request = controller.expectOne('https://api.example.test/agents');
+    expect(request.request.url).toBe('https://api.example.test/agents');
+    request.flush({});
   });
 
   it('leaves absolute URLs untouched', () => {
     http.get('https://third-party.example/ping').subscribe();
     http.get('http://third-party.example/ping').subscribe();
 
-    controller
-      .expectOne(
-        (request: HttpRequest<unknown>) => request.url === 'https://third-party.example/ping',
-      )
-      .flush({});
-    controller
-      .expectOne(
-        (request: HttpRequest<unknown>) => request.url === 'http://third-party.example/ping',
-      )
-      .flush({});
+    const httpsRequest = controller.expectOne(
+      (request: HttpRequest<unknown>) => request.url === 'https://third-party.example/ping',
+    );
+    const httpRequest = controller.expectOne(
+      (request: HttpRequest<unknown>) => request.url === 'http://third-party.example/ping',
+    );
+
+    expect(httpsRequest.request.url).toBe('https://third-party.example/ping');
+    expect(httpRequest.request.url).toBe('http://third-party.example/ping');
+    httpsRequest.flush({});
+    httpRequest.flush({});
   });
 });
