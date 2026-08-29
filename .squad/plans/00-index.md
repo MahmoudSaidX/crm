@@ -14,3 +14,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | hangfire-background-processing-foundation | [`hangfire-background-processing-foundation/00-overview.md`](hangfire-background-processing-foundation/00-overview.md) | 08 |
 | file-storage-foundation | [`file-storage-foundation/00-overview.md`](file-storage-foundation/00-overview.md) | 09 |
 | opentelemetry-structured-logging-health-checks | [`opentelemetry-structured-logging-health-checks/00-overview.md`](opentelemetry-structured-logging-health-checks/00-overview.md) | 10 |
+| automated-testing-architecture-tests | [`automated-testing-architecture-tests/00-overview.md`](automated-testing-architecture-tests/00-overview.md) | 11 |

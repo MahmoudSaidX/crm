@@ -243,10 +243,18 @@ environment: the application never reads `env/backend.env` itself. Without
 them the command fails fast naming the missing keys and printing no value.
 
 The full backend test run **requires** the database to be up --- the
-persistence suite fails, rather than skipping, without it. The
+persistence suite creates and removes an isolated `squadcrm_tests_*` database
+and fails, rather than skipping, without PostgreSQL. It never resets the
+configured development database. The
 architecture and API suites run with no database:
 `cd src/backend && dotnet test tests/SquadCrm.ArchitectureTests` and
 `dotnet test tests/SquadCrm.Api.Tests`.
+
+The frontend unit/component baseline runs with
+`npm test --prefix src/frontend -- --no-progress`. CRM-202's minimal
+`.github/workflows/tests.yml` executes these representative backend and
+frontend suites in CI. Comprehensive CI quality gates and seed/reset tooling
+remain CRM-203 scope.
 
 ## Contributing
 
