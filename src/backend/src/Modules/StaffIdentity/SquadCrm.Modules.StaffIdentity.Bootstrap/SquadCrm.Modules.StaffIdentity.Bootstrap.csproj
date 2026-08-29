@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>SquadCrm.StaffIdentity.Bootstrap</AssemblyName>
+    <RootNamespace>SquadCrm.Modules.StaffIdentity.Bootstrap</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../SquadCrm.Modules.StaffIdentity/SquadCrm.Modules.StaffIdentity.csproj" />
+  </ItemGroup>
+
+</Project>

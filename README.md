@@ -201,6 +201,7 @@ developer-safe local defaults only.
 | `docker compose down -v` | **DESTRUCTIVE** --- stop and delete the `squadcrm-pgdata` volume | available today |
 | `scripts/migrate` | Apply every current module migration | available today |
 | `scripts/seed` | Idempotently add synthetic development/test fixture data | available today |
+| StaffIdentity bootstrap command below | Explicitly create or reset one local Development staff account | CRM-110 |
 | `scripts/reset --yes` | **DESTRUCTIVE:** recreate local PostgreSQL, migrate and seed | available today |
 
 ## Migrations and tests
@@ -254,6 +255,37 @@ credential or production-derived data and is never run at application startup.
 The reset targets `POSTGRES_VOLUME_NAME` (default `squadcrm-pgdata`); an isolated
 verification stack can supply a separate env file through
 `SQUADCRM_BACKEND_ENV_FILE` without touching normal local data.
+
+### Create or reset a local staff account
+
+After PostgreSQL is running and `scripts/migrate` has completed, run this
+explicit Development-only command from the repository root:
+
+```bash
+set -a && source env/backend.env && set +a
+dotnet run \
+  --project src/backend/src/Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity.Bootstrap \
+  -- agent@example.test
+```
+
+The command prompts twice for the password without echoing it. It creates an
+active staff user when the normalized email is new; otherwise it resets that
+user's password, reactivates the account and revokes existing refresh sessions.
+It refuses to run unless `ASPNETCORE_ENVIRONMENT` is exactly `Development` and
+is never called by application startup, `scripts/seed` or `scripts/reset`.
+
+For local automation only, pass the password in the command process environment
+and remove it immediately afterward. Never add it to `env/backend.env`, another
+configuration file, shell history or source control:
+
+```bash
+read -r -s -p "Password: " SQUADCRM_BOOTSTRAP_STAFF_PASSWORD && echo
+export SQUADCRM_BOOTSTRAP_STAFF_PASSWORD
+dotnet run \
+  --project src/backend/src/Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity.Bootstrap \
+  -- agent@example.test
+unset SQUADCRM_BOOTSTRAP_STAFF_PASSWORD
+```
 
 Every `dotnet ef` command needs those `POSTGRES_*` values in the process
 environment: the application never reads `env/backend.env` itself. Without
