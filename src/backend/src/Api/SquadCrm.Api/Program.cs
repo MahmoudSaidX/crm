@@ -9,6 +9,7 @@ using SquadCrm.BuildingBlocks.Errors;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Infrastructure.Postgres;
+using SquadCrm.Infrastructure.FileStorage;
 using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -69,6 +70,7 @@ if (builder.Environment.IsDevelopment())
 // No migration runs here: schema changes are applied by an explicit
 // `dotnet ef database update`.
 builder.AddSquadCrmPostgres();
+builder.AddSquadCrmFileStorage();
 
 string postgresConnectionString = builder.Configuration.GetSquadCrmPostgresConnectionString();
 bool backgroundProcessingEnabled = builder.Configuration.GetValue("BackgroundProcessing:Enabled", true);

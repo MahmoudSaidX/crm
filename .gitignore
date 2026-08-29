@@ -52,3 +52,6 @@ secrets.*.json
 # Docker / local infra (CRM-197)
 .docker/
 docker-compose.override.yml
+
+# Local file-storage bytes (CRM-200)
+.data/

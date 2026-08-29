@@ -88,7 +88,8 @@ src/backend/
 │   ├── BuildingBlocks/
 │   │   └── SquadCrm.BuildingBlocks/                     (technical cross-cutting only; provider-neutral)
 │   ├── Infrastructure/
-│   │   └── SquadCrm.Infrastructure.Postgres/            (PostgreSQL configuration adapter; ADO Npgsql only, no EF Core)
+│   │   ├── SquadCrm.Infrastructure.Postgres/            (PostgreSQL configuration adapter; ADO Npgsql only, no EF Core)
+│   │   └── SquadCrm.Infrastructure.FileStorage/         (local filesystem adapter behind provider-neutral contracts)
 │   └── Modules/
 │       └── ArchitectureFixture/
 │           ├── SquadCrm.Modules.ArchitectureFixture.Contracts/     (public contract surface)
@@ -115,6 +116,8 @@ Enforced by `SquadCrm.ArchitectureTests`; a violation fails `dotnet test`.
   adapter, EF Core or Npgsql. It stays **provider-neutral**.
 - `SquadCrm.Infrastructure.Postgres` → the ADO `Npgsql` package only. **Never**
   EF Core, never a module, never the host.
+- `SquadCrm.Infrastructure.FileStorage` → provider-neutral BuildingBlocks
+  abstractions only. Never a module or the host.
 - **EF Core** → module implementation projects only.
 - A module → never another module's implementation assembly (only its
   `*.Contracts`) and never another module's `*.Persistence` namespace.
@@ -460,6 +463,35 @@ story yet owns retention/purge of processed outbox rows; the
 `ix_outbox_message_pending` partial index (`WHERE processed_at_utc IS NULL`)
 only accelerates the pending-row lookup a future story will need.
 
+## File storage foundation
+
+CRM-200 provides `IFileStorage` for upload, read and idempotent delete operations.
+The configured `Local` adapter writes bytes beneath `FileStorage:LocalRootPath`
+(default `.data/files`) using generated opaque keys. Original filenames are
+display metadata only and are never included in a path. Uploads are size/type
+validated, written to a temporary file and moved into place only after the
+declared byte count is verified.
+
+`FileReference` metadata is deliberately separate from bytes. The business
+module that owns a future attachment persists that metadata and must authorize
+its owning customer, ticket or other resource before calling read or delete;
+storage keys are never authorization tokens. CRM-200 exposes no unauthorised
+generic file endpoint and creates no shared attachment table. Additional
+provider-neutral validators can implement `IFileUploadValidator`; a replacement
+provider implements `IFileStorage` and is selected at the composition boundary.
+
+Configuration is non-secret:
+
+| Key | Default | Purpose |
+|---|---:|---|
+| `FileStorage:Provider` | `Local` | Registered adapter; unsupported values fail fast |
+| `FileStorage:LocalRootPath` | `.data/files` | Local byte root, relative to the API content root unless absolute |
+| `FileStorage:MaxSizeBytes` | `10485760` | Maximum accepted declared and streamed size |
+| `FileStorage:AllowedContentTypes` | PDF, JPEG, PNG, text | Exact MIME allow-list |
+
+Cloud providers, public URLs, malware scanning and attachment-owning business
+workflows remain downstream stories.
+
 ## Non-goals in this foundation
 
 Owned by later stories and intentionally absent here — the absence is enforced by
@@ -468,7 +500,6 @@ stories must update when they legitimately introduce a dependency:
 
 | Not here | Owning story |
 |---|---|
-| File storage adapters | CRM-200 |
 | OpenTelemetry observability pipeline | CRM-201 |
 | Broader testing infrastructure | CRM-202 |
 | Authentication / session implementation (extension point ready) | CRM-110 |
