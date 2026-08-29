@@ -13,3 +13,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | domain-events-integration-events-transactional-outbox | [`domain-events-integration-events-transactional-outbox/00-overview.md`](domain-events-integration-events-transactional-outbox/00-overview.md) | 07 |
 | hangfire-background-processing-foundation | [`hangfire-background-processing-foundation/00-overview.md`](hangfire-background-processing-foundation/00-overview.md) | 08 |
 | file-storage-foundation | [`file-storage-foundation/00-overview.md`](file-storage-foundation/00-overview.md) | 09 |
+| opentelemetry-structured-logging-health-checks | [`opentelemetry-structured-logging-health-checks/00-overview.md`](opentelemetry-structured-logging-health-checks/00-overview.md) | 10 |

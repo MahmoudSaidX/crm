@@ -34,7 +34,7 @@ public sealed class ArchitectureFixtureOutboxStore(ArchitectureFixtureDbContext 
                 FOR UPDATE SKIP LOCKED
                 LIMIT @batch_size
             )
-            RETURNING message.id, message.type, message.payload;
+            RETURNING message.id, message.type, message.payload, message.correlation_id;
             """;
         command.Parameters.AddWithValue("lease_id", leaseId);
         command.Parameters.AddWithValue("leased_until_utc", nowUtc.AddSeconds(options.LeaseSeconds));
@@ -46,7 +46,11 @@ public sealed class ArchitectureFixtureOutboxStore(ArchitectureFixtureDbContext 
         await using NpgsqlDataReader reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            claimed.Add(new ClaimedOutboxMessage(reader.GetGuid(0), reader.GetString(1), reader.GetString(2)));
+            claimed.Add(new ClaimedOutboxMessage(
+                reader.GetGuid(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3)));
         }
 
         await reader.CloseAsync();

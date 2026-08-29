@@ -3,6 +3,11 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Npgsql;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using SquadCrm.Api;
 using SquadCrm.BuildingBlocks.Correlation;
 using SquadCrm.BuildingBlocks.Errors;
@@ -26,6 +31,51 @@ builder.Services.AddSquadCrmProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICorrelationIdAccessor, HttpContextCorrelationIdAccessor>();
+
+bool otlpExportEnabled = !string.IsNullOrWhiteSpace(
+    builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService(
+        serviceName: builder.Environment.ApplicationName,
+        serviceVersion: typeof(Program).Assembly.GetName().Version?.ToString(),
+        serviceNamespace: "SquadCrm"))
+    .WithTracing(tracing =>
+    {
+        tracing.AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddNpgsql()
+            .AddSource(OutboxTelemetry.ActivitySourceName);
+
+        if (otlpExportEnabled)
+        {
+            tracing.AddOtlpExporter();
+        }
+    })
+    .WithMetrics(metrics =>
+    {
+        metrics.AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddMeter("Npgsql")
+            .AddMeter(OutboxTelemetry.MeterName);
+
+        if (otlpExportEnabled)
+        {
+            metrics.AddOtlpExporter();
+        }
+    });
+
+builder.Logging.AddOpenTelemetry(logging =>
+{
+    logging.IncludeScopes = true;
+    logging.ParseStateValues = true;
+
+    if (otlpExportEnabled)
+    {
+        logging.AddOtlpExporter();
+    }
+});
 
 // Authorization extension point for CRM-110. No scheme, no policy, no
 // [Authorize] endpoint, no ICurrentUserAccessor registration yet — this only
@@ -90,7 +140,8 @@ if (backgroundProcessingEnabled)
     builder.Services.AddHostedService<ArchitectureFixtureRecurringJobRegistration>();
 }
 
-// Liveness only. No database/storage/provider probes (owned by later stories).
+// Registrations contributed by infrastructure/modules are tagged "ready".
+// An untagged empty check set is intentional liveness: process/pipeline only.
 builder.Services.AddHealthChecks();
 
 // Explicit module list. A module that is not listed here is a compile-time
@@ -122,19 +173,44 @@ if (app.Environment.IsDevelopment())
     }
 }
 
-app.MapHealthChecks("/health", new HealthCheckOptions
+HealthCheckOptions livenessOptions = new()
 {
-    ResponseWriter = static async (context, report) =>
-    {
-        context.Response.ContentType = "application/json; charset=utf-8";
-        await context.Response.WriteAsync(
-            JsonSerializer.Serialize(new { status = report.Status.ToString() }));
-    },
-});
+    Predicate = static _ => false,
+    ResponseWriter = WriteHealthResponseAsync,
+};
+HealthCheckOptions readinessOptions = new()
+{
+    Predicate = static registration => registration.Tags.Contains("ready"),
+    ResponseWriter = WriteHealthResponseAsync,
+};
+
+app.MapHealthChecks("/health", livenessOptions);
+app.MapHealthChecks("/health/live", livenessOptions);
+app.MapHealthChecks("/health/ready", readinessOptions);
 
 app.MapModuleEndpoints(modules);
 
 await app.RunAsync();
+
+static async Task WriteHealthResponseAsync(HttpContext context, HealthReport report)
+{
+    context.Response.ContentType = "application/json; charset=utf-8";
+    await JsonSerializer.SerializeAsync(
+        context.Response.Body,
+        new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.ToDictionary(
+                entry => entry.Key,
+                entry => new
+                {
+                    status = entry.Value.Status.ToString(),
+                    description = entry.Value.Description,
+                    data = entry.Value.Data,
+                }),
+        },
+        cancellationToken: context.RequestAborted);
+}
 
 /// <summary>
 /// Test seam only: exposes the generated entry point to

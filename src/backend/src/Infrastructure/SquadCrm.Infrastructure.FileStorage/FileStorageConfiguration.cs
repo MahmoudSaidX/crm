@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using SquadCrm.BuildingBlocks.Abstractions.Files;
 
 namespace SquadCrm.Infrastructure.FileStorage;
@@ -49,6 +50,11 @@ public static class FileStorageConfiguration
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<IFileUploadValidator, ConfiguredFileUploadValidator>();
         builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
+        builder.Services.AddHealthChecks()
+            .AddCheck<FileStorageReadinessHealthCheck>(
+                "file_storage",
+                failureStatus: HealthStatus.Unhealthy,
+                tags: ["ready"]);
 
         return builder;
     }
