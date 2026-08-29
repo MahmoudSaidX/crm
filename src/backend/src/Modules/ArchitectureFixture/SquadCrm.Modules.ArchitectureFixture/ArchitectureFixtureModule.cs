@@ -9,6 +9,7 @@ using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Validation;
 using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Modules.ArchitectureFixture.Contracts;
+using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
 using SquadCrm.Modules.ArchitectureFixture.Persistence;
 
 namespace SquadCrm.Modules.ArchitectureFixture;
@@ -72,6 +73,14 @@ public sealed class ArchitectureFixtureModule : IModule
                 options,
                 configuration.GetSquadCrmPostgresConnectionString(),
                 serviceProvider.GetRequiredService<ICorrelationIdAccessor>()));
+
+        services.AddOptions<OutboxProcessingOptions>()
+            .Bind(configuration.GetSection(OutboxProcessingOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddScoped<ArchitectureFixtureOutboxStore>();
+        services.AddScoped<ArchitectureFixtureIntegrationEventDispatcher>();
+        services.AddScoped<ArchitectureFixtureOutboxJob>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)

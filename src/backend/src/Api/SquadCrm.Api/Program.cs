@@ -1,12 +1,15 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Hangfire;
+using Hangfire.PostgreSql;
 using SquadCrm.Api;
 using SquadCrm.BuildingBlocks.Correlation;
 using SquadCrm.BuildingBlocks.Errors;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Infrastructure.Postgres;
+using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -67,6 +70,24 @@ if (builder.Environment.IsDevelopment())
 // `dotnet ef database update`.
 builder.AddSquadCrmPostgres();
 
+string postgresConnectionString = builder.Configuration.GetSquadCrmPostgresConnectionString();
+bool backgroundProcessingEnabled = builder.Configuration.GetValue("BackgroundProcessing:Enabled", true);
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(postgresConnectionString),
+        new PostgreSqlStorageOptions
+        {
+            SchemaName = "hangfire",
+            PrepareSchemaIfNecessary = true,
+        }));
+if (backgroundProcessingEnabled)
+{
+    builder.Services.AddHangfireServer();
+    builder.Services.AddHostedService<ArchitectureFixtureRecurringJobRegistration>();
+}
+
 // Liveness only. No database/storage/provider probes (owned by later stories).
 builder.Services.AddHealthChecks();
 
@@ -92,6 +113,11 @@ app.UseCors();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    if (backgroundProcessingEnabled)
+    {
+        app.UseHangfireDashboard("/hangfire");
+    }
 }
 
 app.MapHealthChecks("/health", new HealthCheckOptions

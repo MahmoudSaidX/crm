@@ -38,4 +38,38 @@ public sealed class OutboxMessage
     public string? Error { get; private set; }
 
     public required string CorrelationId { get; init; }
+
+    public Guid? LeaseId { get; private set; }
+
+    public DateTimeOffset? LeasedUntilUtc { get; private set; }
+
+    public DateTimeOffset? NextAttemptAtUtc { get; private set; }
+
+    internal void MarkProcessed(Guid leaseId, DateTimeOffset processedAtUtc)
+    {
+        EnsureLeaseOwner(leaseId);
+        ProcessedAtUtc = processedAtUtc;
+        Error = null;
+        LeaseId = null;
+        LeasedUntilUtc = null;
+        NextAttemptAtUtc = null;
+    }
+
+    internal void MarkFailed(Guid leaseId, string error, DateTimeOffset? nextAttemptAtUtc)
+    {
+        EnsureLeaseOwner(leaseId);
+        RetryCount++;
+        Error = error.Length <= 2000 ? error : error[..2000];
+        LeaseId = null;
+        LeasedUntilUtc = null;
+        NextAttemptAtUtc = nextAttemptAtUtc;
+    }
+
+    private void EnsureLeaseOwner(Guid leaseId)
+    {
+        if (LeaseId != leaseId)
+        {
+            throw new InvalidOperationException($"Outbox message '{Id}' is not owned by lease '{leaseId}'.");
+        }
+    }
 }

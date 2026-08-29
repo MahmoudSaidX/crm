@@ -27,4 +27,7 @@ internal static class ArchitectureFixtureSchema
 
     /// <summary>This module's own outbox table (CRM-198). Not shared with any other module's schema.</summary>
     public const string OutboxTable = "outbox_message";
+
+    /// <summary>Fixture consumer receipts keyed by integration-event identity (CRM-199).</summary>
+    public const string IntegrationEventReceiptTable = "integration_event_receipt";
 }

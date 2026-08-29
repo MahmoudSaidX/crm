@@ -35,6 +35,9 @@ public sealed class ArchitectureFixtureDbContext(DbContextOptions<ArchitectureFi
     /// <summary>This module's own transactional outbox table (CRM-198).</summary>
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
+    /// <summary>Durable fixture-consumer deduplication receipts (CRM-199).</summary>
+    public DbSet<IntegrationEventReceipt> IntegrationEventReceipts => Set<IntegrationEventReceipt>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
@@ -44,5 +47,6 @@ public sealed class ArchitectureFixtureDbContext(DbContextOptions<ArchitectureFi
         modelBuilder.HasDefaultSchema(ArchitectureFixtureSchema.Name);
         modelBuilder.ApplyConfiguration(new PersistenceProbeConfiguration());
         modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
+        modelBuilder.ApplyConfiguration(new IntegrationEventReceiptConfiguration());
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace SquadCrm.Api.Tests;
 
@@ -111,6 +112,7 @@ public sealed class SquadCrmApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("POSTGRES_DB", "squadcrm-tests");
         builder.UseSetting("POSTGRES_USER", "squadcrm-tests");
         builder.UseSetting("POSTGRES_PASSWORD", PlaceholderPassword);
+        builder.UseSetting("BackgroundProcessing:Enabled", "false");
 
         if (_emptyCorsAllowList)
         {
@@ -129,6 +131,11 @@ public sealed class SquadCrmApiFactory : WebApplicationFactory<Program>
             builder.ConfigureTestServices(services =>
                 services.AddSingleton<ICorsPolicyProvider, ThrowingCorsPolicyProvider>());
         }
+
+        // API contract tests never exercise background execution or a database.
+        // Remove hosted workers even if minimal-host configuration is evaluated
+        // before this factory's BackgroundProcessing override takes effect.
+        builder.ConfigureTestServices(services => services.RemoveAll<IHostedService>());
     }
 
     /// <summary>Raises an unhandled exception from inside the host's request pipeline.</summary>

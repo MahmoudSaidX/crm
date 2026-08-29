@@ -22,13 +22,11 @@ namespace SquadCrm.ArchitectureTests;
 public sealed class ArchitectureRulesTests
 {
     /// <summary>
-    /// Packages that belong to downstream stories. CRM-198 (events/outbox)
-    /// evaluated <c>Hangfire</c> and <c>MediatR</c> and introduced <b>neither</b>:
-    /// domain events are drained synchronously inside an EF Core
-    /// <c>ISaveChangesInterceptor</c> (no dispatcher, no mediator), and any
-    /// future claim/publish/scheduling mechanism over the outbox table is
-    /// CRM-199's responsibility to build, not this story's. This list is
-    /// therefore unchanged by CRM-198. CRM-110 (authentication) must still
+    /// Packages that belong to downstream stories. CRM-199 legitimately adds
+    /// Hangfire to the API execution boundary, so Hangfire now has the narrower
+    /// placement rule below instead of a solution-wide prohibition. MediatR
+    /// remains absent: the fixture publication proof is explicit and in-process,
+    /// with no general event bus or handler registry. CRM-110 (authentication) must still
     /// update this list when it legitimately introduces
     /// <c>Microsoft.AspNetCore.Authentication.</c>. CRM-204 already resolved the
     /// authorization half:
@@ -46,7 +44,6 @@ public sealed class ArchitectureRulesTests
     /// </summary>
     private static readonly string[] ForbiddenAssemblyPrefixes =
     [
-        "Hangfire",
         "MediatR",
         "FluentValidation",
         "Microsoft.AspNetCore.Authentication.",
@@ -54,6 +51,19 @@ public sealed class ArchitectureRulesTests
         "Scalar.",
         "NSwag.",
     ];
+
+    [Fact]
+    public void Hangfire_MustRemainInApiExecutionBoundary()
+    {
+        foreach (Assembly assembly in SquadCrmAssemblies.All.Where(
+            assembly => assembly.GetName().Name is not SquadCrmAssemblies.ApiName
+                and not "SquadCrm.Api.Tests"))
+        {
+            Assert.DoesNotContain(
+                SquadCrmAssemblies.ReferencedAssemblyNames(assembly),
+                name => name.StartsWith("Hangfire", StringComparison.OrdinalIgnoreCase));
+        }
+    }
 
     [Fact]
     public void BuildingBlocks_MustNotDependOnModulesOrApi()

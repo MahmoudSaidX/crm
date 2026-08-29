@@ -50,9 +50,20 @@ internal sealed class OutboxMessageConfiguration : IEntityTypeConfiguration<Outb
             .HasMaxLength(128)
             .IsRequired();
 
+        builder.Property(message => message.LeaseId)
+            .HasColumnName("lease_id");
+
+        builder.Property(message => message.LeasedUntilUtc)
+            .HasColumnName("leased_until_utc")
+            .HasColumnType("timestamptz");
+
+        builder.Property(message => message.NextAttemptAtUtc)
+            .HasColumnName("next_attempt_at_utc")
+            .HasColumnType("timestamptz");
+
         // Accelerates the pending-row lookup a future story (CRM-199) will
         // need. No retention/purge story owns this table yet.
-        builder.HasIndex(message => message.ProcessedAtUtc)
+        builder.HasIndex(message => new { message.ProcessedAtUtc, message.NextAttemptAtUtc, message.OccurredAtUtc })
             .HasFilter("processed_at_utc IS NULL")
             .HasDatabaseName("ix_outbox_message_pending");
 

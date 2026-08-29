@@ -422,22 +422,39 @@ An unhandled domain event type in the translation switch **throws** rather
 than being silently dropped — the next module author adding a second domain
 event type must extend the switch explicitly.
 
-### What CRM-198 does **not** build
+### CRM-199 background delivery
 
-**Claiming/publishing pending outbox rows on a schedule, retrying failed
-deliveries, and consumer idempotency are CRM-199's scope** (Hangfire). **Structured
-observability of processing status/failures is CRM-201's scope.** This story adds
-neither: `ProcessedAtUtc`, `RetryCount` and `Error` exist on `OutboxMessage` as
-mapped columns only — the Fields Dictionary requires them — but this story always
-writes them `null`/`0`/`null`. There is no `IOutboxMessageStore`, no
-claim/lease mechanism, no publisher, no scheduler, no `IHostedService`, no
-`PeriodicTimer`, and no retry/backoff loop anywhere in this story.
+Hangfire is configured in the API composition root with PostgreSQL-backed
+storage. It is execution infrastructure only: the ArchitectureFixture module
+continues to own its outbox table, lease/retry state, migration and consumer
+receipt. The scheduled job is a thin call into that module processor; CRM-199
+adds no reminder, SLA or other future business job.
+
+Pending rows are claimed in bounded batches with PostgreSQL `FOR UPDATE SKIP
+LOCKED`. A lease id and expiry prevent simultaneous ownership, and success or
+failure updates must present the current lease id. Expired leases become
+eligible again. Failure uses bounded backoff and exhausted rows stop being
+pending at the configured retry ceiling. Diagnostic state contains only a
+bounded exception type, never payloads, connection strings or customer data.
+
+Publication is deliberately a fixture-only executable proof. The dispatcher
+recognizes only `architecture-fixture.probe-recorded.v1`, invokes the
+ArchitectureFixture consumer in-process, and persists an
+`integration_event_receipt` keyed by `EventId`. The receipt commits before the
+outbox row is marked processed, so a crash between those writes produces a safe
+at-least-once redelivery without duplicating the fixture effect. This is not a
+general event bus or an external transport decision.
+
+The Hangfire dashboard is exposed only in Development. It is absent elsewhere
+until CRM-110 supplies authentication; no interim credential scheme is added.
+CRM-201 still owns OpenTelemetry, metrics, deeper health checks and processing
+status observability.
 
 ### Data hygiene
 
-Integration-event payloads carry identifiers, not secrets/PII. `Error` (once a
-future story writes to it) must be truncated and sanitised at the write
-site — never a raw exception message or stack trace. `Payload` is stored as
+Integration-event payloads carry identifiers, not secrets/PII. `Error` is
+truncated and sanitised at the write site — never a raw exception message or
+stack trace. `Payload` is stored as
 `text`, not `jsonb`, to preserve exact byte fidelity (no key reordering). No
 story yet owns retention/purge of processed outbox rows; the
 `ix_outbox_message_pending` partial index (`WHERE processed_at_utc IS NULL`)
@@ -451,17 +468,15 @@ stories must update when they legitimately introduce a dependency:
 
 | Not here | Owning story |
 |---|---|
-| Background outbox publishing, retry, consumer idempotency | CRM-199 |
 | File storage adapters | CRM-200 |
 | OpenTelemetry observability pipeline | CRM-201 |
 | Broader testing infrastructure | CRM-202 |
 | Authentication / session implementation (extension point ready) | CRM-110 |
 | External integrations | CRM-192 |
-| Hangfire, HTTPS/deployment, API versioning | later stories |
+| HTTPS/deployment, API versioning | later stories |
 
 **CRM-106 deliberately does not solve:** cross-module distributed transactions;
-background outbox publishing/retry/idempotency (CRM-198 delivers the transactional
-write path only — see above; CRM-199 owns the rest); per-module PostgreSQL
+per-module PostgreSQL
 roles or table-level permissions; production migration automation; migration on
 application startup; database readiness in `/health` (CRM-201); CI test
 orchestration and filtering (CRM-202).

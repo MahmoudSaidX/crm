@@ -11,3 +11,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | crm-106-postgresql-ef-core-schema-per-module | [`crm-106-postgresql-ef-core-schema-per-module/00-overview.md`](crm-106-postgresql-ef-core-schema-per-module/00-overview.md) | 05 |
 | shared-api-validation-security-foundation | [`shared-api-validation-security-foundation/00-overview.md`](shared-api-validation-security-foundation/00-overview.md) | 06 |
 | domain-events-integration-events-transactional-outbox | [`domain-events-integration-events-transactional-outbox/00-overview.md`](domain-events-integration-events-transactional-outbox/00-overview.md) | 07 |
+| hangfire-background-processing-foundation | [`hangfire-background-processing-foundation/00-overview.md`](hangfire-background-processing-foundation/00-overview.md) | 08 |
