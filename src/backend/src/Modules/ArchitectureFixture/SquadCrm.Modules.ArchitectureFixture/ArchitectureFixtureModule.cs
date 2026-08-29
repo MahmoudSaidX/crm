@@ -11,6 +11,7 @@ using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Modules.ArchitectureFixture.Contracts;
 using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
 using SquadCrm.Modules.ArchitectureFixture.Persistence;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace SquadCrm.Modules.ArchitectureFixture;
 
@@ -81,6 +82,11 @@ public sealed class ArchitectureFixtureModule : IModule
         services.AddScoped<ArchitectureFixtureOutboxStore>();
         services.AddScoped<ArchitectureFixtureIntegrationEventDispatcher>();
         services.AddScoped<ArchitectureFixtureOutboxJob>();
+        services.AddHealthChecks()
+            .AddCheck<OutboxReadinessHealthCheck>(
+                "outbox",
+                failureStatus: HealthStatus.Unhealthy,
+                tags: ["ready"]);
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)

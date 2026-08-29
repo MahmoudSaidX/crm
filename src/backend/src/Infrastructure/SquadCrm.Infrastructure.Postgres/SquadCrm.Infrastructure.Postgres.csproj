@@ -12,6 +12,7 @@
        provider-neutral. Both facts are enforced by SquadCrm.ArchitectureTests. -->
   <ItemGroup>
     <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="Npgsql.OpenTelemetry" Version="10.0.3" />
   </ItemGroup>
 
   <!-- Hosting abstractions only, for the composition-root extension method. -->

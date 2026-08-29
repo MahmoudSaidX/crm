@@ -62,6 +62,8 @@ the design-time factory to go looking for it.
 | URL | Notes |
 |---|---|
 | `http://localhost:5080/health` | Liveness probe. Returns `200 OK` with `{"status":"Healthy"}` |
+| `http://localhost:5080/health/live` | Explicit liveness alias; runs no dependency checks |
+| `http://localhost:5080/health/ready` | Readiness for PostgreSQL, local storage and outbox status; exposes safe counts only |
 | `http://localhost:5080/openapi/v1.json` | **Development only.** Built-in OpenAPI document |
 
 There is deliberately **no Swagger UI, Scalar, NSwag or other OpenAPI UI**: this
@@ -450,8 +452,8 @@ general event bus or an external transport decision.
 
 The Hangfire dashboard is exposed only in Development. It is absent elsewhere
 until CRM-110 supplies authentication; no interim credential scheme is added.
-CRM-201 still owns OpenTelemetry, metrics, deeper health checks and processing
-status observability.
+CRM-201 adds telemetry and count-only outbox processing status; it never exports
+payloads or durable error text.
 
 ### Data hygiene
 
@@ -492,6 +494,27 @@ Configuration is non-secret:
 Cloud providers, public URLs, malware scanning and attachment-owning business
 workflows remain downstream stories.
 
+## Observability and health
+
+CRM-201 configures OpenTelemetry traces and metrics for ASP.NET Core, outgoing
+HTTP, Npgsql, the .NET runtime and the existing outbox job. Console logs use
+structured JSON and include scopes. Request scopes carry distinct sanitized
+`CorrelationId`, OpenTelemetry `TraceId` and `SpanId` fields; background outbox
+work resumes the durable correlation identifier written with its message.
+
+OTLP export for traces, metrics and logs is disabled unless
+`OTEL_EXPORTER_OTLP_ENDPOINT` is set. Standard `OTEL_EXPORTER_OTLP_*` variables
+configure the exporter. Treat `OTEL_EXPORTER_OTLP_HEADERS` as a secret: keep it
+only in `env/backend.env` or deployment secret storage and never commit/log it.
+
+`/health` and `/health/live` are liveness and intentionally run no dependency
+checks. `/health/ready` checks PostgreSQL, configured local file storage and the
+module outbox. Readiness responses contain fixed descriptions and pending,
+failed and exhausted counts only—never connection strings, provider exceptions,
+outbox `Payload`/`Error`, SQL parameters or customer content. Exhausted outbox
+messages make readiness `Degraded` (HTTP 200); unavailable dependencies make it
+`Unhealthy` (HTTP 503).
+
 ## Non-goals in this foundation
 
 Owned by later stories and intentionally absent here — the absence is enforced by
@@ -500,7 +523,6 @@ stories must update when they legitimately introduce a dependency:
 
 | Not here | Owning story |
 |---|---|
-| OpenTelemetry observability pipeline | CRM-201 |
 | Broader testing infrastructure | CRM-202 |
 | Authentication / session implementation (extension point ready) | CRM-110 |
 | External integrations | CRM-192 |
@@ -509,11 +531,12 @@ stories must update when they legitimately introduce a dependency:
 **CRM-106 deliberately does not solve:** cross-module distributed transactions;
 per-module PostgreSQL
 roles or table-level permissions; production migration automation; migration on
-application startup; database readiness in `/health` (CRM-201); CI test
+application startup; CI test
 orchestration and filtering (CRM-202).
 
-`/health` is a **liveness** probe only. It performs no database, storage or
-provider checks.
+`/health` remains a **liveness** probe only. Dependency checks are isolated at
+`/health/ready` so orchestrators can distinguish a live process from one that
+should not receive traffic.
 
 ## Warnings-as-errors
 

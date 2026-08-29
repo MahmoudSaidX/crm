@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace SquadCrm.BuildingBlocks.Correlation;
 
@@ -21,11 +23,14 @@ public sealed class CorrelationIdMiddleware
     public const int MaxLength = 128;
 
     private readonly RequestDelegate _next;
+    private readonly ILogger<CorrelationIdMiddleware> _logger;
 
-    public CorrelationIdMiddleware(RequestDelegate next)
+    public CorrelationIdMiddleware(RequestDelegate next, ILogger<CorrelationIdMiddleware> logger)
     {
         ArgumentNullException.ThrowIfNull(next);
+        ArgumentNullException.ThrowIfNull(logger);
         _next = next;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -41,6 +46,14 @@ public sealed class CorrelationIdMiddleware
             ctx.Response.Headers[HeaderName] = ctx.TraceIdentifier;
             return Task.CompletedTask;
         }, context);
+
+        Activity? activity = Activity.Current;
+        using IDisposable? scope = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["CorrelationId"] = correlationId,
+            ["TraceId"] = activity?.TraceId.ToString(),
+            ["SpanId"] = activity?.SpanId.ToString(),
+        });
 
         await _next(context).ConfigureAwait(false);
     }

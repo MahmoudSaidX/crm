@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Npgsql;
 
 namespace SquadCrm.Infrastructure.Postgres;
@@ -124,6 +125,11 @@ public static class PostgresConfiguration
         ]);
 
         builder.Services.AddSingleton(options);
+        builder.Services.AddHealthChecks()
+            .AddCheck<PostgresReadinessHealthCheck>(
+                "postgres",
+                failureStatus: HealthStatus.Unhealthy,
+                tags: ["ready"]);
 
         return builder;
     }

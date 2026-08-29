@@ -55,10 +55,9 @@ relied upon as equal:
   `System.Diagnostics.Activity.Current?.Id` when one exists, otherwise the
   same `HttpContext.TraceIdentifier` value.
 
-**They are never guaranteed equal.** With no ambient `Activity` (today's
-default, before CRM-201's OpenTelemetry wiring), `traceId` happens to equal
+**They are never guaranteed equal.** With no ambient `Activity`, `traceId` happens to equal
 `correlationId` because both fall back to the same `TraceIdentifier`. Once
-an `Activity` is active, `traceId` reports the `Activity`'s id while
+an `Activity` is active (the normal CRM-201 HTTP path), `traceId` reports the `Activity`'s id while
 `correlationId` keeps reporting the stable client handle — they legitimately
 **diverge**. Do not add or restore an "always matches" assertion; test and
 document divergence instead.
@@ -271,8 +270,6 @@ content-negotiation or header-based versioning machinery is introduced.
 | A real identity model behind `ICurrentUserAccessor` | CRM-110 |
 | Audit logging | CRM-114 |
 | Domain/integration events, transactional outbox | CRM-198 |
-| File storage adapters | CRM-200 |
-| OpenTelemetry observability pipeline, `Activity`-based tracing | CRM-201 |
 | Broader architecture-test suite build-out | CRM-202 |
 | Content-Security-Policy / `frame-ancestors` headers | undecided — frontend/deployment topology dependent |
 | Version-negotiation framework beyond the `/api/v1` route prefix | undecided |
