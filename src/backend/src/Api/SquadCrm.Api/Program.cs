@@ -100,10 +100,12 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        // No credentials in this story; an empty allow-list blocks every origin.
+        // Refresh cookies require credentials; the explicit allow-list above prevents
+        // credentialed cross-origin access from ever combining with a wildcard origin.
         policy.WithOrigins(corsOptions.AllowedOrigins)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -148,6 +150,7 @@ builder.Services.AddHealthChecks();
 // absence, never a silent runtime gap. No runtime assembly scanning.
 IModule[] modules =
 [
+    new SquadCrm.Modules.StaffIdentity.StaffIdentityModule(),
     new SquadCrm.Modules.ArchitectureFixture.ArchitectureFixtureModule(),
 ];
 
@@ -161,7 +164,14 @@ app.UseExceptionHandler();
 // carry the header baseline too — not after UseCors(), which would skip them.
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors();
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 
 if (app.Environment.IsDevelopment())
 {

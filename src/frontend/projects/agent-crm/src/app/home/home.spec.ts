@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import {
   AppConfigStore,
@@ -18,7 +20,13 @@ describe('Agent CRM — Home smoke', () => {
 
     await TestBed.configureTestingModule({
       imports: [Home],
-      providers: [provideAppConfig(), provideNoopAnimations(), providePrimeNG({})],
+      providers: [
+        provideAppConfig(),
+        provideHttpClient(),
+        provideRouter([]),
+        provideNoopAnimations(),
+        providePrimeNG({}),
+      ],
     }).compileComponents();
 
     TestBed.inject(AppConfigStore).set(

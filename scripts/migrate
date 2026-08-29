@@ -24,3 +24,7 @@ dotnet ef database update \
   --project src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture \
   --startup-project src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture \
   --context ArchitectureFixtureDbContext
+dotnet ef database update \
+  --project src/Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity \
+  --startup-project src/Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity \
+  --context StaffIdentityDbContext
