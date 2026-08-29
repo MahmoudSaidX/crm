@@ -25,12 +25,8 @@ public sealed class PersistenceRoundTripTests
         await using ArchitectureFixtureDbContext context = PostgresTestDatabase.CreateContext();
         await using IDbContextTransaction transaction = await context.Database.BeginTransactionAsync();
 
-        context.PersistenceProbes.Add(new PersistenceProbe
-        {
-            Id = id,
-            Label = nameof(Probe_CanBeWrittenAndReadBack),
-            RecordedAtUtc = recordedAt,
-        });
+        context.PersistenceProbes.Add(
+            PersistenceProbe.Record(id, nameof(Probe_CanBeWrittenAndReadBack), recordedAt));
 
         await context.SaveChangesAsync();
 

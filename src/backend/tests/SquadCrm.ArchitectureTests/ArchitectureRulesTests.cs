@@ -22,9 +22,16 @@ namespace SquadCrm.ArchitectureTests;
 public sealed class ArchitectureRulesTests
 {
     /// <summary>
-    /// Packages that belong to downstream stories. CRM-198 (events/outbox) and
-    /// CRM-110 (authentication) must update this list when they legitimately
-    /// introduce one of these. CRM-204 already resolved the authorization half:
+    /// Packages that belong to downstream stories. CRM-198 (events/outbox)
+    /// evaluated <c>Hangfire</c> and <c>MediatR</c> and introduced <b>neither</b>:
+    /// domain events are drained synchronously inside an EF Core
+    /// <c>ISaveChangesInterceptor</c> (no dispatcher, no mediator), and any
+    /// future claim/publish/scheduling mechanism over the outbox table is
+    /// CRM-199's responsibility to build, not this story's. This list is
+    /// therefore unchanged by CRM-198. CRM-110 (authentication) must still
+    /// update this list when it legitimately introduces
+    /// <c>Microsoft.AspNetCore.Authentication.</c>. CRM-204 already resolved the
+    /// authorization half:
     /// <c>Microsoft.AspNetCore.Authorization.</c> is unblocked because this
     /// story registers the inert authorization extension point
     /// (<c>services.AddAuthorization()</c>, zero policies, no scheme). No

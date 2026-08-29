@@ -18,12 +18,22 @@ namespace SquadCrm.Modules.ArchitectureFixture.Persistence;
 /// <c>SquadCrm.ArchitectureTests</c> fails the build if one appears, or if a
 /// context is parked outside its owning module's <c>Persistence</c> namespace.
 /// </para>
+/// <para>
+/// The transactional outbox write path (CRM-198) is implemented by
+/// <see cref="ArchitectureFixtureOutboxInterceptor"/>, registered via
+/// <c>ArchitectureFixtureDbContextOptions.Apply</c> — not by an overridden
+/// <c>SaveChangesAsync</c> here, which would miss the synchronous
+/// <c>SaveChanges()</c>/<c>SaveChanges(bool)</c> overloads.
+/// </para>
 /// </summary>
 public sealed class ArchitectureFixtureDbContext(DbContextOptions<ArchitectureFixtureDbContext> options)
     : DbContext(options)
 {
     /// <summary>The single scaffolding table this module owns.</summary>
     public DbSet<PersistenceProbe> PersistenceProbes => Set<PersistenceProbe>();
+
+    /// <summary>This module's own transactional outbox table (CRM-198).</summary>
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,5 +43,6 @@ public sealed class ArchitectureFixtureDbContext(DbContextOptions<ArchitectureFi
         // and never another module's schema.
         modelBuilder.HasDefaultSchema(ArchitectureFixtureSchema.Name);
         modelBuilder.ApplyConfiguration(new PersistenceProbeConfiguration());
+        modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
     }
 }

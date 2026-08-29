@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>SquadCrm.BuildingBlocks.Abstractions</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Deliberately dependency-free: no FrameworkReference, no PackageReference,
+       no ProjectReference. Module *.Contracts projects reference ONLY this
+       project so a contract that implements IIntegrationEvent never drags
+       ASP.NET Core or infrastructure across the contract boundary
+       (SquadCrm.ArchitectureTests enforces this). -->
+
+</Project>

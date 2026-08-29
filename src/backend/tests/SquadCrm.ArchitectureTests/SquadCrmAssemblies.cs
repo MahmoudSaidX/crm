@@ -1,4 +1,5 @@
 using System.Reflection;
+using SquadCrm.BuildingBlocks.Abstractions.Events;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Modules.ArchitectureFixture;
@@ -33,6 +34,8 @@ internal static class SquadCrmAssemblies
 
     public static Assembly BuildingBlocks { get; } = typeof(IModule).Assembly;
 
+    public static Assembly Abstractions { get; } = typeof(IDomainEvent).Assembly;
+
     public static Assembly InfrastructurePostgres { get; } = typeof(PostgresOptions).Assembly;
 
     public static Assembly ArchitectureFixture { get; } = typeof(ArchitectureFixtureModule).Assembly;
@@ -46,6 +49,7 @@ internal static class SquadCrmAssemblies
     [
         Api,
         BuildingBlocks,
+        Abstractions,
         InfrastructurePostgres,
         ArchitectureFixture,
         ArchitectureFixtureContracts,
