@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SquadCrm.BuildingBlocks.Correlation;
 using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Validation;
@@ -62,9 +63,15 @@ public sealed class ArchitectureFixtureModule : IModule
         // composition root derived from the POSTGRES_* contract. The host never
         // sees this type, and no other module may reference it
         // (SquadCrm.ArchitectureTests enforces this).
-        services.AddDbContext<ArchitectureFixtureDbContext>(options =>
+        // ICorrelationIdAccessor is resolved from the container the HOST
+        // registers it in (Program.cs) — this module never registers
+        // IHttpContextAccessor itself; a module's persistence must not depend
+        // on HttpContext directly (CRM-198, B2).
+        services.AddDbContext<ArchitectureFixtureDbContext>((serviceProvider, options) =>
             ArchitectureFixtureDbContextOptions.Apply(
-                options, configuration.GetSquadCrmPostgresConnectionString()));
+                options,
+                configuration.GetSquadCrmPostgresConnectionString(),
+                serviceProvider.GetRequiredService<ICorrelationIdAccessor>()));
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)

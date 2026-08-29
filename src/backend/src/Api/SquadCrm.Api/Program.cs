@@ -21,6 +21,7 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSquadCrmProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICorrelationIdAccessor, HttpContextCorrelationIdAccessor>();
 
 // Authorization extension point for CRM-110. No scheme, no policy, no
 // [Authorize] endpoint, no ICurrentUserAccessor registration yet — this only

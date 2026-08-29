@@ -299,6 +299,61 @@ public sealed class PersistenceArchitectureRulesTests
         $"{assemblyName} has forbidden persistence dependencies. Offending types: "
         + string.Join(", ", result.FailingTypeNames ?? []);
 
+    /// <summary>
+    /// CRM-198, Ruling 2: SquadCrm.BuildingBlocks.Abstractions is deliberately
+    /// dependency-free so *.Contracts assemblies can reference it without
+    /// inheriting ASP.NET Core or infrastructure. A stray package/project/
+    /// framework reference here would silently reintroduce that coupling for
+    /// every future module.
+    /// </summary>
+    [Fact]
+    public void Abstractions_MustHaveNoDependencies()
+    {
+        IReadOnlyList<string> referenced = SquadCrmAssemblies.ReferencedAssemblyNames(SquadCrmAssemblies.Abstractions);
+
+        // Exact-name/prefix checks against first-party and framework names
+        // only — the .NET runtime/BCL assemblies referenced by every project
+        // (System.*, netstandard, mscorlib) are expected and not a violation.
+        string[] violations = referenced
+            .Where(name =>
+                name.StartsWith("SquadCrm.", StringComparison.Ordinal)
+                || name.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal)
+                || SquadCrmAssemblies.EfCoreAndNpgsqlPrefixes.Any(
+                    prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        Assert.True(
+            violations.Length == 0,
+            $"{SquadCrmAssemblies.Abstractions.GetName().Name} must have no project/framework/package "
+            + "dependencies. Offending references: " + string.Join(", ", violations));
+    }
+
+    /// <summary>
+    /// CRM-198, Ruling 2: a module's *.Contracts project may implement
+    /// IIntegrationEvent, but must never reference the ASP.NET-Core-bearing
+    /// SquadCrm.BuildingBlocks — only SquadCrm.BuildingBlocks.Abstractions.
+    /// Exact-name equality is used deliberately: a substring/prefix check
+    /// would false-positive on "SquadCrm.BuildingBlocks.Abstractions" itself
+    /// containing "SquadCrm.BuildingBlocks" as a string prefix.
+    /// </summary>
+    [Fact]
+    public void ContractsAssemblies_MustNotDependOnBuildingBlocks()
+    {
+        Assembly[] contracts = SquadCrmAssemblies.All
+            .Where(assembly => assembly.GetName().Name!
+                .EndsWith(SquadCrmAssemblies.ContractsSuffix, StringComparison.Ordinal))
+            .ToArray();
+
+        Assert.NotEmpty(contracts);
+
+        foreach (Assembly assembly in contracts)
+        {
+            IReadOnlyList<string> referenced = SquadCrmAssemblies.ReferencedAssemblyNames(assembly);
+
+            Assert.DoesNotContain(SquadCrmAssemblies.BuildingBlocksName, referenced);
+        }
+    }
+
     private static void AssertReferencesNoEfCoreOrNpgsql(Assembly assembly)
     {
         string[] violations = SquadCrmAssemblies.ReferencedAssemblyNames(assembly)

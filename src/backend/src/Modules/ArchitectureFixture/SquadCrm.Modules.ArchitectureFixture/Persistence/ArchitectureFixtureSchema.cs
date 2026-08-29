@@ -24,4 +24,7 @@ internal static class ArchitectureFixtureSchema
 
     /// <summary>The single scaffolding table. Not a CRM entity.</summary>
     public const string ProbeTable = "persistence_probe";
+
+    /// <summary>This module's own outbox table (CRM-198). Not shared with any other module's schema.</summary>
+    public const string OutboxTable = "outbox_message";
 }

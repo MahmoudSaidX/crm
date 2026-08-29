@@ -4,7 +4,12 @@
     <RootNamespace>SquadCrm.Modules.ArchitectureFixture.Contracts</RootNamespace>
   </PropertyGroup>
 
-  <!-- Public contract surface. Intentionally has NO project references
-       (enforced by SquadCrm.ArchitectureTests). -->
+  <!-- Public contract surface. References ONLY SquadCrm.BuildingBlocks.Abstractions
+       (enforced by SquadCrm.ArchitectureTests) — never SquadCrm.BuildingBlocks
+       itself, which carries ASP.NET Core and would drag it across the contract
+       boundary into every consumer of this project. -->
+  <ItemGroup>
+    <ProjectReference Include="../../../BuildingBlocks/SquadCrm.BuildingBlocks.Abstractions/SquadCrm.BuildingBlocks.Abstractions.csproj" />
+  </ItemGroup>
 
 </Project>

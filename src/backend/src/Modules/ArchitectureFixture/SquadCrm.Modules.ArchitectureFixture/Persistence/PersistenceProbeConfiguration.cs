@@ -30,6 +30,10 @@ internal sealed class PersistenceProbeConfiguration : IEntityTypeConfiguration<P
             .HasColumnName("recorded_at_utc")
             .HasColumnType("timestamptz");
 
+        // DomainEvents is an in-memory-only collection (AC 1); it must never
+        // be mapped as a column/navigation, or EF's model build fails (B6).
+        builder.Ignore(probe => probe.DomainEvents);
+
         // No foreign key of any kind: cross-schema/cross-module foreign keys are
         // not the modular-monolith integration mechanism, and there is nothing
         // else for scaffolding to reference.

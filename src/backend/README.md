@@ -369,6 +369,80 @@ A module issuing raw SQL against another module's schema remains a **coding
 convention**: nothing above can catch it. Enforcing it at the database level
 would need per-module PostgreSQL roles, which is deliberately out of scope here.
 
+## Domain events, integration events & the outbox (CRM-198)
+
+`SquadCrm.BuildingBlocks.Abstractions` is a **dependency-free** project holding
+exactly two marker interfaces: `IDomainEvent` (raised and consumed inside one
+module only) and `IIntegrationEvent` (`EventId`, `OccurredAtUtc`, and a stable
+versioned contract-name `Type`, e.g. `"architecture-fixture.probe-recorded.v1"`
+— never `nameof(...)` or a CLR type name). It has no `FrameworkReference`, no
+package reference and no project reference — module `*.Contracts` projects
+reference **only** this project, never the ASP.NET-Core-bearing
+`SquadCrm.BuildingBlocks`, so implementing `IIntegrationEvent` never drags
+infrastructure across the contract boundary. `SquadCrm.ArchitectureTests`
+enforces both facts.
+
+`SquadCrm.BuildingBlocks.Events.HasDomainEvents` is a small opt-in base an
+entity derives from to raise domain events (`AddDomainEvent`). There is no
+dispatcher, no mediator and no bus — `MediatR` stays forbidden
+(`ForbiddenAssemblyPrefixes`).
+
+`SquadCrm.BuildingBlocks.Correlation.ICorrelationIdAccessor` reads the current
+request's correlation id without any consumer depending on `HttpContext`
+directly. It is registered in the **host** (`Program.cs`), never inside a
+module — a module's persistence layer must not depend on `HttpContext`.
+
+### The outbox table is a per-module persistence detail
+
+`OutboxMessage` is **not** a shared `BuildingBlocks` type. Each module that
+needs one defines its own `OutboxMessage` class and maps it to its own table,
+in its own schema, exactly like any other entity (schema-per-module,
+`docs/adr/ADR-002-postgresql.md`). The `ArchitectureFixture` module's
+`outbox_message` table (in the `architecture_fixture` schema) is the
+demonstration instance.
+
+### One `SaveChanges` call, one transaction — via an `ISaveChangesInterceptor`
+
+`ArchitectureFixtureOutboxInterceptor` (an EF Core `ISaveChangesInterceptor`,
+registered through `ArchitectureFixtureDbContextOptions.Apply` — the single
+place both the runtime `AddDbContext` registration and the design-time
+factory wire up provider options) drains any pending `HasDomainEvents`
+entries on every `SaveChanges`/`SaveChangesAsync` call — **all four
+overloads**, not just one — translates each domain event into this module's
+`IIntegrationEvent` contract, and adds the corresponding `OutboxMessage` row
+to the same change tracker before the underlying `SaveChanges` commits. EF
+Core's single-transaction guarantee means the business row and the outbox row
+commit or roll back together, whether or not the caller already opened an
+explicit `BeginTransactionAsync`. A `SaveChangesAsync(CancellationToken)`
+*override* would have missed `SaveChanges()`, `SaveChanges(bool)` and
+`SaveChangesAsync(bool, CancellationToken)` — this is exactly the defect the
+interceptor design avoids.
+
+An unhandled domain event type in the translation switch **throws** rather
+than being silently dropped — the next module author adding a second domain
+event type must extend the switch explicitly.
+
+### What CRM-198 does **not** build
+
+**Claiming/publishing pending outbox rows on a schedule, retrying failed
+deliveries, and consumer idempotency are CRM-199's scope** (Hangfire). **Structured
+observability of processing status/failures is CRM-201's scope.** This story adds
+neither: `ProcessedAtUtc`, `RetryCount` and `Error` exist on `OutboxMessage` as
+mapped columns only — the Fields Dictionary requires them — but this story always
+writes them `null`/`0`/`null`. There is no `IOutboxMessageStore`, no
+claim/lease mechanism, no publisher, no scheduler, no `IHostedService`, no
+`PeriodicTimer`, and no retry/backoff loop anywhere in this story.
+
+### Data hygiene
+
+Integration-event payloads carry identifiers, not secrets/PII. `Error` (once a
+future story writes to it) must be truncated and sanitised at the write
+site — never a raw exception message or stack trace. `Payload` is stored as
+`text`, not `jsonb`, to preserve exact byte fidelity (no key reordering). No
+story yet owns retention/purge of processed outbox rows; the
+`ix_outbox_message_pending` partial index (`WHERE processed_at_utc IS NULL`)
+only accelerates the pending-row lookup a future story will need.
+
 ## Non-goals in this foundation
 
 Owned by later stories and intentionally absent here — the absence is enforced by
@@ -377,7 +451,7 @@ stories must update when they legitimately introduce a dependency:
 
 | Not here | Owning story |
 |---|---|
-| Integration events / transactional outbox | CRM-198 |
+| Background outbox publishing, retry, consumer idempotency | CRM-199 |
 | File storage adapters | CRM-200 |
 | OpenTelemetry observability pipeline | CRM-201 |
 | Broader testing infrastructure | CRM-202 |
@@ -386,7 +460,8 @@ stories must update when they legitimately introduce a dependency:
 | Hangfire, HTTPS/deployment, API versioning | later stories |
 
 **CRM-106 deliberately does not solve:** cross-module distributed transactions;
-the transactional outbox and integration events (CRM-198); per-module PostgreSQL
+background outbox publishing/retry/idempotency (CRM-198 delivers the transactional
+write path only — see above; CRM-199 owns the rest); per-module PostgreSQL
 roles or table-level permissions; production migration automation; migration on
 application startup; database readiness in `/health` (CRM-201); CI test
 orchestration and filtering (CRM-202).
