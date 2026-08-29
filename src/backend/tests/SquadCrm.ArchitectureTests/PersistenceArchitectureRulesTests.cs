@@ -128,6 +128,30 @@ public sealed class PersistenceArchitectureRulesTests
         Assert.True(result.IsSuccessful, Describe(SquadCrmAssemblies.InfrastructurePostgresName, result));
     }
 
+    [Fact]
+    public void InfrastructureFileStorage_MustNotDependOnEfCoreNpgsqlModulesOrApi()
+    {
+        Assembly assembly = SquadCrmAssemblies.InfrastructureFileStorage;
+        IReadOnlyList<string> references = SquadCrmAssemblies.ReferencedAssemblyNames(assembly);
+
+        Assert.DoesNotContain(references, name =>
+            SquadCrmAssemblies.EfCoreAndNpgsqlPrefixes.Any(
+                prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            || name.StartsWith(SquadCrmAssemblies.ModulesNamespacePrefix, StringComparison.Ordinal)
+            || name == SquadCrmAssemblies.ApiName);
+
+        TestResult result = Types.InAssembly(assembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                "Microsoft.EntityFrameworkCore",
+                "Npgsql",
+                SquadCrmAssemblies.ModulesNamespacePrefix,
+                SquadCrmAssemblies.ApiName)
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, Describe(SquadCrmAssemblies.InfrastructureFileStorageName, result));
+    }
+
     /// <summary>
     /// The host composes modules; it never touches their EF internals. It still
     /// <i>references</i> the module assembly — that is the composition seam — so

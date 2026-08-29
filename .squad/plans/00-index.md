@@ -12,3 +12,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | shared-api-validation-security-foundation | [`shared-api-validation-security-foundation/00-overview.md`](shared-api-validation-security-foundation/00-overview.md) | 06 |
 | domain-events-integration-events-transactional-outbox | [`domain-events-integration-events-transactional-outbox/00-overview.md`](domain-events-integration-events-transactional-outbox/00-overview.md) | 07 |
 | hangfire-background-processing-foundation | [`hangfire-background-processing-foundation/00-overview.md`](hangfire-background-processing-foundation/00-overview.md) | 08 |
+| file-storage-foundation | [`file-storage-foundation/00-overview.md`](file-storage-foundation/00-overview.md) | 09 |

@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="../../BuildingBlocks/SquadCrm.BuildingBlocks/SquadCrm.BuildingBlocks.csproj" />
     <ProjectReference Include="../../Infrastructure/SquadCrm.Infrastructure.Postgres/SquadCrm.Infrastructure.Postgres.csproj" />
+    <ProjectReference Include="../../Infrastructure/SquadCrm.Infrastructure.FileStorage/SquadCrm.Infrastructure.FileStorage.csproj" />
     <ProjectReference Include="../../Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture.csproj" />
     <ProjectReference Include="../../Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture.Contracts/SquadCrm.Modules.ArchitectureFixture.Contracts.csproj" />
   </ItemGroup>

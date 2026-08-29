@@ -2,6 +2,7 @@ using System.Reflection;
 using SquadCrm.BuildingBlocks.Abstractions.Events;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.Infrastructure.Postgres;
+using SquadCrm.Infrastructure.FileStorage;
 using SquadCrm.Modules.ArchitectureFixture;
 using SquadCrm.Modules.ArchitectureFixture.Contracts;
 
@@ -19,6 +20,7 @@ internal static class SquadCrmAssemblies
     public const string ContractsSuffix = ".Contracts";
     public const string InfrastructureNamespacePrefix = "SquadCrm.Infrastructure.";
     public const string InfrastructurePostgresName = "SquadCrm.Infrastructure.Postgres";
+    public const string InfrastructureFileStorageName = "SquadCrm.Infrastructure.FileStorage";
 
     /// <summary>Assembly-name prefixes of the EF Core and Npgsql package families.</summary>
     public static readonly string[] EfCoreAndNpgsqlPrefixes =
@@ -38,6 +40,8 @@ internal static class SquadCrmAssemblies
 
     public static Assembly InfrastructurePostgres { get; } = typeof(PostgresOptions).Assembly;
 
+    public static Assembly InfrastructureFileStorage { get; } = typeof(FileStorageOptions).Assembly;
+
     public static Assembly ArchitectureFixture { get; } = typeof(ArchitectureFixtureModule).Assembly;
 
     public static Assembly ArchitectureFixtureContracts { get; } = typeof(ModuleInfoResponse).Assembly;
@@ -51,6 +55,7 @@ internal static class SquadCrmAssemblies
         BuildingBlocks,
         Abstractions,
         InfrastructurePostgres,
+        InfrastructureFileStorage,
         ArchitectureFixture,
         ArchitectureFixtureContracts,
         ApiTests,

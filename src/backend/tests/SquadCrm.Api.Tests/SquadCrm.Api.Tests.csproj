@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Api\SquadCrm.Api\SquadCrm.Api.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\SquadCrm.Infrastructure.FileStorage\SquadCrm.Infrastructure.FileStorage.csproj" />
   </ItemGroup>
 
   <!-- Integration tests host the API in-process (WebApplicationFactory) and
