@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$script_dir/.." && pwd)"
+backend_env_file="${SQUADCRM_BACKEND_ENV_FILE:-$repo_root/env/backend.env}"
+
+if [[ -f "$backend_env_file" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$backend_env_file"
+  set +a
+fi
+
+export POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
+export POSTGRES_PORT="${POSTGRES_PORT:-5432}"
+export POSTGRES_DB="${POSTGRES_DB:-squadcrm}"
+export POSTGRES_USER="${POSTGRES_USER:-squadcrm}"
+export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-change-me}"
+
+cd "$repo_root/src/backend"
+dotnet tool restore
+dotnet ef database update \
+  --project src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture \
+  --startup-project src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture \
+  --context ArchitectureFixtureDbContext

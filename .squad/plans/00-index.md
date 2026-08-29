@@ -15,3 +15,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | file-storage-foundation | [`file-storage-foundation/00-overview.md`](file-storage-foundation/00-overview.md) | 09 |
 | opentelemetry-structured-logging-health-checks | [`opentelemetry-structured-logging-health-checks/00-overview.md`](opentelemetry-structured-logging-health-checks/00-overview.md) | 10 |
 | automated-testing-architecture-tests | [`automated-testing-architecture-tests/00-overview.md`](automated-testing-architecture-tests/00-overview.md) | 11 |
+| ci-quality-gates-seed-reset-documentation | [`ci-quality-gates-seed-reset-documentation/00-overview.md`](ci-quality-gates-seed-reset-documentation/00-overview.md) | 12 |
