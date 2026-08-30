@@ -126,3 +126,113 @@ public sealed class SchemaOwnershipTests(PostgresTestDatabase database)
         return Convert.ToInt64(await command.ExecuteScalarAsync()) == 1L;
     }
 }
+
+/// <summary>Same schema-ownership assertions, parameterized for <c>role_management</c> (CRM-112).</summary>
+[Collection(PostgresTestDatabase.CollectionName)]
+public sealed class RoleManagementSchemaOwnershipTests(PostgresTestDatabase database)
+{
+    private const string ModuleSchema = "role_management";
+    private const string HistoryTable = "__ef_migrations_history";
+
+    [Fact]
+    public async Task Schema_ExistsForTheOwningModule()
+    {
+        await using NpgsqlConnection connection = await database.OpenConnectionAsync();
+
+        await using NpgsqlCommand command = new(
+            "select count(*) from information_schema.schemata where schema_name = @schema",
+            connection);
+        command.Parameters.AddWithValue("schema", ModuleSchema);
+
+        Assert.Equal(1L, Convert.ToInt64(await command.ExecuteScalarAsync()));
+    }
+
+    [Theory]
+    [InlineData("role")]
+    [InlineData("role_audit_event")]
+    public async Task Table_ExistsInModuleSchema(string table)
+    {
+        await using NpgsqlConnection connection = await database.OpenConnectionAsync();
+
+        Assert.True(await TableExistsAsync(connection, ModuleSchema, table));
+    }
+
+    [Fact]
+    public async Task RoleTable_ColumnsUseSnakeCaseNames()
+    {
+        await using NpgsqlConnection connection = await database.OpenConnectionAsync();
+
+        List<string> columns = await ColumnsAsync(connection, ModuleSchema, "role");
+
+        Assert.Equal(
+            [
+                "code", "created_at_utc", "description", "id", "is_active",
+                "name", "normalized_code", "normalized_name", "updated_at_utc",
+            ],
+            columns);
+    }
+
+    [Fact]
+    public async Task RoleAuditEventTable_ColumnsUseSnakeCaseNames()
+    {
+        await using NpgsqlConnection connection = await database.OpenConnectionAsync();
+
+        List<string> columns = await ColumnsAsync(connection, ModuleSchema, "role_audit_event");
+
+        Assert.Equal(
+            ["changed_by_handle", "event_type", "id", "occurred_at_utc", "role_id"],
+            columns);
+    }
+
+    [Fact]
+    public async Task MigrationHistory_LivesInModuleSchema()
+    {
+        await using NpgsqlConnection connection = await database.OpenConnectionAsync();
+
+        Assert.True(await TableExistsAsync(connection, ModuleSchema, HistoryTable));
+
+        await using NpgsqlCommand rows = new(
+            $"select count(*) from {ModuleSchema}.{HistoryTable}",
+            connection);
+
+        Assert.True(Convert.ToInt64(await rows.ExecuteScalarAsync()) >= 1);
+    }
+
+    private static async Task<List<string>> ColumnsAsync(NpgsqlConnection connection, string schema, string table)
+    {
+        await using NpgsqlCommand command = new(
+            """
+            select column_name
+            from information_schema.columns
+            where table_schema = @schema and table_name = @table
+            order by column_name
+            """,
+            connection);
+        command.Parameters.AddWithValue("schema", schema);
+        command.Parameters.AddWithValue("table", table);
+
+        List<string> columns = [];
+        await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            columns.Add(reader.GetString(0));
+        }
+
+        return columns;
+    }
+
+    private static async Task<bool> TableExistsAsync(NpgsqlConnection connection, string schema, string table)
+    {
+        await using NpgsqlCommand command = new(
+            """
+            select count(*)
+            from information_schema.tables
+            where table_schema = @schema and table_name = @table
+            """,
+            connection);
+        command.Parameters.AddWithValue("schema", schema);
+        command.Parameters.AddWithValue("table", table);
+
+        return Convert.ToInt64(await command.ExecuteScalarAsync()) == 1L;
+    }
+}

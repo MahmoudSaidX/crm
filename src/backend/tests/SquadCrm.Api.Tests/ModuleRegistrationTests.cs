@@ -26,4 +26,23 @@ public sealed class ModuleRegistrationTests
         Assert.Equal("ArchitectureFixture", document.RootElement.GetProperty("module").GetString());
         Assert.Equal("registered", document.RootElement.GetProperty("status").GetString());
     }
+
+    /// <summary>
+    /// RoleManagement adds no test-only module-info endpoint (unlike
+    /// ArchitectureFixture); its composition is instead proven by its real
+    /// routes being reachable through the host at all — requiring
+    /// authorization (401), never a 404, confirms <c>RoleManagementModule</c>
+    /// is present in the registered module set.
+    /// </summary>
+    [Fact]
+    public async Task RoleManagementModule_EndpointsAreComposedByTheHost()
+    {
+        using var factory = new SquadCrmApiFactory();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync(
+            new Uri("/api/v1/roles", UriKind.Relative));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 }
