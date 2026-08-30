@@ -5,6 +5,7 @@ using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Infrastructure.FileStorage;
 using SquadCrm.Modules.ArchitectureFixture;
 using SquadCrm.Modules.ArchitectureFixture.Contracts;
+using SquadCrm.Modules.RoleManagement;
 using SquadCrm.Modules.StaffIdentity;
 using SquadCrm.Modules.StaffIdentity.Bootstrap;
 
@@ -52,6 +53,8 @@ internal static class SquadCrmAssemblies
 
     public static Assembly StaffIdentityBootstrap { get; } = typeof(BootstrapProgram).Assembly;
 
+    public static Assembly RoleManagement { get; } = typeof(RoleManagementModule).Assembly;
+
     public static Assembly ApiTests { get; } = typeof(SquadCrm.Api.Tests.HealthEndpointTests).Assembly;
 
     public static Assembly UnitTests { get; } = typeof(SquadCrm.UnitTests.DomainEventTests).Assembly;
@@ -68,6 +71,7 @@ internal static class SquadCrmAssemblies
         ArchitectureFixtureContracts,
         StaffIdentity,
         StaffIdentityBootstrap,
+        RoleManagement,
         ApiTests,
         UnitTests,
         typeof(SquadCrmAssemblies).Assembly,

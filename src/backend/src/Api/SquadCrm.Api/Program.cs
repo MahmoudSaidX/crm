@@ -151,6 +151,7 @@ builder.Services.AddHealthChecks();
 IModule[] modules =
 [
     new SquadCrm.Modules.StaffIdentity.StaffIdentityModule(),
+    new SquadCrm.Modules.RoleManagement.RoleManagementModule(),
     new SquadCrm.Modules.ArchitectureFixture.ArchitectureFixtureModule(),
 ];
 

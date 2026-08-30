@@ -17,3 +17,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | automated-testing-architecture-tests | [`automated-testing-architecture-tests/00-overview.md`](automated-testing-architecture-tests/00-overview.md) | 11 |
 | ci-quality-gates-seed-reset-documentation | [`ci-quality-gates-seed-reset-documentation/00-overview.md`](ci-quality-gates-seed-reset-documentation/00-overview.md) | 12 |
 | user-authentication-session-management | [`user-authentication-session-management/00-overview.md`](user-authentication-session-management/00-overview.md) | 13 |
+| manage-roles | [`manage-roles/00-overview.md`](manage-roles/00-overview.md) | 14 |

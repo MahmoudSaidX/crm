@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\src\Modules\ArchitectureFixture\SquadCrm.Modules.ArchitectureFixture\SquadCrm.Modules.ArchitectureFixture.csproj" />
     <ProjectReference Include="..\..\src\Modules\ArchitectureFixture\SquadCrm.Modules.ArchitectureFixture.Contracts\SquadCrm.Modules.ArchitectureFixture.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\StaffIdentity\SquadCrm.Modules.StaffIdentity\SquadCrm.Modules.StaffIdentity.csproj" />
+    <ProjectReference Include="..\..\src\Modules\RoleManagement\SquadCrm.Modules.RoleManagement\SquadCrm.Modules.RoleManagement.csproj" />
     <ProjectReference Include="..\..\src\Modules\StaffIdentity\SquadCrm.Modules.StaffIdentity.Bootstrap\SquadCrm.Modules.StaffIdentity.Bootstrap.csproj" />
     <ProjectReference Include="..\SquadCrm.Api.Tests\SquadCrm.Api.Tests.csproj" />
     <ProjectReference Include="..\SquadCrm.UnitTests\SquadCrm.UnitTests.csproj" />

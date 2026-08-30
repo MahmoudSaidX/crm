@@ -17,5 +17,20 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./home/home').then((m) => m.Home),
   },
+  {
+    path: 'roles',
+    canActivate: [authGuard],
+    loadComponent: () => import('./roles/role-list').then((m) => m.RoleList),
+  },
+  {
+    path: 'roles/new',
+    canActivate: [authGuard],
+    loadComponent: () => import('./roles/role-form').then((m) => m.RoleForm),
+  },
+  {
+    path: 'roles/:id/edit',
+    canActivate: [authGuard],
+    loadComponent: () => import('./roles/role-form').then((m) => m.RoleForm),
+  },
   { path: '**', redirectTo: '' },
 ];

@@ -28,6 +28,7 @@
     <ProjectReference Include="../../Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture.csproj" />
     <ProjectReference Include="../../Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture.Contracts/SquadCrm.Modules.ArchitectureFixture.Contracts.csproj" />
     <ProjectReference Include="../../Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity/SquadCrm.Modules.StaffIdentity.csproj" />
+    <ProjectReference Include="../../Modules/RoleManagement/SquadCrm.Modules.RoleManagement/SquadCrm.Modules.RoleManagement.csproj" />
   </ItemGroup>
 
 </Project>
