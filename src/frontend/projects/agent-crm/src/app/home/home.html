@@ -1,17 +1,12 @@
 <main class="home">
-  <h1>Squad CRM — Agent</h1>
+  <h1>{{ localization.translate('agent.home.title') }}</h1>
   <p data-testid="surface">{{ config.appSurface }}</p>
-  <p data-testid="direction">{{ locale() }} / {{ direction() }}</p>
+  <p data-testid="direction">{{ localization.locale() }} / {{ localization.direction() }}</p>
 
-  <p-button
-    icon="pi pi-globe"
-    [label]="locale() === 'en' ? 'العربية' : 'English'"
-    data-testid="locale-toggle"
-    (onClick)="toggleLocale()"
-  />
+  <crm-agent-language-switcher />
   <p-button
     icon="pi pi-sign-out"
-    label="Sign out"
+    [label]="localization.translate('common.actions.signOut')"
     severity="secondary"
     data-testid="sign-out"
     (onClick)="signOut()"

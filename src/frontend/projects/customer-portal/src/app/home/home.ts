@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
-import { APP_CONFIG, LocaleService, SupportedLocale } from '@squad-crm/platform';
-import { ButtonModule } from 'primeng/button';
+import { APP_CONFIG, LocalizationService } from '@squad-crm/platform';
+import { PortalLanguageSwitcher } from '../i18n/portal-language-switcher';
 
 /**
  * Temporary integration smoke marker for CRM-104: it proves PrimeNG + PrimeIcons
@@ -9,19 +9,11 @@ import { ButtonModule } from 'primeng/button';
  */
 @Component({
   selector: 'portal-home',
-  imports: [ButtonModule],
+  imports: [PortalLanguageSwitcher],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
 export class Home {
-  private readonly localeService = inject(LocaleService);
-
   protected readonly config = inject(APP_CONFIG);
-  protected readonly locale = this.localeService.locale;
-  protected readonly direction = this.localeService.direction;
-
-  protected toggleLocale(): void {
-    const next: SupportedLocale = this.locale() === 'en' ? 'ar' : 'en';
-    this.localeService.setLocale(next);
-  }
+  protected readonly localization = inject(LocalizationService);
 }

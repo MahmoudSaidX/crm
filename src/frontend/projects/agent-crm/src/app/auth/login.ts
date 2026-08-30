@@ -6,6 +6,8 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { PasswordModule } from 'primeng/password';
+import { LocalizationService } from '@squad-crm/platform';
+import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
 import { AuthService } from './auth.service';
 
 @Component({
@@ -17,6 +19,7 @@ import { AuthService } from './auth.service';
     InputTextModule,
     MessageModule,
     PasswordModule,
+    AgentLanguageSwitcher,
   ],
   templateUrl: './login.html',
   styleUrl: './login.scss',
@@ -25,6 +28,7 @@ import { AuthService } from './auth.service';
 export class Login {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  protected readonly localization = inject(LocalizationService);
   readonly submitting = signal(false);
   readonly rejected = signal(false);
   readonly form = new FormGroup({

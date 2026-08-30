@@ -149,12 +149,25 @@ PrimeIcons is loaded globally through the `styles` array in `angular.json`.
 
 ## Localization and direction
 
-Foundation only — **full translation content is CRM-116.**
-
 `LocaleService` (`@squad-crm/platform`) owns the active locale and derives the
 document direction from it (`ar` → RTL, `en` → LTR), keeps `<html lang>` and
-`<html dir>` in sync, and persists the choice under `sc.locale`. An unsupported
-or stale persisted value falls back to the runtime `defaultLocale`.
+`<html dir>` in sync, and persists the browser/device choice under `sc.locale`.
+An unsupported or stale persisted value falls back to the runtime
+`defaultLocale`.
+
+`LocalizationService` is the shared runtime resource engine. Shared UI owns
+`COMMON_TRANSLATIONS`; apps and features own their namespaced resource objects
+and register them with `provideTranslations()` in the application config.
+Arabic keys fall back to English. A key missing from English too is returned as
+the stable key and reported once to the developer console, which keeps the UI
+predictable and makes incomplete resources testable. Use `formatDate()` and
+`formatNumber()` for locale-sensitive presentation.
+
+Backend errors are rendered by mapping stable error codes to translation keys;
+never depend on or display backend English detail text. Business content that
+requires both languages uses explicit independent `arabicValue` and
+`englishValue` fields and `isCompleteBilingualValue()`. User-entered content is
+not automatically translated.
 
 The locale is applied inside the same bootstrap initializer that loads the
 runtime configuration, so direction is correct before the first render — Angular

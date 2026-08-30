@@ -1,37 +1,37 @@
 <main class="role-form-page">
   <header>
-    <h1>{{ isEdit() ? 'Edit role' : 'New role' }}</h1>
+    <h1>{{ localization.translate(isEdit() ? 'roles.edit' : 'roles.new') }}</h1>
+    <crm-agent-language-switcher />
   </header>
 
-  @if (duplicateField() === 'name') {
-    <p-message severity="error">A role with this name already exists.</p-message>
-  }
-  @if (duplicateField() === 'code') {
-    <p-message severity="error">A role with this code already exists.</p-message>
+  @if (errorKey(); as key) {
+    <p-message severity="error">{{ localization.translate(key) }}</p-message>
   }
 
   <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-    <label for="name">Name</label>
+    <label for="name">{{ localization.translate('roles.fields.name') }}</label>
     <input pInputText id="name" type="text" formControlName="name" />
     @if (form.controls.name.touched && form.controls.name.invalid) {
-      <small class="field-error">Name is required (max 200 characters).</small>
+      <small class="field-error">{{ localization.translate('roles.validation.name') }}</small>
     }
 
-    <label for="code">Code</label>
+    <label for="code">{{ localization.translate('roles.fields.code') }}</label>
     <input pInputText id="code" type="text" formControlName="code" />
     @if (form.controls.code.touched && form.controls.code.invalid) {
-      <small class="field-error">Code is required (max 64 characters).</small>
+      <small class="field-error">{{ localization.translate('roles.validation.code') }}</small>
     }
 
-    <label for="description">Description</label>
+    <label for="description">{{ localization.translate('roles.fields.description') }}</label>
     <textarea pTextarea id="description" formControlName="description" rows="3"></textarea>
     @if (form.controls.description.touched && form.controls.description.invalid) {
-      <small class="field-error">Description must be at most 1000 characters.</small>
+      <small class="field-error">{{
+        localization.translate('roles.validation.description')
+      }}</small>
     }
 
     <p-button
       type="submit"
-      label="Save"
+      [label]="localization.translate('common.actions.save')"
       icon="pi pi-check"
       [loading]="submitting()"
       [disabled]="form.invalid"

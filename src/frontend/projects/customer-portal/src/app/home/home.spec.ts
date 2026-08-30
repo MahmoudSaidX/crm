@@ -5,10 +5,13 @@ import {
   LOCALE_STORAGE_KEY,
   LocaleService,
   provideAppConfig,
+  provideTranslations,
   validateAppConfig,
 } from '@squad-crm/platform';
 import { providePrimeNG } from 'primeng/config';
 import { Home } from './home';
+import { COMMON_TRANSLATIONS } from '@squad-crm/shared-ui';
+import { PORTAL_TRANSLATIONS } from '../i18n/portal-translations';
 
 describe('Customer Portal — Home smoke', () => {
   let fixture: ComponentFixture<Home>;
@@ -18,7 +21,13 @@ describe('Customer Portal — Home smoke', () => {
 
     await TestBed.configureTestingModule({
       imports: [Home],
-      providers: [provideAppConfig(), provideNoopAnimations(), providePrimeNG({})],
+      providers: [
+        provideAppConfig(),
+        provideNoopAnimations(),
+        providePrimeNG({}),
+        provideTranslations(COMMON_TRANSLATIONS),
+        provideTranslations(PORTAL_TRANSLATIONS),
+      ],
     }).compileComponents();
 
     TestBed.inject(AppConfigStore).set(
@@ -55,10 +64,11 @@ describe('Customer Portal — Home smoke', () => {
   });
 
   it('switches the document direction to rtl when the locale toggles to ar', () => {
-    fixture.nativeElement.querySelector('p-button button').click();
+    fixture.nativeElement.querySelector('[data-testid="locale-toggle"] button').click();
     fixture.detectChanges();
 
     expect(TestBed.inject(LocaleService).locale()).toBe('ar');
     expect(document.documentElement.getAttribute('dir')).toBe('rtl');
+    expect(fixture.nativeElement.querySelector('h1').textContent).toContain('بوابة العملاء');
   });
 });
