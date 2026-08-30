@@ -7,10 +7,13 @@ import {
   LOCALE_STORAGE_KEY,
   LocaleService,
   provideAppConfig,
+  provideTranslations,
   validateAppConfig,
 } from '@squad-crm/platform';
 import { providePrimeNG } from 'primeng/config';
 import { Home } from './home';
+import { COMMON_TRANSLATIONS } from '@squad-crm/shared-ui';
+import { AGENT_TRANSLATIONS } from '../i18n/agent-translations';
 
 describe('Agent CRM — Home smoke', () => {
   let fixture: ComponentFixture<Home>;
@@ -26,6 +29,8 @@ describe('Agent CRM — Home smoke', () => {
         provideRouter([]),
         provideNoopAnimations(),
         providePrimeNG({}),
+        provideTranslations(COMMON_TRANSLATIONS),
+        provideTranslations(AGENT_TRANSLATIONS),
       ],
     }).compileComponents();
 
@@ -63,10 +68,13 @@ describe('Agent CRM — Home smoke', () => {
   });
 
   it('switches the document direction to rtl when the locale toggles to ar', () => {
-    fixture.nativeElement.querySelector('p-button button').click();
+    fixture.nativeElement.querySelector('[data-testid="locale-toggle"] button').click();
     fixture.detectChanges();
 
     expect(TestBed.inject(LocaleService).locale()).toBe('ar');
     expect(document.documentElement.getAttribute('dir')).toBe('rtl');
+    expect(fixture.nativeElement.querySelector('h1').textContent).toContain(
+      'سكواد لإدارة علاقات العملاء',
+    );
   });
 });

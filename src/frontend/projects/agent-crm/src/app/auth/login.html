@@ -1,20 +1,21 @@
 <main class="login-page">
   <section class="login-card" aria-labelledby="login-title">
     <header>
+      <crm-agent-language-switcher />
       <span class="brand-mark" aria-hidden="true"><i class="pi pi-users"></i></span>
       <p class="eyebrow">Squad CRM</p>
-      <h1 id="login-title">Sign in to Agent CRM</h1>
-      <p class="supporting-copy">Use your staff account to continue.</p>
+      <h1 id="login-title">{{ localization.translate('agent.login.title') }}</h1>
+      <p class="supporting-copy">{{ localization.translate('agent.login.supportingCopy') }}</p>
     </header>
 
     @if (rejected()) {
-      <p-message severity="error"
-        >Email or password is incorrect, or the account is inactive.</p-message
-      >
+      <p-message severity="error">{{
+        localization.translate('agent.login.invalidCredentials')
+      }}</p-message>
     }
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <label for="email">Email</label>
+      <label for="email">{{ localization.translate('agent.login.email') }}</label>
       <input
         pInputText
         id="email"
@@ -24,10 +25,10 @@
         inputmode="email"
       />
       @if (form.controls.email.touched && form.controls.email.invalid) {
-        <small class="field-error">Enter a valid email address.</small>
+        <small class="field-error">{{ localization.translate('agent.validation.email') }}</small>
       }
 
-      <label for="password">Password</label>
+      <label for="password">{{ localization.translate('agent.login.password') }}</label>
       <p-password
         inputId="password"
         formControlName="password"
@@ -37,17 +38,17 @@
         [fluid]="true"
       />
       @if (form.controls.password.touched && form.controls.password.invalid) {
-        <small class="field-error">Password must contain at least 8 characters.</small>
+        <small class="field-error">{{ localization.translate('agent.validation.password') }}</small>
       }
 
       <div class="remember-row">
         <p-checkbox inputId="remember" formControlName="rememberSession" [binary]="true" />
-        <label for="remember">Keep me signed in</label>
+        <label for="remember">{{ localization.translate('agent.login.remember') }}</label>
       </div>
 
       <p-button
         type="submit"
-        label="Sign in"
+        [label]="localization.translate('agent.login.submit')"
         icon="pi pi-sign-in"
         [loading]="submitting()"
         [disabled]="form.invalid"

@@ -4,16 +4,19 @@ import { ButtonModule } from 'primeng/button';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { Role, RolesService } from './roles.service';
+import { LocalizationService } from '@squad-crm/platform';
+import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
 
 @Component({
   selector: 'crm-role-list',
-  imports: [RouterLink, ButtonModule, TableModule, TagModule],
+  imports: [RouterLink, ButtonModule, TableModule, TagModule, AgentLanguageSwitcher],
   templateUrl: './role-list.html',
   styleUrl: './role-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RoleList {
   private readonly rolesService = inject(RolesService);
+  protected readonly localization = inject(LocalizationService);
   readonly roles = signal<Role[]>([]);
   readonly totalRecords = signal(0);
   readonly loading = signal(false);

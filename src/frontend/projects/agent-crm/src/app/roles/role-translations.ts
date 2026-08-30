@@ -1,0 +1,34 @@
+import { TranslationResources } from '@squad-crm/platform';
+
+export const ROLE_TRANSLATIONS: TranslationResources = {
+  en: {
+    'roles.title': 'Roles',
+    'roles.new': 'New role',
+    'roles.edit': 'Edit role',
+    'roles.fields.name': 'Name',
+    'roles.fields.code': 'Code',
+    'roles.fields.description': 'Description',
+    'roles.fields.status': 'Status',
+    'roles.empty': 'No roles yet.',
+    'roles.validation.name': 'Name is required (max 200 characters).',
+    'roles.validation.code': 'Code is required (max 64 characters).',
+    'roles.validation.description': 'Description must be at most 1000 characters.',
+    'roles.errors.duplicateName': 'A role with this name already exists.',
+    'roles.errors.duplicateCode': 'A role with this code already exists.',
+  },
+  ar: {
+    'roles.title': 'الأدوار',
+    'roles.new': 'دور جديد',
+    'roles.edit': 'تعديل الدور',
+    'roles.fields.name': 'الاسم',
+    'roles.fields.code': 'الرمز',
+    'roles.fields.description': 'الوصف',
+    'roles.fields.status': 'الحالة',
+    'roles.empty': 'لا توجد أدوار بعد.',
+    'roles.validation.name': 'الاسم مطلوب (بحد أقصى 200 حرف).',
+    'roles.validation.code': 'الرمز مطلوب (بحد أقصى 64 حرفاً).',
+    'roles.validation.description': 'يجب ألا يتجاوز الوصف 1000 حرف.',
+    'roles.errors.duplicateName': 'يوجد دور بهذا الاسم بالفعل.',
+    'roles.errors.duplicateCode': 'يوجد دور بهذا الرمز بالفعل.',
+  },
+};

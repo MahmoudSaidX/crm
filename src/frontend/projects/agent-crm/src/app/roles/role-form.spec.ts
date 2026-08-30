@@ -3,6 +3,9 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { RoleForm } from './role-form';
 import { RolesService } from './roles.service';
+import { provideTranslations } from '@squad-crm/platform';
+import { COMMON_TRANSLATIONS } from '@squad-crm/shared-ui';
+import { ROLE_TRANSLATIONS } from './role-translations';
 
 describe('RoleForm', () => {
   let rolesService: jasmine.SpyObj<RolesService>;
@@ -14,6 +17,8 @@ describe('RoleForm', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        provideTranslations(COMMON_TRANSLATIONS),
+        provideTranslations(ROLE_TRANSLATIONS),
         { provide: RolesService, useValue: rolesService },
         { provide: Router, useValue: router },
         {
@@ -50,7 +55,7 @@ describe('RoleForm', () => {
 
     await fixture.componentInstance.submit();
 
-    expect(fixture.componentInstance.duplicateField()).toBe('name');
+    expect(fixture.componentInstance.errorKey()).toBe('roles.errors.duplicateName');
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
@@ -69,7 +74,7 @@ describe('RoleForm', () => {
 
     await fixture.componentInstance.submit();
 
-    expect(fixture.componentInstance.duplicateField()).toBe('code');
+    expect(fixture.componentInstance.errorKey()).toBe('roles.errors.duplicateCode');
   });
 
   it('navigates to the list on successful submit', async () => {

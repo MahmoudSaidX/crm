@@ -1,7 +1,18 @@
 import { provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { RoleList } from './role-list';
 import { RolesService } from './roles.service';
+import {
+  AppConfigStore,
+  LocaleService,
+  provideAppConfig,
+  provideTranslations,
+  validateAppConfig,
+} from '@squad-crm/platform';
+import { COMMON_TRANSLATIONS } from '@squad-crm/shared-ui';
+import { ROLE_TRANSLATIONS } from './role-translations';
+import { Paginator } from 'primeng/paginator';
 
 describe('RoleList', () => {
   const roleA = {
@@ -18,14 +29,36 @@ describe('RoleList', () => {
   let list: jasmine.SpyObj<RolesService>;
 
   beforeEach(() => {
+    localStorage.removeItem('sc.locale');
     list = jasmine.createSpyObj<RolesService>('RolesService', ['list', 'activate', 'deactivate']);
     list.list.and.resolveTo({ items: [roleA, roleB], page: 1, pageSize: 20, totalCount: 2 });
     list.activate.and.resolveTo({ ...roleB, isActive: true });
     list.deactivate.and.resolveTo({ ...roleA, isActive: false });
 
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), { provide: RolesService, useValue: list }],
+      providers: [
+        provideRouter([]),
+        provideAppConfig(),
+        provideTranslations(COMMON_TRANSLATIONS),
+        provideTranslations(ROLE_TRANSLATIONS),
+        { provide: RolesService, useValue: list },
+      ],
     });
+    TestBed.inject(AppConfigStore).set(
+      validateAppConfig({
+        apiBaseUrl: 'http://localhost:5080',
+        defaultLocale: 'en',
+        supportedLocales: ['en', 'ar'],
+        appSurface: 'agent-crm',
+      }),
+    );
+    TestBed.inject(LocaleService).initialize();
+  });
+
+  afterEach(() => {
+    localStorage.removeItem('sc.locale');
+    document.documentElement.setAttribute('lang', 'en');
+    document.documentElement.setAttribute('dir', 'ltr');
   });
 
   it('renders rows from a mocked RolesService', async () => {
@@ -55,5 +88,18 @@ describe('RoleList', () => {
 
     expect(list.deactivate).toHaveBeenCalledWith('role-a');
     expect(list.list).toHaveBeenCalledTimes(2);
+  });
+
+  it('localizes feature chrome without translating role values', async () => {
+    TestBed.inject(LocaleService).setLocale('ar');
+    const fixture = TestBed.createComponent(RoleList);
+    await fixture.componentInstance.load();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('الأدوار');
+    expect(fixture.nativeElement.textContent).toContain('Sales Manager');
+    const paginator = fixture.debugElement.query(By.directive(Paginator))
+      .componentInstance as Paginator;
+    expect(paginator.locale).toBe('ar');
   });
 });

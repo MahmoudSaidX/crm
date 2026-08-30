@@ -18,3 +18,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | ci-quality-gates-seed-reset-documentation | [`ci-quality-gates-seed-reset-documentation/00-overview.md`](ci-quality-gates-seed-reset-documentation/00-overview.md) | 12 |
 | user-authentication-session-management | [`user-authentication-session-management/00-overview.md`](user-authentication-session-management/00-overview.md) | 13 |
 | manage-roles | [`manage-roles/00-overview.md`](manage-roles/00-overview.md) | 14 |
+| arabic-english-localization | [`arabic-english-localization/00-overview.md`](arabic-english-localization/00-overview.md) | 15 |

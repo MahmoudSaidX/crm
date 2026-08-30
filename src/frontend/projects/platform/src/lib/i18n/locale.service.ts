@@ -9,7 +9,7 @@ export const LOCALE_STORAGE_KEY = 'sc.locale';
 /**
  * Owns the active locale and the document direction derived from it.
  *
- * Foundation only: this ships no translation dictionaries. CRM-116 owns content.
+ * Localization resources react to this service; direction remains document-global.
  */
 @Injectable({ providedIn: 'root' })
 export class LocaleService {

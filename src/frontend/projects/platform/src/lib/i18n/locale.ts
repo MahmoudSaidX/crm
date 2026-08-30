@@ -6,7 +6,7 @@
  * `LocaleService` is their only consumer today (see `src/frontend/README.md`).
  */
 
-/** Locales the Squad CRM foundation supports. Content itself is CRM-116. */
+/** Locales currently supported by Squad CRM UI resources. */
 export const SUPPORTED_LOCALES = ['en', 'ar'] as const;
 
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
