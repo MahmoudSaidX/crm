@@ -3,6 +3,9 @@ import { TranslationResources } from '@squad-crm/platform';
 export const AGENT_TRANSLATIONS: TranslationResources = {
   en: {
     'agent.home.title': 'Squad CRM — Agent',
+    'agent.shell.title': 'Squad CRM',
+    'agent.navigation.home': 'Home',
+    'agent.navigation.roles': 'Roles',
     'agent.login.title': 'Sign in to Agent CRM',
     'agent.login.supportingCopy': 'Use your staff account to continue.',
     'agent.login.email': 'Email',
@@ -15,6 +18,9 @@ export const AGENT_TRANSLATIONS: TranslationResources = {
   },
   ar: {
     'agent.home.title': 'سكواد لإدارة علاقات العملاء — الموظفون',
+    'agent.shell.title': 'سكواد لإدارة علاقات العملاء',
+    'agent.navigation.home': 'الرئيسية',
+    'agent.navigation.roles': 'الأدوار',
     'agent.login.title': 'تسجيل الدخول إلى نظام الموظفين',
     'agent.login.supportingCopy': 'استخدم حساب الموظف للمتابعة.',
     'agent.login.email': 'البريد الإلكتروني',

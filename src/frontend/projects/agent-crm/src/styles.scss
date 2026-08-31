@@ -13,6 +13,10 @@ body {
     sans-serif;
 }
 
+body {
+  overflow-x: hidden;
+}
+
 app-root {
   display: block;
   min-height: 100%;

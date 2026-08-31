@@ -1,0 +1,55 @@
+<div class="shell">
+  <header class="topbar">
+    <p-button
+      class="menu-trigger"
+      icon="pi pi-bars"
+      [rounded]="true"
+      [text]="true"
+      [ariaLabel]="menuLabel()"
+      data-testid="mobile-menu-trigger"
+      (onClick)="mobileNavigationVisible.set(true)"
+    />
+    <a class="brand" routerLink="/">{{ title() }}</a>
+    <div class="topbar-actions"><ng-content select="[shell-actions]" /></div>
+  </header>
+
+  <div class="shell-body">
+    <nav class="desktop-navigation" [attr.aria-label]="navigationLabel()">
+      @for (item of navigationItems(); track item.routerLink) {
+        <a
+          [routerLink]="item.routerLink"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+        >
+          <i [class]="item.icon" aria-hidden="true"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <main class="shell-content" tabindex="-1"><router-outlet /></main>
+  </div>
+</div>
+
+<p-drawer
+  [visible]="mobileNavigationVisible()"
+  (visibleChange)="mobileNavigationVisible.set($event)"
+  [header]="title()"
+  position="start"
+  [closeButtonProps]="{ ariaLabel: closeMenuLabel() }"
+  styleClass="sc-mobile-navigation"
+>
+  <nav class="mobile-navigation" [attr.aria-label]="navigationLabel()">
+    @for (item of navigationItems(); track item.routerLink) {
+      <a
+        [routerLink]="item.routerLink"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+        (click)="closeMobileNavigation()"
+      >
+        <i [class]="item.icon" aria-hidden="true"></i>
+        <span>{{ item.label }}</span>
+      </a>
+    }
+  </nav>
+</p-drawer>

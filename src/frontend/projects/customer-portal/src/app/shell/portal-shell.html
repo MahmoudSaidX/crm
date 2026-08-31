@@ -1,0 +1,9 @@
+<sc-responsive-shell
+  [title]="localization.translate('portal.shell.title')"
+  [menuLabel]="localization.translate('common.navigation.openMenu')"
+  [closeMenuLabel]="localization.translate('common.navigation.closeMenu')"
+  [navigationLabel]="localization.translate('common.navigation.primary')"
+  [navigationItems]="navigationItems()"
+>
+  <portal-language-switcher shell-actions />
+</sc-responsive-shell>

@@ -1,0 +1,119 @@
+:host {
+  --sc-shell-breakpoint: 64rem;
+  display: block;
+  min-block-size: 100dvh;
+}
+
+.shell {
+  min-block-size: 100dvh;
+  background: var(--p-content-background);
+  color: var(--p-text-color);
+}
+
+.topbar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 10;
+  display: flex;
+  min-block-size: 4rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding-inline: clamp(0.75rem, 3vw, 1.5rem);
+  border-block-end: 1px solid var(--p-content-border-color);
+  background: var(--p-content-background);
+}
+
+.brand {
+  color: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.topbar-actions {
+  display: flex;
+  min-inline-size: 0;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline-start: auto;
+}
+
+.shell-body {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  min-block-size: calc(100dvh - 4rem);
+}
+
+.desktop-navigation,
+.mobile-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.desktop-navigation {
+  padding: 1rem;
+  border-inline-end: 1px solid var(--p-content-border-color);
+  background: var(--p-content-background);
+}
+
+.desktop-navigation a,
+.mobile-navigation a {
+  display: flex;
+  min-block-size: 2.75rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--p-border-radius-md);
+  color: inherit;
+  text-decoration: none;
+}
+
+.desktop-navigation a:hover,
+.desktop-navigation a.active,
+.mobile-navigation a:hover,
+.mobile-navigation a.active {
+  background: var(--p-primary-50);
+  color: var(--p-primary-700);
+}
+
+.desktop-navigation a:focus-visible,
+.mobile-navigation a:focus-visible,
+.brand:focus-visible {
+  outline: 2px solid var(--p-primary-color);
+  outline-offset: 2px;
+}
+
+.shell-content {
+  min-inline-size: 0;
+}
+
+.menu-trigger {
+  display: none;
+}
+
+@media (max-width: 63.999rem) {
+  .shell-body {
+    display: block;
+  }
+
+  .desktop-navigation {
+    display: none;
+  }
+
+  .menu-trigger {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 30rem) {
+  .topbar {
+    flex-wrap: wrap;
+    padding-block: 0.5rem;
+  }
+
+  .topbar-actions {
+    inline-size: 100%;
+    justify-content: flex-end;
+  }
+}

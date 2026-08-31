@@ -13,6 +13,7 @@
   justify-content: space-between;
   gap: 1rem;
   margin-block-end: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .roles-header h1 {
@@ -22,4 +23,11 @@
 .row-actions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 40rem) {
+  .roles-header h1 {
+    inline-size: 100%;
+  }
 }
