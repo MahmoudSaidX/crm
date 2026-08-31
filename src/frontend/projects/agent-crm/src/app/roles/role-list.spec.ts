@@ -13,6 +13,7 @@ import {
 import { COMMON_TRANSLATIONS } from '@squad-crm/shared-ui';
 import { ROLE_TRANSLATIONS } from './role-translations';
 import { Paginator } from 'primeng/paginator';
+import { AuthorizationState } from '../auth/authorization.state';
 
 describe('RoleList', () => {
   const roleA = {
@@ -101,5 +102,16 @@ describe('RoleList', () => {
     const paginator = fixture.debugElement.query(By.directive(Paginator))
       .componentInstance as Paginator;
     expect(paginator.locale).toBe('ar');
+  });
+
+  it('hides management actions until roles.manage is granted', async () => {
+    const fixture = TestBed.createComponent(RoleList);
+    await fixture.componentInstance.load();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Permissions');
+
+    TestBed.inject(AuthorizationState).set(['roles.view', 'roles.manage']);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Permissions');
   });
 });

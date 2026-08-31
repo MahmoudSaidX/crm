@@ -291,6 +291,24 @@ Every `dotnet ef` command needs those `POSTGRES_*` values in the process
 environment: the application never reads `env/backend.env` itself. Without
 them the command fails fast naming the missing keys and printing no value.
 
+### Bootstrap the first role administrator
+
+This is privileged operator tooling, not a user-management workflow. First create an
+active staff subject and an active global role through the normal CRM-110/CRM-112
+paths. Then, with the `POSTGRES_*` environment loaded, explicitly assign that subject
+to the role and grant the minimum `roles.view` and `roles.manage` capabilities:
+
+```bash
+dotnet run \
+  --project src/backend/src/Tools/SquadCrm.RoleManagement.Bootstrap \
+  -- --subject-email agent@example.test --role-code ADMINISTRATOR
+```
+
+The command is safe to repeat. It rejects missing/inactive subjects or roles, accepts
+no credential, creates no default administrator, and is never run by API startup,
+seed, migration, or reset scripts. Treat access to this command and its database
+configuration as privileged production operator access.
+
 The full backend test run **requires** the database to be up --- the
 persistence suite creates and removes an isolated `squadcrm_tests_*` database
 and fails, rather than skipping, without PostgreSQL. It never resets the

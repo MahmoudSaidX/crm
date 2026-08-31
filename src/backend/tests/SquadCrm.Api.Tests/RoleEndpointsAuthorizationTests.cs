@@ -4,9 +4,8 @@ using System.Net.Http.Json;
 namespace SquadCrm.Api.Tests;
 
 /// <summary>
-/// Every <c>/api/v1/roles*</c> route uses bare <c>RequireAuthorization()</c>
-/// (no permission policy exists yet in this repo) — mirrors
-/// <see cref="AuthenticationBoundaryTests.ProtectedEndpoint_RejectsAnonymousRequest"/>.
+/// Role routes require explicit view/manage permission policies while preserving
+/// the authentication boundary's 401 response for anonymous callers.
 /// </summary>
 public sealed class RoleEndpointsAuthorizationTests
 {
@@ -84,4 +83,18 @@ public sealed class RoleEndpointsAuthorizationTests
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+
+    [Theory]
+    [InlineData("/api/v1/permissions")]
+    [InlineData("/api/v1/authorization/me")]
+    public async Task PermissionEndpoints_RejectAnonymousRequest(string path)
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync(path, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
 }

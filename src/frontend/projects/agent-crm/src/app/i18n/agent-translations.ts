@@ -15,6 +15,9 @@ export const AGENT_TRANSLATIONS: TranslationResources = {
     'agent.login.invalidCredentials': 'Email or password is incorrect, or the account is inactive.',
     'agent.validation.email': 'Enter a valid email address.',
     'agent.validation.password': 'Password must contain at least 8 characters.',
+    'authorization.forbidden.title': 'Access denied',
+    'authorization.forbidden.message': 'You do not have permission to perform this action.',
+    'authorization.forbidden.home': 'Return home',
   },
   ar: {
     'agent.home.title': 'سكواد لإدارة علاقات العملاء — الموظفون',
@@ -31,5 +34,8 @@ export const AGENT_TRANSLATIONS: TranslationResources = {
       'البريد الإلكتروني أو كلمة المرور غير صحيحة، أو الحساب غير نشط.',
     'agent.validation.email': 'أدخل بريداً إلكترونياً صالحاً.',
     'agent.validation.password': 'يجب ألا تقل كلمة المرور عن 8 أحرف.',
+    'authorization.forbidden.title': 'تم رفض الوصول',
+    'authorization.forbidden.message': 'ليست لديك صلاحية لتنفيذ هذا الإجراء.',
+    'authorization.forbidden.home': 'العودة إلى الرئيسية',
   },
 };

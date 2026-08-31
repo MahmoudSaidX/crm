@@ -11,6 +11,6 @@ internal sealed class HttpCurrentUserAccessor(IHttpContextAccessor httpContextAc
     public bool IsAuthenticated => Principal?.Identity?.IsAuthenticated == true;
 
     public string? Handle => IsAuthenticated
-        ? Principal?.FindFirstValue(ClaimTypes.NameIdentifier)
+        ? Principal?.FindFirst("sub")?.Value
         : null;
 }

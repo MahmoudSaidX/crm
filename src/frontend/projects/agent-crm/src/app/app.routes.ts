@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './auth/auth.guard';
+import { requirePermission } from './auth/permission.guard';
 
 export const routes: Routes = [
   {
@@ -18,15 +19,27 @@ export const routes: Routes = [
       },
       {
         path: 'roles',
+        canActivate: [requirePermission('roles.view')],
         loadComponent: () => import('./roles/role-list').then((m) => m.RoleList),
       },
       {
         path: 'roles/new',
+        canActivate: [requirePermission('roles.manage')],
         loadComponent: () => import('./roles/role-form').then((m) => m.RoleForm),
       },
       {
         path: 'roles/:id/edit',
+        canActivate: [requirePermission('roles.manage')],
         loadComponent: () => import('./roles/role-form').then((m) => m.RoleForm),
+      },
+      {
+        path: 'roles/:id/permissions',
+        canActivate: [requirePermission('roles.manage')],
+        loadComponent: () => import('./roles/role-permissions').then((m) => m.RolePermissions),
+      },
+      {
+        path: 'forbidden',
+        loadComponent: () => import('./auth/forbidden').then((m) => m.Forbidden),
       },
     ],
   },

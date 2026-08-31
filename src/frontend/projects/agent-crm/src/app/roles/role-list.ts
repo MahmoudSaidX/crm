@@ -6,6 +6,7 @@ import { TagModule } from 'primeng/tag';
 import { Role, RolesService } from './roles.service';
 import { LocalizationService } from '@squad-crm/platform';
 import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { AuthorizationState } from '../auth/authorization.state';
 
 @Component({
   selector: 'crm-role-list',
@@ -17,6 +18,7 @@ import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
 export class RoleList {
   private readonly rolesService = inject(RolesService);
   protected readonly localization = inject(LocalizationService);
+  protected readonly authorization = inject(AuthorizationState);
   readonly roles = signal<Role[]>([]);
   readonly totalRecords = signal(0);
   readonly loading = signal(false);

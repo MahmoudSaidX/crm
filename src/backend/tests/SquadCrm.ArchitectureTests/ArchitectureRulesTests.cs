@@ -94,6 +94,15 @@ public sealed class ArchitectureRulesTests
 
         Assert.DoesNotContain(references, name =>
             SquadCrmAssemblies.IsModuleImplementation(name) || name == SquadCrmAssemblies.ApiName);
+
+        AssertContractBoundary(SquadCrmAssemblies.StaffIdentityContracts);
+    }
+
+    private static void AssertContractBoundary(Assembly assembly)
+    {
+        IReadOnlyList<string> references = SquadCrmAssemblies.ReferencedAssemblyNames(assembly);
+        Assert.DoesNotContain(references, name =>
+            SquadCrmAssemblies.IsModuleImplementation(name) || name == SquadCrmAssemblies.ApiName);
     }
 
     [Fact]

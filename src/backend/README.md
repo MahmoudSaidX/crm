@@ -33,6 +33,7 @@ Run from `src/backend/`:
 | `dotnet build` | Build the solution |
 | `dotnet run --project src/Api/SquadCrm.Api` | Run the API host |
 | `dotnet run --project src/Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity.Bootstrap -- <staff-email>` | Explicitly create or reset one local staff account; Development only, with a masked password prompt |
+| `dotnet run --project src/Tools/SquadCrm.RoleManagement.Bootstrap -- --subject-email <email> --role-code <code>` | Explicit, idempotent privileged assignment of an existing active staff subject to an existing active role with the minimum role-administration permissions |
 | `dotnet test` | Run unit, architecture, API and persistence tests. The persistence suite **needs** `docker compose up -d` and the env values loaded — it fails, it does not skip |
 | `dotnet test tests/SquadCrm.UnitTests` | Deterministic backend unit tests. **No database needed** |
 | `dotnet test tests/SquadCrm.ArchitectureTests` | Static architecture rules. **No database needed** |

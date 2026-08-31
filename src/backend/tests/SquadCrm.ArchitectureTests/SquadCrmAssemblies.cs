@@ -8,6 +8,8 @@ using SquadCrm.Modules.ArchitectureFixture.Contracts;
 using SquadCrm.Modules.RoleManagement;
 using SquadCrm.Modules.StaffIdentity;
 using SquadCrm.Modules.StaffIdentity.Bootstrap;
+using SquadCrm.Modules.StaffIdentity.Contracts;
+using RoleAuthorizationBootstrap = SquadCrm.Tools.RoleManagementBootstrap.BootstrapProgram;
 
 namespace SquadCrm.ArchitectureTests;
 
@@ -51,9 +53,13 @@ internal static class SquadCrmAssemblies
 
     public static Assembly StaffIdentity { get; } = typeof(StaffIdentityModule).Assembly;
 
+    public static Assembly StaffIdentityContracts { get; } = typeof(StaffSubjectReference).Assembly;
+
     public static Assembly StaffIdentityBootstrap { get; } = typeof(BootstrapProgram).Assembly;
 
     public static Assembly RoleManagement { get; } = typeof(RoleManagementModule).Assembly;
+
+    public static Assembly RoleManagementBootstrap { get; } = typeof(RoleAuthorizationBootstrap).Assembly;
 
     public static Assembly ApiTests { get; } = typeof(SquadCrm.Api.Tests.HealthEndpointTests).Assembly;
 
@@ -70,8 +76,10 @@ internal static class SquadCrmAssemblies
         ArchitectureFixture,
         ArchitectureFixtureContracts,
         StaffIdentity,
+        StaffIdentityContracts,
         StaffIdentityBootstrap,
         RoleManagement,
+        RoleManagementBootstrap,
         ApiTests,
         UnitTests,
         typeof(SquadCrmAssemblies).Assembly,

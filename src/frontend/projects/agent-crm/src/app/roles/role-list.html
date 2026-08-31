@@ -2,11 +2,13 @@
   <header class="roles-header">
     <h1>{{ localization.translate('roles.title') }}</h1>
     <crm-agent-language-switcher />
-    <p-button
-      [label]="localization.translate('roles.new')"
-      icon="pi pi-plus"
-      routerLink="/roles/new"
-    />
+    @if (authorization.has('roles.manage')) {
+      <p-button
+        [label]="localization.translate('roles.new')"
+        icon="pi pi-plus"
+        routerLink="/roles/new"
+      />
+    }
   </header>
 
   <p-table
@@ -46,24 +48,33 @@
           />
         </td>
         <td class="row-actions">
-          <p-button
-            [label]="localization.translate('common.actions.edit')"
-            icon="pi pi-pencil"
-            severity="secondary"
-            size="small"
-            [routerLink]="['/roles', role.id, 'edit']"
-          />
-          <p-button
-            [label]="
-              localization.translate(
-                role.isActive ? 'common.actions.deactivate' : 'common.actions.activate'
-              )
-            "
-            [icon]="role.isActive ? 'pi pi-ban' : 'pi pi-check'"
-            [severity]="role.isActive ? 'danger' : 'success'"
-            size="small"
-            (onClick)="toggleActive(role)"
-          />
+          @if (authorization.has('roles.manage')) {
+            <p-button
+              [label]="localization.translate('roles.permissions.action')"
+              icon="pi pi-lock"
+              severity="secondary"
+              size="small"
+              [routerLink]="['/roles', role.id, 'permissions']"
+            />
+            <p-button
+              [label]="localization.translate('common.actions.edit')"
+              icon="pi pi-pencil"
+              severity="secondary"
+              size="small"
+              [routerLink]="['/roles', role.id, 'edit']"
+            />
+            <p-button
+              [label]="
+                localization.translate(
+                  role.isActive ? 'common.actions.deactivate' : 'common.actions.activate'
+                )
+              "
+              [icon]="role.isActive ? 'pi pi-ban' : 'pi pi-check'"
+              [severity]="role.isActive ? 'danger' : 'success'"
+              size="small"
+              (onClick)="toggleActive(role)"
+            />
+          }
         </td>
       </tr>
     </ng-template>

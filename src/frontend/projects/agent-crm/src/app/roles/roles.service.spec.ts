@@ -106,4 +106,19 @@ describe('RolesService', () => {
     });
     await completion;
   });
+
+  it('loads and replaces a role permission assignment', async () => {
+    const load = service.permissions('role-1');
+    const getRequest = http.expectOne('/api/v1/roles/role-1/permissions');
+    expect(getRequest.request.method).toBe('GET');
+    getRequest.flush([]);
+    await load;
+
+    const replace = service.replacePermissions('role-1', ['roles.view']);
+    const putRequest = http.expectOne('/api/v1/roles/role-1/permissions');
+    expect(putRequest.request.method).toBe('PUT');
+    expect(putRequest.request.body).toEqual({ permissionCodes: ['roles.view'] });
+    putRequest.flush(null);
+    await replace;
+  });
 });

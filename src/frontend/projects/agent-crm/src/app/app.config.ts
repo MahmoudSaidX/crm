@@ -16,6 +16,7 @@ import {
 
 import { routes } from './app.routes';
 import { authInterceptor } from './auth/auth.interceptor';
+import { forbiddenInterceptor } from './auth/forbidden.interceptor';
 import { AGENT_TRANSLATIONS } from './i18n/agent-translations';
 import { ROLE_TRANSLATIONS } from './roles/role-translations';
 
@@ -25,7 +26,10 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
     // Runtime configuration + HTTP + locale/direction foundation.
-    providePlatform({ appSurface: 'agent-crm', httpInterceptors: [authInterceptor] }),
+    providePlatform({
+      appSurface: 'agent-crm',
+      httpInterceptors: [authInterceptor, forbiddenInterceptor],
+    }),
     provideTranslations(COMMON_TRANSLATIONS),
     provideTranslations(AGENT_TRANSLATIONS),
     provideTranslations(ROLE_TRANSLATIONS),

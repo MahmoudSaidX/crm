@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>SquadCrm.RoleManagement.Bootstrap</AssemblyName>
+    <RootNamespace>SquadCrm.Tools.RoleManagementBootstrap</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../Modules/RoleManagement/SquadCrm.Modules.RoleManagement/SquadCrm.Modules.RoleManagement.csproj" />
+    <ProjectReference Include="../../Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity/SquadCrm.Modules.StaffIdentity.csproj" />
+  </ItemGroup>
+</Project>

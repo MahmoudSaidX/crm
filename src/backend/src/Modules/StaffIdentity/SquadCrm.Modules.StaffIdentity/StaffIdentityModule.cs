@@ -17,6 +17,7 @@ using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.BuildingBlocks.Validation;
 using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Modules.StaffIdentity.Persistence;
+using SquadCrm.Modules.StaffIdentity.Contracts;
 
 namespace SquadCrm.Modules.StaffIdentity;
 
@@ -45,6 +46,7 @@ public sealed class StaffIdentityModule : IModule
         services.AddScoped<AuthenticationService>();
         services.AddScoped<IPasswordHasher<StaffUser>, PasswordHasher<StaffUser>>();
         services.AddScoped<ICurrentUserAccessor, HttpCurrentUserAccessor>();
+        services.AddScoped<IStaffSubjectReferenceReader, StaffSubjectReferenceReader>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>

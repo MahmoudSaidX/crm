@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,16 @@ public sealed class RoleManagementModule : IModule
                     RoleManagementSchema.MigrationsHistoryTable,
                     RoleManagementSchema.Name)));
         services.AddScoped<RoleService>();
+        services.AddScoped<PermissionService>();
+        services.AddScoped<AuthorizationBootstrapService>();
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy(PermissionPolicies.RolesView, policy =>
+                policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.RolesView)));
+            options.AddPolicy(PermissionPolicies.RolesManage, policy =>
+                policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.RolesManage)));
+        });
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule
         // (RegisterServices order in Program.cs runs StaffIdentity first); DI
@@ -33,14 +44,85 @@ public sealed class RoleManagementModule : IModule
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
-        RouteGroupBuilder roles = endpoints.MapGroup("/api/v1/roles").WithTags("Roles").RequireAuthorization();
+        RouteGroupBuilder roles = endpoints.MapGroup("/api/v1/roles").WithTags("Roles");
 
-        roles.MapPost("", CreateAsync).ValidatesDataAnnotations<CreateRoleRequest>();
-        roles.MapGet("", ListAsync);
-        roles.MapGet("/{id:guid}", GetAsync);
-        roles.MapPut("/{id:guid}", UpdateAsync).ValidatesDataAnnotations<UpdateRoleRequest>();
-        roles.MapPost("/{id:guid}/activate", ActivateAsync);
-        roles.MapPost("/{id:guid}/deactivate", DeactivateAsync);
+        roles.MapPost("", CreateAsync).ValidatesDataAnnotations<CreateRoleRequest>()
+            .RequireAuthorization(PermissionPolicies.RolesManage);
+        roles.MapGet("", ListAsync).RequireAuthorization(PermissionPolicies.RolesView);
+        roles.MapGet("/{id:guid}", GetAsync).RequireAuthorization(PermissionPolicies.RolesView);
+        roles.MapPut("/{id:guid}", UpdateAsync).ValidatesDataAnnotations<UpdateRoleRequest>()
+            .RequireAuthorization(PermissionPolicies.RolesManage);
+        roles.MapPost("/{id:guid}/activate", ActivateAsync).RequireAuthorization(PermissionPolicies.RolesManage);
+        roles.MapPost("/{id:guid}/deactivate", DeactivateAsync).RequireAuthorization(PermissionPolicies.RolesManage);
+        roles.MapGet("/{id:guid}/permissions", GetRolePermissionsAsync)
+            .RequireAuthorization(PermissionPolicies.RolesView);
+        roles.MapPut("/{id:guid}/permissions", ReplaceRolePermissionsAsync)
+            .ValidatesDataAnnotations<ReplaceRolePermissionsRequest>()
+            .RequireAuthorization(PermissionPolicies.RolesManage);
+
+        endpoints.MapGet("/api/v1/permissions", GetPermissionCatalogAsync)
+            .WithTags("Permissions")
+            .RequireAuthorization(PermissionPolicies.RolesView);
+        endpoints.MapGet("/api/v1/authorization/me", GetCurrentPermissionsAsync)
+            .WithTags("Authorization")
+            .RequireAuthorization();
+    }
+
+    private static async Task<IResult> GetPermissionCatalogAsync(
+        PermissionService permissionService,
+        CancellationToken cancellationToken) =>
+        Results.Ok(await permissionService.GetCatalogAsync(roleId: null, cancellationToken));
+
+    private static async Task<IResult> GetRolePermissionsAsync(
+        Guid id,
+        PermissionService permissionService,
+        CancellationToken cancellationToken)
+    {
+        if (!await permissionService.RoleExistsAsync(id, cancellationToken))
+        {
+            return NotFoundProblem();
+        }
+
+        return Results.Ok(await permissionService.GetCatalogAsync(id, cancellationToken));
+    }
+
+    private static async Task<IResult> ReplaceRolePermissionsAsync(
+        Guid id,
+        ReplaceRolePermissionsRequest request,
+        PermissionService permissionService,
+        CancellationToken cancellationToken)
+    {
+        ReplacePermissionsResult result = await permissionService.ReplaceAsync(
+            id, request.PermissionCodes, cancellationToken);
+        return result.Failure switch
+        {
+            ReplacePermissionsFailure.None => Results.NoContent(),
+            ReplacePermissionsFailure.RoleNotFound => NotFoundProblem(),
+            ReplacePermissionsFailure.RoleInactive => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Permissions cannot be changed for an inactive role.",
+                extensions: new Dictionary<string, object?> { ["code"] = "permissions.role_inactive" }),
+            _ => Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["permissionCodes"] = ["Permission codes must be unique, non-empty catalog entries."],
+            }),
+        };
+    }
+
+    private static async Task<IResult> GetCurrentPermissionsAsync(
+        System.Security.Claims.ClaimsPrincipal principal,
+        PermissionService permissionService,
+        CancellationToken cancellationToken)
+    {
+        string? subject = principal.FindFirst("sub")?.Value;
+        if (!Guid.TryParse(subject, out Guid staffSubjectId))
+        {
+            return Results.Forbid();
+        }
+
+        IReadOnlyList<string> permissionCodes = await permissionService.GetCurrentPermissionsAsync(
+            staffSubjectId, cancellationToken);
+        return Results.Ok(new CurrentPermissionsResponse(permissionCodes));
     }
 
     private static async Task<IResult> CreateAsync(

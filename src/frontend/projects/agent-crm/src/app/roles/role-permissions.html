@@ -1,0 +1,42 @@
+<main class="permission-page">
+  <header>
+    <h1>{{ localization.translate('roles.permissions.title') }}</h1>
+    @if (role(); as currentRole) {
+      <p>{{ currentRole.name }} · {{ currentRole.code }}</p>
+    }
+  </header>
+
+  @if (error()) {
+    <p-message severity="error" [text]="localization.translate('roles.permissions.error')" />
+  }
+
+  @for (module of modules(); track module) {
+    <section class="permission-group">
+      <h2>{{ module }}</h2>
+      @for (permission of permissionsFor(module); track permission.code) {
+        <label class="permission-item" [for]="permission.code">
+          <p-checkbox
+            [inputId]="permission.code"
+            [binary]="true"
+            [ngModel]="selected().has(permission.code)"
+            (ngModelChange)="toggle(permission.code, $event)"
+          />
+          <span>
+            <strong>{{ permission.name }}</strong>
+            <small>{{ permission.description }}</small>
+            <code>{{ permission.code }}</code>
+          </span>
+        </label>
+      }
+    </section>
+  }
+
+  <div class="actions">
+    <p-button
+      [label]="localization.translate('roles.permissions.save')"
+      icon="pi pi-save"
+      [loading]="saving()"
+      (onClick)="save()"
+    />
+  </div>
+</main>

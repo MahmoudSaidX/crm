@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { AuthorizationState } from './authorization.state';
 
 interface AccessCredentialResponse {
   readonly accessToken: string;
@@ -16,6 +17,7 @@ export interface SignInCredentials {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly authorization = inject(AuthorizationState);
   private readonly accessTokenState = signal<string | null>(null);
   readonly isAuthenticated = computed(() => this.accessTokenState() !== null);
 
@@ -60,10 +62,12 @@ export class AuthService {
       );
     } finally {
       this.accessTokenState.set(null);
+      this.authorization.clear();
     }
   }
 
   clear(): void {
     this.accessTokenState.set(null);
+    this.authorization.clear();
   }
 }

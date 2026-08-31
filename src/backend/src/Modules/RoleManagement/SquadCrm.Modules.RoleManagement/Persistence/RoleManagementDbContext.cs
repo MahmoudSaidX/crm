@@ -6,6 +6,10 @@ public sealed class RoleManagementDbContext(DbContextOptions<RoleManagementDbCon
 {
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<RoleAuditEvent> RoleAuditEvents => Set<RoleAuditEvent>();
+    public DbSet<PermissionDefinition> PermissionDefinitions => Set<PermissionDefinition>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public DbSet<StaffSubjectRole> StaffSubjectRoles => Set<StaffSubjectRole>();
+    public DbSet<PermissionChangeAuditEvent> PermissionChangeAuditEvents => Set<PermissionChangeAuditEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +41,62 @@ public sealed class RoleManagementDbContext(DbContextOptions<RoleManagementDbCon
             entity.Property(auditEvent => auditEvent.EventType).HasColumnName("event_type").HasMaxLength(32);
             entity.Property(auditEvent => auditEvent.ChangedByHandle).HasColumnName("changed_by_handle").HasMaxLength(256);
             entity.Property(auditEvent => auditEvent.OccurredAtUtc).HasColumnName("occurred_at_utc");
+        });
+
+        modelBuilder.Entity<PermissionDefinition>(entity =>
+        {
+            entity.ToTable("permission_definition");
+            entity.HasKey(permission => permission.Code);
+            entity.Property(permission => permission.Code).HasColumnName("code").HasMaxLength(128);
+            entity.Property(permission => permission.Name).HasColumnName("name").HasMaxLength(200);
+            entity.Property(permission => permission.Module).HasColumnName("module").HasMaxLength(100);
+            entity.Property(permission => permission.Description).HasColumnName("description").HasMaxLength(1000);
+            entity.HasData(
+                new PermissionDefinition
+                {
+                    Code = Permissions.RolesView,
+                    Name = "View roles",
+                    Module = "Role Management",
+                    Description = "View global roles and their assigned permissions.",
+                },
+                new PermissionDefinition
+                {
+                    Code = Permissions.RolesManage,
+                    Name = "Manage roles",
+                    Module = "Role Management",
+                    Description = "Create, update, activate, deactivate, and configure global roles.",
+                });
+        });
+
+        modelBuilder.Entity<RolePermission>(entity =>
+        {
+            entity.ToTable("role_permission");
+            entity.HasKey(item => new { item.RoleId, item.PermissionCode });
+            entity.Property(item => item.RoleId).HasColumnName("role_id");
+            entity.Property(item => item.PermissionCode).HasColumnName("permission_code").HasMaxLength(128);
+            entity.HasOne(item => item.Role).WithMany().HasForeignKey(item => item.RoleId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(item => item.Permission).WithMany().HasForeignKey(item => item.PermissionCode).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<StaffSubjectRole>(entity =>
+        {
+            entity.ToTable("staff_subject_role");
+            entity.HasKey(item => new { item.StaffSubjectId, item.RoleId });
+            entity.Property(item => item.StaffSubjectId).HasColumnName("staff_subject_id");
+            entity.Property(item => item.RoleId).HasColumnName("role_id");
+            entity.HasOne(item => item.Role).WithMany().HasForeignKey(item => item.RoleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PermissionChangeAuditEvent>(entity =>
+        {
+            entity.ToTable("permission_change_audit_event");
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasColumnName("id");
+            entity.Property(item => item.RoleId).HasColumnName("role_id");
+            entity.Property(item => item.EventType).HasColumnName("event_type").HasMaxLength(64);
+            entity.Property(item => item.PermissionCodes).HasColumnName("permission_codes").HasMaxLength(2048);
+            entity.Property(item => item.ChangedByHandle).HasColumnName("changed_by_handle").HasMaxLength(256);
+            entity.Property(item => item.OccurredAtUtc).HasColumnName("occurred_at_utc");
         });
     }
 }

@@ -4,6 +4,7 @@ import { LocalizationService } from '@squad-crm/platform';
 import { ResponsiveShell, ShellNavigationItem } from '@squad-crm/shared-ui';
 import { ButtonModule } from 'primeng/button';
 import { AuthService } from '../auth/auth.service';
+import { AuthorizationService } from '../auth/authorization.service';
 import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
 
 @Component({
@@ -15,6 +16,7 @@ import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
 export class AgentShell {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  protected readonly authorization = inject(AuthorizationService);
   protected readonly localization = inject(LocalizationService);
   protected readonly navigationItems = computed<readonly ShellNavigationItem[]>(() => [
     {
@@ -23,12 +25,20 @@ export class AgentShell {
       routerLink: '/',
       exact: true,
     },
-    {
-      label: this.localization.translate('agent.navigation.roles'),
-      icon: 'pi pi-users',
-      routerLink: '/roles',
-    },
+    ...(this.authorization.state.has('roles.view')
+      ? [
+          {
+            label: this.localization.translate('agent.navigation.roles'),
+            icon: 'pi pi-users',
+            routerLink: '/roles',
+          },
+        ]
+      : []),
   ]);
+
+  constructor() {
+    void this.authorization.load();
+  }
 
   protected async signOut(): Promise<void> {
     await this.auth.signOut();

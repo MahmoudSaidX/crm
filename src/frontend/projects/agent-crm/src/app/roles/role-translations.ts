@@ -15,6 +15,10 @@ export const ROLE_TRANSLATIONS: TranslationResources = {
     'roles.validation.description': 'Description must be at most 1000 characters.',
     'roles.errors.duplicateName': 'A role with this name already exists.',
     'roles.errors.duplicateCode': 'A role with this code already exists.',
+    'roles.permissions.action': 'Permissions',
+    'roles.permissions.title': 'Role permissions',
+    'roles.permissions.save': 'Save permissions',
+    'roles.permissions.error': 'Permissions could not be saved.',
   },
   ar: {
     'roles.title': 'الأدوار',
@@ -30,5 +34,9 @@ export const ROLE_TRANSLATIONS: TranslationResources = {
     'roles.validation.description': 'يجب ألا يتجاوز الوصف 1000 حرف.',
     'roles.errors.duplicateName': 'يوجد دور بهذا الاسم بالفعل.',
     'roles.errors.duplicateCode': 'يوجد دور بهذا الرمز بالفعل.',
+    'roles.permissions.action': 'الصلاحيات',
+    'roles.permissions.title': 'صلاحيات الدور',
+    'roles.permissions.save': 'حفظ الصلاحيات',
+    'roles.permissions.error': 'تعذر حفظ الصلاحيات.',
   },
 };
