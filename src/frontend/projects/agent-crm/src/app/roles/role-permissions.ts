@@ -39,7 +39,11 @@ export class RolePermissions {
 
   toggle(code: string, granted: boolean): void {
     const next = new Set(this.selected());
-    granted ? next.add(code) : next.delete(code);
+    if (granted) {
+      next.add(code);
+    } else {
+      next.delete(code);
+    }
     this.selected.set(next);
   }
 
