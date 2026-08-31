@@ -12,7 +12,15 @@ import { AuthorizationState } from '../auth/authorization.state';
 
 @Component({
   selector: 'crm-staff-user-list',
-  imports: [RouterLink, FormsModule, ButtonModule, InputTextModule, TableModule, TagModule, AgentLanguageSwitcher],
+  imports: [
+    RouterLink,
+    FormsModule,
+    ButtonModule,
+    InputTextModule,
+    TableModule,
+    TagModule,
+    AgentLanguageSwitcher,
+  ],
   templateUrl: './staff-user-list.html',
   styleUrl: './staff-user-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,7 +38,11 @@ export class StaffUserList {
   async load(page = 1): Promise<void> {
     this.loading.set(true);
     try {
-      const result = await this.staffUsersService.list(page, this.pageSize, this.search() || undefined);
+      const result = await this.staffUsersService.list(
+        page,
+        this.pageSize,
+        this.search() || undefined,
+      );
       this.staffUsers.set([...result.items]);
       this.totalRecords.set(result.totalCount);
     } finally {

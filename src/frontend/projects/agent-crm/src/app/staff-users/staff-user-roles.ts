@@ -36,7 +36,11 @@ export class StaffUserRoles {
 
   toggle(roleId: string, checked: boolean): void {
     const next = new Set(this.selected());
-    checked ? next.add(roleId) : next.delete(roleId);
+    if (checked) {
+      next.add(roleId);
+    } else {
+      next.delete(roleId);
+    }
     this.selected.set(next);
   }
 
