@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SquadCrm.BuildingBlocks.Security;
+using SquadCrm.Modules.Audit.Contracts;
 using SquadCrm.Modules.RoleManagement;
 using SquadCrm.Modules.RoleManagement.Persistence;
 using SquadCrm.Modules.StaffIdentity.Contracts;
@@ -91,7 +92,7 @@ public sealed class PermissionManagementTests
         await using RoleManagementDbContext context = PostgresTestDatabase.CreateRoleManagementContext();
         Role role = await CreateRoleAsync(context);
         Guid subjectId = Guid.NewGuid();
-        AuthorizationBootstrapService valid = new(context, new StubSubjectReader(new(subjectId, true)));
+        AuthorizationBootstrapService valid = new(context, new StubSubjectReader(new(subjectId, true)), new NoOpAuditRecorder());
 
         Assert.True((await valid.BootstrapAsync("agent@example.test", role.Code, CancellationToken.None)).Succeeded);
         Assert.True((await valid.BootstrapAsync("agent@example.test", role.Code, CancellationToken.None)).Succeeded);
@@ -100,8 +101,9 @@ public sealed class PermissionManagementTests
         Assert.Single(await context.PermissionChangeAuditEvents.Where(
             item => item.RoleId == role.Id && item.EventType == "bootstrap_permissions_granted").ToListAsync());
 
-        AuthorizationBootstrapService missing = new(context, new StubSubjectReader(null));
-        AuthorizationBootstrapService inactive = new(context, new StubSubjectReader(new(Guid.NewGuid(), false)));
+        AuthorizationBootstrapService missing = new(context, new StubSubjectReader(null), new NoOpAuditRecorder());
+        AuthorizationBootstrapService inactive = new(
+            context, new StubSubjectReader(new(Guid.NewGuid(), false)), new NoOpAuditRecorder());
         Assert.Equal(AuthorizationBootstrapFailure.SubjectNotFound,
             (await missing.BootstrapAsync("missing@example.test", role.Code, CancellationToken.None)).Failure);
         Assert.Equal(AuthorizationBootstrapFailure.SubjectInactive,
@@ -122,6 +124,11 @@ public sealed class PermissionManagementTests
     {
         public bool IsAuthenticated => handle is not null;
         public string? Handle => handle;
+    }
+
+    private sealed class NoOpAuditRecorder : IAuditRecorder
+    {
+        public Task RecordAsync(AuditRecordRequest request, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class StubSubjectReader(StaffSubjectReference? subject) : IStaffSubjectReferenceReader

@@ -58,6 +58,16 @@ export const routes: Routes = [
         loadComponent: () => import('./staff-users/staff-user-roles').then((m) => m.StaffUserRoles),
       },
       {
+        path: 'audit',
+        canActivate: [requirePermission('audit.view')],
+        loadComponent: () => import('./audit/audit-list').then((m) => m.AuditList),
+      },
+      {
+        path: 'audit/:id',
+        canActivate: [requirePermission('audit.view')],
+        loadComponent: () => import('./audit/audit-detail').then((m) => m.AuditDetail),
+      },
+      {
         path: 'forbidden',
         loadComponent: () => import('./auth/forbidden').then((m) => m.Forbidden),
       },

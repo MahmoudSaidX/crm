@@ -1,0 +1,38 @@
+:host {
+  display: block;
+}
+
+.audit-page {
+  box-sizing: border-box;
+  padding: clamp(1rem, 4vw, 2rem);
+}
+
+.audit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-end: 1rem;
+  flex-wrap: wrap;
+}
+
+.audit-header h1 {
+  margin: 0;
+}
+
+.audit-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
+  flex-wrap: wrap;
+}
+
+.audit-row {
+  cursor: pointer;
+}
+
+@media (max-width: 40rem) {
+  .audit-header h1 {
+    inline-size: 100%;
+  }
+}

@@ -43,6 +43,15 @@ export class AgentShell {
           },
         ]
       : []),
+    ...(this.authorization.state.has('audit.view')
+      ? [
+          {
+            label: this.localization.translate('agent.navigation.audit'),
+            icon: 'pi pi-history',
+            routerLink: '/audit',
+          },
+        ]
+      : []),
   ]);
 
   constructor() {

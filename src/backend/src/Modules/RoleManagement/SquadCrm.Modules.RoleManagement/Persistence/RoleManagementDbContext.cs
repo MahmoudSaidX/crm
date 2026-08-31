@@ -80,6 +80,13 @@ public sealed class RoleManagementDbContext(DbContextOptions<RoleManagementDbCon
                     Name = "Manage staff users",
                     Module = "Staff Management",
                     Description = "Create, update, activate, deactivate staff users, and assign roles.",
+                },
+                new PermissionDefinition
+                {
+                    Code = Permissions.AuditView,
+                    Name = "View audit records",
+                    Module = "Audit",
+                    Description = "View the audit trail of administrative actions.",
                 });
         });
 

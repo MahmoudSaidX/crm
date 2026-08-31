@@ -1,0 +1,36 @@
+import { TranslationResources } from '@squad-crm/platform';
+
+export const AUDIT_TRANSLATIONS: TranslationResources = {
+  en: {
+    'audit.title': 'Audit Trail',
+    'audit.detail.title': 'Audit record',
+    'audit.detail.notFound': 'This audit record could not be found.',
+    'audit.detail.back': 'Back to audit trail',
+    'audit.fields.actor': 'Actor',
+    'audit.fields.action': 'Action',
+    'audit.fields.entityType': 'Entity type',
+    'audit.fields.entityId': 'Entity ID',
+    'audit.fields.occurredAt': 'Occurred at',
+    'audit.fields.metadata': 'Details',
+    'audit.empty': 'No audit records yet.',
+    'audit.filters.entityType': 'Filter by entity type',
+    'audit.filters.action': 'Filter by action',
+    'audit.filters.actorHandle': 'Filter by actor',
+  },
+  ar: {
+    'audit.title': 'سجل التدقيق',
+    'audit.detail.title': 'سجل التدقيق',
+    'audit.detail.notFound': 'تعذر العثور على سجل التدقيق هذا.',
+    'audit.detail.back': 'العودة إلى سجل التدقيق',
+    'audit.fields.actor': 'الجهة المنفذة',
+    'audit.fields.action': 'الإجراء',
+    'audit.fields.entityType': 'نوع الكيان',
+    'audit.fields.entityId': 'معرّف الكيان',
+    'audit.fields.occurredAt': 'وقت الحدوث',
+    'audit.fields.metadata': 'التفاصيل',
+    'audit.empty': 'لا توجد سجلات تدقيق بعد.',
+    'audit.filters.entityType': 'تصفية حسب نوع الكيان',
+    'audit.filters.action': 'تصفية حسب الإجراء',
+    'audit.filters.actorHandle': 'تصفية حسب الجهة المنفذة',
+  },
+};

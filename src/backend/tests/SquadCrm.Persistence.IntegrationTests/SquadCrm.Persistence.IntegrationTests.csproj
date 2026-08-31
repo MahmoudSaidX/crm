@@ -24,6 +24,8 @@
     <ProjectReference Include="..\..\src\Modules\StaffIdentity\SquadCrm.Modules.StaffIdentity\SquadCrm.Modules.StaffIdentity.csproj" />
     <ProjectReference Include="..\..\src\Modules\RoleManagement\SquadCrm.Modules.RoleManagement\SquadCrm.Modules.RoleManagement.csproj" />
     <ProjectReference Include="..\..\src\Modules\StaffIdentity\SquadCrm.Modules.StaffIdentity.Bootstrap\SquadCrm.Modules.StaffIdentity.Bootstrap.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Audit\SquadCrm.Modules.Audit\SquadCrm.Modules.Audit.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Audit\SquadCrm.Modules.Audit.Contracts\SquadCrm.Modules.Audit.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

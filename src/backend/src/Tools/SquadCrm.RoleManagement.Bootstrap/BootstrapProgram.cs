@@ -2,6 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SquadCrm.Infrastructure.Postgres;
+using SquadCrm.Modules.Audit;
+using SquadCrm.Modules.Audit.Contracts;
+using SquadCrm.Modules.Audit.Persistence;
 using SquadCrm.Modules.RoleManagement;
 using SquadCrm.Modules.RoleManagement.Persistence;
 using SquadCrm.Modules.StaffIdentity;
@@ -39,7 +42,9 @@ public static class BootstrapProgram
         ServiceCollection services = new();
         services.AddDbContext<StaffIdentityDbContext>(options => options.UseNpgsql(connectionString));
         services.AddDbContext<RoleManagementDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<AuditDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<IStaffSubjectReferenceReader, StaffSubjectReferenceReader>();
+        services.AddScoped<IAuditRecorder, AuditRecorder>();
         services.AddScoped<AuthorizationBootstrapService>();
 
         await using ServiceProvider provider = services.BuildServiceProvider();

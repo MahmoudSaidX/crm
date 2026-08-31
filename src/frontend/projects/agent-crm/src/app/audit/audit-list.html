@@ -1,0 +1,73 @@
+<main class="audit-page">
+  <header class="audit-header">
+    <h1>{{ localization.translate('audit.title') }}</h1>
+    <crm-agent-language-switcher />
+  </header>
+
+  <div class="audit-filters">
+    <input
+      pInputText
+      type="search"
+      [placeholder]="localization.translate('audit.filters.entityType')"
+      [(ngModel)]="entityType"
+      (keyup.enter)="onFilter()"
+    />
+    <input
+      pInputText
+      type="search"
+      [placeholder]="localization.translate('audit.filters.action')"
+      [(ngModel)]="action"
+      (keyup.enter)="onFilter()"
+    />
+    <input
+      pInputText
+      type="search"
+      [placeholder]="localization.translate('audit.filters.actorHandle')"
+      [(ngModel)]="actorHandle"
+      (keyup.enter)="onFilter()"
+    />
+    <p-button
+      [label]="localization.translate('common.actions.search')"
+      icon="pi pi-search"
+      severity="secondary"
+      (onClick)="onFilter()"
+    />
+  </div>
+
+  <p-table
+    [value]="auditRecords()"
+    [lazy]="true"
+    [paginator]="true"
+    [rows]="pageSize"
+    [totalRecords]="totalRecords()"
+    [paginatorLocale]="localization.locale()"
+    [loading]="loading()"
+    [scrollable]="true"
+    (onLazyLoad)="onLazyLoad($event)"
+    dataKey="id"
+  >
+    <ng-template #header>
+      <tr>
+        <th style="min-width: 12rem">{{ localization.translate('audit.fields.occurredAt') }}</th>
+        <th style="min-width: 10rem">{{ localization.translate('audit.fields.actor') }}</th>
+        <th style="min-width: 10rem">{{ localization.translate('audit.fields.action') }}</th>
+        <th style="min-width: 10rem">{{ localization.translate('audit.fields.entityType') }}</th>
+        <th style="min-width: 12rem">{{ localization.translate('audit.fields.entityId') }}</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-auditRecord>
+      <tr class="audit-row" [routerLink]="['/audit', auditRecord.id]">
+        <td>{{ auditRecord.occurredAtUtc | date: 'medium' }}</td>
+        <td>{{ auditRecord.actorHandle }}</td>
+        <td>{{ auditRecord.action }}</td>
+        <td>{{ auditRecord.entityType }}</td>
+        <td>{{ auditRecord.entityId }}</td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="5">{{ localization.translate('audit.empty') }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</main>

@@ -15,6 +15,7 @@ using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Infrastructure.FileStorage;
+using SquadCrm.Modules.Audit;
 using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -150,6 +151,7 @@ builder.Services.AddHealthChecks();
 // absence, never a silent runtime gap. No runtime assembly scanning.
 IModule[] modules =
 [
+    new AuditModule(),
     new SquadCrm.Modules.StaffIdentity.StaffIdentityModule(),
     new SquadCrm.Modules.RoleManagement.RoleManagementModule(),
     new SquadCrm.Modules.ArchitectureFixture.ArchitectureFixtureModule(),
