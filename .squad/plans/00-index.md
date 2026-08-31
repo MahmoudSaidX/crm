@@ -21,3 +21,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | arabic-english-localization | [`arabic-english-localization/00-overview.md`](arabic-english-localization/00-overview.md) | 15 |
 | responsive-application-shell | [`responsive-application-shell/00-overview.md`](responsive-application-shell/00-overview.md) | 16 |
 | configure-role-permissions | [`configure-role-permissions/00-overview.md`](configure-role-permissions/00-overview.md) | 17 |
+| manage-staff-users | [`manage-staff-users/00-overview.md`](manage-staff-users/00-overview.md) | 18 |

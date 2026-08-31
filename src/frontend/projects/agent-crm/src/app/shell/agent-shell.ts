@@ -34,6 +34,15 @@ export class AgentShell {
           },
         ]
       : []),
+    ...(this.authorization.state.has('users.view')
+      ? [
+          {
+            label: this.localization.translate('agent.navigation.staffUsers'),
+            icon: 'pi pi-id-card',
+            routerLink: '/staff-users',
+          },
+        ]
+      : []),
   ]);
 
   constructor() {

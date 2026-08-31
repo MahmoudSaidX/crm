@@ -27,6 +27,7 @@ public sealed class RoleManagementModule : IModule
         services.AddScoped<RoleService>();
         services.AddScoped<PermissionService>();
         services.AddScoped<AuthorizationBootstrapService>();
+        services.AddScoped<StaffRoleAssignmentService>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
         services.AddAuthorization(options =>
         {
@@ -34,6 +35,10 @@ public sealed class RoleManagementModule : IModule
                 policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.RolesView)));
             options.AddPolicy(PermissionPolicies.RolesManage, policy =>
                 policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.RolesManage)));
+            options.AddPolicy(PermissionPolicies.UsersView, policy =>
+                policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.UsersView)));
+            options.AddPolicy(PermissionPolicies.UsersManage, policy =>
+                policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.UsersManage)));
         });
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule
@@ -66,6 +71,42 @@ public sealed class RoleManagementModule : IModule
         endpoints.MapGet("/api/v1/authorization/me", GetCurrentPermissionsAsync)
             .WithTags("Authorization")
             .RequireAuthorization();
+
+        RouteGroupBuilder staffRoles = endpoints
+            .MapGroup("/api/v1/staff-users/{staffSubjectId:guid}/roles")
+            .WithTags("StaffRoleAssignments");
+        staffRoles.MapGet("", GetStaffRolesAsync).RequireAuthorization(PermissionPolicies.RolesView);
+        staffRoles.MapPut("", ReplaceStaffRolesAsync)
+            .ValidatesDataAnnotations<ReplaceStaffRolesRequest>()
+            .RequireAuthorization(PermissionPolicies.RolesManage);
+    }
+
+    private static async Task<IResult> GetStaffRolesAsync(
+        Guid staffSubjectId,
+        StaffRoleAssignmentService assignmentService,
+        CancellationToken cancellationToken) =>
+        Results.Ok(await assignmentService.GetAssignedRolesAsync(staffSubjectId, cancellationToken));
+
+    private static async Task<IResult> ReplaceStaffRolesAsync(
+        Guid staffSubjectId,
+        ReplaceStaffRolesRequest request,
+        StaffRoleAssignmentService assignmentService,
+        CancellationToken cancellationToken)
+    {
+        StaffRoleAssignmentResult result = await assignmentService.ReplaceAsync(
+            staffSubjectId, request.RoleIds, cancellationToken);
+        return result.Failure switch
+        {
+            StaffRoleAssignmentFailure.None => Results.NoContent(),
+            StaffRoleAssignmentFailure.SubjectNotFound => Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Staff subject not found.",
+                extensions: new Dictionary<string, object?> { ["code"] = "staff_users.not_found" }),
+            _ => Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["roleIds"] = ["Role ids must be unique, existing role identifiers."],
+            }),
+        };
     }
 
     private static async Task<IResult> GetPermissionCatalogAsync(

@@ -96,7 +96,7 @@ public sealed class PermissionManagementTests
         Assert.True((await valid.BootstrapAsync("agent@example.test", role.Code, CancellationToken.None)).Succeeded);
         Assert.True((await valid.BootstrapAsync("agent@example.test", role.Code, CancellationToken.None)).Succeeded);
         Assert.Single(await context.StaffSubjectRoles.Where(item => item.StaffSubjectId == subjectId).ToListAsync());
-        Assert.Equal(2, await context.RolePermissions.CountAsync(item => item.RoleId == role.Id));
+        Assert.Equal(Permissions.Bootstrap.Count, await context.RolePermissions.CountAsync(item => item.RoleId == role.Id));
         Assert.Single(await context.PermissionChangeAuditEvents.Where(
             item => item.RoleId == role.Id && item.EventType == "bootstrap_permissions_granted").ToListAsync());
 
@@ -128,6 +128,10 @@ public sealed class PermissionManagementTests
     {
         public Task<StaffSubjectReference?> FindByNormalizedEmailAsync(
             string normalizedEmail,
+            CancellationToken cancellationToken) => Task.FromResult(subject);
+
+        public Task<StaffSubjectReference?> FindByIdAsync(
+            Guid id,
             CancellationToken cancellationToken) => Task.FromResult(subject);
     }
 }

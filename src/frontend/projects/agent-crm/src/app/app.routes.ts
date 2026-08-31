@@ -38,6 +38,26 @@ export const routes: Routes = [
         loadComponent: () => import('./roles/role-permissions').then((m) => m.RolePermissions),
       },
       {
+        path: 'staff-users',
+        canActivate: [requirePermission('users.view')],
+        loadComponent: () => import('./staff-users/staff-user-list').then((m) => m.StaffUserList),
+      },
+      {
+        path: 'staff-users/new',
+        canActivate: [requirePermission('users.manage')],
+        loadComponent: () => import('./staff-users/staff-user-form').then((m) => m.StaffUserForm),
+      },
+      {
+        path: 'staff-users/:id/edit',
+        canActivate: [requirePermission('users.manage')],
+        loadComponent: () => import('./staff-users/staff-user-form').then((m) => m.StaffUserForm),
+      },
+      {
+        path: 'staff-users/:id/roles',
+        canActivate: [requirePermission('users.manage')],
+        loadComponent: () => import('./staff-users/staff-user-roles').then((m) => m.StaffUserRoles),
+      },
+      {
         path: 'forbidden',
         loadComponent: () => import('./auth/forbidden').then((m) => m.Forbidden),
       },

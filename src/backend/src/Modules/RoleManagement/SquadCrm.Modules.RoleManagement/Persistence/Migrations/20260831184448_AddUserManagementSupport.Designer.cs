@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SquadCrm.Modules.RoleManagement.Persistence;
@@ -11,9 +12,11 @@ using SquadCrm.Modules.RoleManagement.Persistence;
 namespace SquadCrm.Modules.RoleManagement.Persistence.Migrations
 {
     [DbContext(typeof(RoleManagementDbContext))]
-    partial class RoleManagementDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260831184448_AddUserManagementSupport")]
+    partial class AddUserManagementSupport
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

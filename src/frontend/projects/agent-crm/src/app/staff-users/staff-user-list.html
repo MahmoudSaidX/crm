@@ -1,0 +1,105 @@
+<main class="staff-users-page">
+  <header class="staff-users-header">
+    <h1>{{ localization.translate('staffUsers.title') }}</h1>
+    <crm-agent-language-switcher />
+    @if (authorization.has('users.manage')) {
+      <p-button
+        [label]="localization.translate('staffUsers.new')"
+        icon="pi pi-plus"
+        routerLink="/staff-users/new"
+      />
+    }
+  </header>
+
+  <div class="staff-users-search">
+    <input
+      pInputText
+      type="search"
+      [placeholder]="localization.translate('staffUsers.search')"
+      [(ngModel)]="search"
+      (keyup.enter)="onSearch()"
+    />
+    <p-button
+      [label]="localization.translate('common.actions.search')"
+      icon="pi pi-search"
+      severity="secondary"
+      (onClick)="onSearch()"
+    />
+  </div>
+
+  <p-table
+    [value]="staffUsers()"
+    [lazy]="true"
+    [paginator]="true"
+    [rows]="pageSize"
+    [totalRecords]="totalRecords()"
+    [paginatorLocale]="localization.locale()"
+    [loading]="loading()"
+    [scrollable]="true"
+    (onLazyLoad)="onLazyLoad($event)"
+    dataKey="id"
+  >
+    <ng-template #header>
+      <tr>
+        <th style="min-width: 14rem">{{ localization.translate('staffUsers.fields.email') }}</th>
+        <th style="min-width: 12rem">{{ localization.translate('staffUsers.fields.displayName') }}</th>
+        <th style="min-width: 10rem">{{ localization.translate('staffUsers.fields.department') }}</th>
+        <th style="min-width: 10rem">{{ localization.translate('staffUsers.fields.branch') }}</th>
+        <th style="min-width: 8rem">{{ localization.translate('staffUsers.fields.status') }}</th>
+        <th style="min-width: 18rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-staffUser>
+      <tr>
+        <td>{{ staffUser.email }}</td>
+        <td>{{ staffUser.displayName || '—' }}</td>
+        <td>{{ staffUser.department || '—' }}</td>
+        <td>{{ staffUser.branch || '—' }}</td>
+        <td>
+          <p-tag
+            [value]="
+              localization.translate(
+                staffUser.isActive ? 'common.status.active' : 'common.status.inactive'
+              )
+            "
+            [severity]="staffUser.isActive ? 'success' : 'danger'"
+          />
+        </td>
+        <td class="row-actions">
+          @if (authorization.has('users.manage')) {
+            <p-button
+              [label]="localization.translate('staffUsers.roles.action')"
+              icon="pi pi-lock"
+              severity="secondary"
+              size="small"
+              [routerLink]="['/staff-users', staffUser.id, 'roles']"
+            />
+            <p-button
+              [label]="localization.translate('common.actions.edit')"
+              icon="pi pi-pencil"
+              severity="secondary"
+              size="small"
+              [routerLink]="['/staff-users', staffUser.id, 'edit']"
+            />
+            <p-button
+              [label]="
+                localization.translate(
+                  staffUser.isActive ? 'common.actions.deactivate' : 'common.actions.activate'
+                )
+              "
+              [icon]="staffUser.isActive ? 'pi pi-ban' : 'pi pi-check'"
+              [severity]="staffUser.isActive ? 'danger' : 'success'"
+              size="small"
+              (onClick)="toggleActive(staffUser)"
+            />
+          }
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="6">{{ localization.translate('staffUsers.empty') }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</main>

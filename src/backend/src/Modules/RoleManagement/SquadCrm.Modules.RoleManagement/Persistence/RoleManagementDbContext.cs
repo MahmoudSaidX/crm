@@ -10,6 +10,7 @@ public sealed class RoleManagementDbContext(DbContextOptions<RoleManagementDbCon
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<StaffSubjectRole> StaffSubjectRoles => Set<StaffSubjectRole>();
     public DbSet<PermissionChangeAuditEvent> PermissionChangeAuditEvents => Set<PermissionChangeAuditEvent>();
+    public DbSet<StaffRoleAssignmentAuditEvent> StaffRoleAssignmentAuditEvents => Set<StaffRoleAssignmentAuditEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -65,6 +66,20 @@ public sealed class RoleManagementDbContext(DbContextOptions<RoleManagementDbCon
                     Name = "Manage roles",
                     Module = "Role Management",
                     Description = "Create, update, activate, deactivate, and configure global roles.",
+                },
+                new PermissionDefinition
+                {
+                    Code = Permissions.UsersView,
+                    Name = "View staff users",
+                    Module = "Staff Management",
+                    Description = "View staff user profiles and their role assignments.",
+                },
+                new PermissionDefinition
+                {
+                    Code = Permissions.UsersManage,
+                    Name = "Manage staff users",
+                    Module = "Staff Management",
+                    Description = "Create, update, activate, deactivate staff users, and assign roles.",
                 });
         });
 
@@ -95,6 +110,18 @@ public sealed class RoleManagementDbContext(DbContextOptions<RoleManagementDbCon
             entity.Property(item => item.RoleId).HasColumnName("role_id");
             entity.Property(item => item.EventType).HasColumnName("event_type").HasMaxLength(64);
             entity.Property(item => item.PermissionCodes).HasColumnName("permission_codes").HasMaxLength(2048);
+            entity.Property(item => item.ChangedByHandle).HasColumnName("changed_by_handle").HasMaxLength(256);
+            entity.Property(item => item.OccurredAtUtc).HasColumnName("occurred_at_utc");
+        });
+
+        modelBuilder.Entity<StaffRoleAssignmentAuditEvent>(entity =>
+        {
+            entity.ToTable("staff_role_assignment_audit_event");
+            entity.HasKey(item => item.Id);
+            entity.Property(item => item.Id).HasColumnName("id");
+            entity.Property(item => item.StaffSubjectId).HasColumnName("staff_subject_id");
+            entity.Property(item => item.EventType).HasColumnName("event_type").HasMaxLength(64);
+            entity.Property(item => item.RoleCodes).HasColumnName("role_codes").HasMaxLength(2048);
             entity.Property(item => item.ChangedByHandle).HasColumnName("changed_by_handle").HasMaxLength(256);
             entity.Property(item => item.OccurredAtUtc).HasColumnName("occurred_at_utc");
         });

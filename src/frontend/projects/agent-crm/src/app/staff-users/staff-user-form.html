@@ -1,0 +1,50 @@
+<main class="staff-user-form-page">
+  <header>
+    <h1>{{ localization.translate(isEdit() ? 'staffUsers.edit' : 'staffUsers.new') }}</h1>
+    <crm-agent-language-switcher />
+  </header>
+
+  @if (errorKey(); as key) {
+    <p-message severity="error">{{ localization.translate(key) }}</p-message>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label for="email">{{ localization.translate('staffUsers.fields.email') }}</label>
+    <input pInputText id="email" type="email" formControlName="email" />
+    @if (form.controls.email.touched && form.controls.email.invalid) {
+      <small class="field-error">{{ localization.translate('staffUsers.validation.email') }}</small>
+    }
+
+    @if (!isEdit()) {
+      <label for="password">{{ localization.translate('staffUsers.fields.password') }}</label>
+      <p-password
+        inputId="password"
+        formControlName="password"
+        [feedback]="false"
+        [toggleMask]="true"
+      />
+      @if (form.controls.password.touched && form.controls.password.invalid) {
+        <small class="field-error">{{
+          localization.translate('staffUsers.validation.password')
+        }}</small>
+      }
+    }
+
+    <label for="displayName">{{ localization.translate('staffUsers.fields.displayName') }}</label>
+    <input pInputText id="displayName" type="text" formControlName="displayName" />
+
+    <label for="department">{{ localization.translate('staffUsers.fields.department') }}</label>
+    <input pInputText id="department" type="text" formControlName="department" />
+
+    <label for="branch">{{ localization.translate('staffUsers.fields.branch') }}</label>
+    <input pInputText id="branch" type="text" formControlName="branch" />
+
+    <p-button
+      type="submit"
+      [label]="localization.translate('common.actions.save')"
+      icon="pi pi-check"
+      [loading]="submitting()"
+      [disabled]="form.invalid"
+    />
+  </form>
+</main>

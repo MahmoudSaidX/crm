@@ -1,0 +1,40 @@
+:host {
+  display: block;
+}
+
+.staff-users-page {
+  box-sizing: border-box;
+  padding: clamp(1rem, 4vw, 2rem);
+}
+
+.staff-users-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-end: 1rem;
+  flex-wrap: wrap;
+}
+
+.staff-users-header h1 {
+  margin: 0;
+}
+
+.staff-users-search {
+  display: flex;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
+  flex-wrap: wrap;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 40rem) {
+  .staff-users-header h1 {
+    inline-size: 100%;
+  }
+}

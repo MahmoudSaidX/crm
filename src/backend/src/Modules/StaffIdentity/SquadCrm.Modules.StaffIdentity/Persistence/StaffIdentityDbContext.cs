@@ -19,6 +19,9 @@ public sealed class StaffIdentityDbContext(DbContextOptions<StaffIdentityDbConte
             entity.Property(user => user.NormalizedEmail).HasColumnName("normalized_email").HasMaxLength(320);
             entity.HasIndex(user => user.NormalizedEmail).IsUnique();
             entity.Property(user => user.PasswordHash).HasColumnName("password_hash").HasMaxLength(1024);
+            entity.Property(user => user.DisplayName).HasColumnName("display_name").HasMaxLength(200);
+            entity.Property(user => user.Department).HasColumnName("department").HasMaxLength(200);
+            entity.Property(user => user.Branch).HasColumnName("branch").HasMaxLength(200);
             entity.Property(user => user.IsActive).HasColumnName("is_active");
             entity.Property(user => user.CreatedAtUtc).HasColumnName("created_at_utc");
         });
@@ -45,6 +48,7 @@ public sealed class StaffIdentityDbContext(DbContextOptions<StaffIdentityDbConte
             entity.Property(authenticationEvent => authenticationEvent.StaffUserId).HasColumnName("staff_user_id");
             entity.Property(authenticationEvent => authenticationEvent.EventType).HasColumnName("event_type").HasMaxLength(32);
             entity.Property(authenticationEvent => authenticationEvent.Outcome).HasColumnName("outcome").HasMaxLength(32);
+            entity.Property(authenticationEvent => authenticationEvent.ChangedByHandle).HasColumnName("changed_by_handle").HasMaxLength(256);
             entity.Property(authenticationEvent => authenticationEvent.OccurredAtUtc).HasColumnName("occurred_at_utc");
         });
     }

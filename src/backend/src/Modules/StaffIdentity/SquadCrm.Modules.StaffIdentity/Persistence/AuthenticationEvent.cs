@@ -6,5 +6,6 @@ public sealed class AuthenticationEvent
     public Guid? StaffUserId { get; set; }
     public required string EventType { get; set; }
     public required string Outcome { get; set; }
+    public string? ChangedByHandle { get; set; }
     public DateTimeOffset OccurredAtUtc { get; set; }
 }

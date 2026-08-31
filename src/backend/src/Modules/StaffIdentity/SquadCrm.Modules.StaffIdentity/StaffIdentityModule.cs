@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.BuildingBlocks.Validation;
@@ -44,6 +45,7 @@ public sealed class StaffIdentityModule : IModule
                     StaffIdentitySchema.MigrationsHistoryTable,
                     StaffIdentitySchema.Name)));
         services.AddScoped<AuthenticationService>();
+        services.AddScoped<StaffUserService>();
         services.AddScoped<IPasswordHasher<StaffUser>, PasswordHasher<StaffUser>>();
         services.AddScoped<ICurrentUserAccessor, HttpCurrentUserAccessor>();
         services.AddScoped<IStaffSubjectReferenceReader, StaffSubjectReferenceReader>();
@@ -102,7 +104,103 @@ public sealed class StaffIdentityModule : IModule
         auth.MapPost("/refresh", RefreshAsync).RequireRateLimiting("auth-refresh");
         auth.MapPost("/logout", SignOutAsync).RequireRateLimiting("auth-refresh");
         auth.MapGet("/me", CurrentStaff).RequireAuthorization();
+
+        RouteGroupBuilder staffUsers = endpoints.MapGroup("/api/v1/staff-users").WithTags("StaffUsers");
+        staffUsers.MapPost("", CreateStaffUserAsync)
+            .ValidatesDataAnnotations<CreateStaffUserRequest>()
+            .RequireAuthorization(UsersManagePolicy);
+        staffUsers.MapGet("", ListStaffUsersAsync).RequireAuthorization(UsersViewPolicy);
+        staffUsers.MapGet("/{id:guid}", GetStaffUserAsync).RequireAuthorization(UsersViewPolicy);
+        staffUsers.MapPut("/{id:guid}", UpdateStaffUserAsync)
+            .ValidatesDataAnnotations<UpdateStaffUserRequest>()
+            .RequireAuthorization(UsersManagePolicy);
+        staffUsers.MapPost("/{id:guid}/activate", ActivateStaffUserAsync).RequireAuthorization(UsersManagePolicy);
+        staffUsers.MapPost("/{id:guid}/deactivate", DeactivateStaffUserAsync).RequireAuthorization(UsersManagePolicy);
     }
+
+    // Policy names registered by RoleManagementModule ("permission:<code>" convention from
+    // CRM-113); referenced here by string only — no project reference needed, ASP.NET Core
+    // resolves authorization policies by name from the shared AuthorizationOptions.
+    private const string UsersViewPolicy = "permission:users.view";
+    private const string UsersManagePolicy = "permission:users.manage";
+
+    private static async Task<IResult> CreateStaffUserAsync(
+        CreateStaffUserRequest request,
+        StaffUserService staffUserService,
+        CancellationToken cancellationToken)
+    {
+        StaffUserMutationResult result = await staffUserService.CreateAsync(request, cancellationToken);
+        return result.Failure switch
+        {
+            StaffUserMutationFailure.None => Results.Created(
+                $"/api/v1/staff-users/{result.User!.Id}", ToResponse(result.User)),
+            StaffUserMutationFailure.DuplicateEmail => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "A staff user with this email already exists.",
+                extensions: new Dictionary<string, object?> { ["code"] = "staff_users.duplicate_email" }),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> ListStaffUsersAsync(
+        [AsParameters] PaginationRequest pagination,
+        string? search,
+        StaffUserService staffUserService,
+        CancellationToken cancellationToken)
+    {
+        PagedResult<Persistence.StaffUser> page = await staffUserService.ListAsync(pagination, search, cancellationToken);
+        return Results.Ok(new PagedResult<StaffUserResponse>(
+            page.Items.Select(ToResponse).ToList(), page.Page, page.PageSize, page.TotalCount));
+    }
+
+    private static async Task<IResult> GetStaffUserAsync(
+        Guid id, StaffUserService staffUserService, CancellationToken cancellationToken)
+    {
+        Persistence.StaffUser? user = await staffUserService.GetAsync(id, cancellationToken);
+        return user is null ? StaffUserNotFoundProblem() : Results.Ok(ToResponse(user));
+    }
+
+    private static async Task<IResult> UpdateStaffUserAsync(
+        Guid id,
+        UpdateStaffUserRequest request,
+        StaffUserService staffUserService,
+        CancellationToken cancellationToken)
+    {
+        StaffUserMutationResult result = await staffUserService.UpdateAsync(id, request, cancellationToken);
+        return result.Failure switch
+        {
+            StaffUserMutationFailure.None => Results.Ok(ToResponse(result.User!)),
+            StaffUserMutationFailure.NotFound => StaffUserNotFoundProblem(),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> ActivateStaffUserAsync(
+        Guid id, StaffUserService staffUserService, CancellationToken cancellationToken)
+    {
+        StaffUserMutationResult result = await staffUserService.ActivateAsync(id, cancellationToken);
+        return result.Failure == StaffUserMutationFailure.NotFound
+            ? StaffUserNotFoundProblem()
+            : Results.Ok(ToResponse(result.User!));
+    }
+
+    private static async Task<IResult> DeactivateStaffUserAsync(
+        Guid id, StaffUserService staffUserService, CancellationToken cancellationToken)
+    {
+        StaffUserMutationResult result = await staffUserService.DeactivateAsync(id, cancellationToken);
+        return result.Failure == StaffUserMutationFailure.NotFound
+            ? StaffUserNotFoundProblem()
+            : Results.Ok(ToResponse(result.User!));
+    }
+
+    private static IResult StaffUserNotFoundProblem() => Results.Problem(
+        statusCode: StatusCodes.Status404NotFound,
+        title: "Staff user not found.",
+        extensions: new Dictionary<string, object?> { ["code"] = "staff_users.not_found" });
+
+    private static StaffUserResponse ToResponse(Persistence.StaffUser user) => new(
+        user.Id, user.NormalizedEmail, user.DisplayName, user.Department, user.Branch,
+        user.IsActive, user.CreatedAtUtc);
 
     private static async Task<IResult> SignInAsync(
         SignInRequest request,

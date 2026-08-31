@@ -7,4 +7,8 @@ public interface IStaffSubjectReferenceReader
     Task<StaffSubjectReference?> FindByNormalizedEmailAsync(
         string normalizedEmail,
         CancellationToken cancellationToken);
+
+    Task<StaffSubjectReference?> FindByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken);
 }
