@@ -54,13 +54,6 @@ describe('Agent CRM — Home smoke', () => {
     document.documentElement.setAttribute('dir', 'ltr');
   });
 
-  it('renders a PrimeNG button with a PrimeIcon', () => {
-    const button: HTMLElement | null = fixture.nativeElement.querySelector('p-button button');
-
-    expect(button).not.toBeNull();
-    expect(button?.querySelector('.pi.pi-globe')).not.toBeNull();
-  });
-
   it('runs on the agent-crm surface with the default locale applied to <html>', () => {
     expect(TestBed.inject(AppConfigStore).require().appSurface).toBe('agent-crm');
     expect(document.documentElement.getAttribute('lang')).toBe('en');
@@ -68,7 +61,7 @@ describe('Agent CRM — Home smoke', () => {
   });
 
   it('switches the document direction to rtl when the locale toggles to ar', () => {
-    fixture.nativeElement.querySelector('[data-testid="locale-toggle"] button').click();
+    TestBed.inject(LocaleService).setLocale('ar');
     fixture.detectChanges();
 
     expect(TestBed.inject(LocaleService).locale()).toBe('ar');

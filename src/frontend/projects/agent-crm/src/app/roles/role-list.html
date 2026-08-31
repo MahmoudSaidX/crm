@@ -17,16 +17,17 @@
     [totalRecords]="totalRecords()"
     [paginatorLocale]="localization.locale()"
     [loading]="loading()"
+    [scrollable]="true"
     (onLazyLoad)="onLazyLoad($event)"
     dataKey="id"
   >
     <ng-template #header>
       <tr>
-        <th>{{ localization.translate('roles.fields.name') }}</th>
-        <th>{{ localization.translate('roles.fields.code') }}</th>
-        <th>{{ localization.translate('roles.fields.description') }}</th>
-        <th>{{ localization.translate('roles.fields.status') }}</th>
-        <th></th>
+        <th style="min-width: 12rem">{{ localization.translate('roles.fields.name') }}</th>
+        <th style="min-width: 10rem">{{ localization.translate('roles.fields.code') }}</th>
+        <th style="min-width: 16rem">{{ localization.translate('roles.fields.description') }}</th>
+        <th style="min-width: 8rem">{{ localization.translate('roles.fields.status') }}</th>
+        <th style="min-width: 15rem"></th>
       </tr>
     </ng-template>
     <ng-template #body let-role>

@@ -1,0 +1,18 @@
+<sc-responsive-shell
+  [title]="localization.translate('agent.shell.title')"
+  [menuLabel]="localization.translate('common.navigation.openMenu')"
+  [closeMenuLabel]="localization.translate('common.navigation.closeMenu')"
+  [navigationLabel]="localization.translate('common.navigation.primary')"
+  [navigationItems]="navigationItems()"
+>
+  <div shell-actions>
+    <crm-agent-language-switcher />
+    <p-button
+      icon="pi pi-sign-out"
+      [label]="localization.translate('common.actions.signOut')"
+      severity="secondary"
+      data-testid="sign-out"
+      (onClick)="signOut()"
+    />
+  </div>
+</sc-responsive-shell>

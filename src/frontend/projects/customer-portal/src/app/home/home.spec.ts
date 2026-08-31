@@ -50,13 +50,6 @@ describe('Customer Portal — Home smoke', () => {
     document.documentElement.setAttribute('dir', 'ltr');
   });
 
-  it('renders a PrimeNG button with a PrimeIcon', () => {
-    const button: HTMLElement | null = fixture.nativeElement.querySelector('p-button button');
-
-    expect(button).not.toBeNull();
-    expect(button?.querySelector('.pi.pi-globe')).not.toBeNull();
-  });
-
   it('runs on the customer-portal surface with the default locale applied to <html>', () => {
     expect(TestBed.inject(AppConfigStore).require().appSurface).toBe('customer-portal');
     expect(document.documentElement.getAttribute('lang')).toBe('en');
@@ -64,7 +57,7 @@ describe('Customer Portal — Home smoke', () => {
   });
 
   it('switches the document direction to rtl when the locale toggles to ar', () => {
-    fixture.nativeElement.querySelector('[data-testid="locale-toggle"] button').click();
+    TestBed.inject(LocaleService).setLocale('ar');
     fixture.detectChanges();
 
     expect(TestBed.inject(LocaleService).locale()).toBe('ar');

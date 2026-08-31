@@ -2,13 +2,4 @@
   <h1>{{ localization.translate('agent.home.title') }}</h1>
   <p data-testid="surface">{{ config.appSurface }}</p>
   <p data-testid="direction">{{ localization.locale() }} / {{ localization.direction() }}</p>
-
-  <crm-agent-language-switcher />
-  <p-button
-    icon="pi pi-sign-out"
-    [label]="localization.translate('common.actions.signOut')"
-    severity="secondary"
-    data-testid="sign-out"
-    (onClick)="signOut()"
-  />
 </main>
