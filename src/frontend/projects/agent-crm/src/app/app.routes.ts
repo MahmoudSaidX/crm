@@ -40,20 +40,17 @@ export const routes: Routes = [
       {
         path: 'departments',
         canActivate: [requirePermission('departments.view')],
-        loadComponent: () =>
-          import('./departments/department-list').then((m) => m.DepartmentList),
+        loadComponent: () => import('./departments/department-list').then((m) => m.DepartmentList),
       },
       {
         path: 'departments/new',
         canActivate: [requirePermission('departments.manage')],
-        loadComponent: () =>
-          import('./departments/department-form').then((m) => m.DepartmentForm),
+        loadComponent: () => import('./departments/department-form').then((m) => m.DepartmentForm),
       },
       {
         path: 'departments/:id/edit',
         canActivate: [requirePermission('departments.manage')],
-        loadComponent: () =>
-          import('./departments/department-form').then((m) => m.DepartmentForm),
+        loadComponent: () => import('./departments/department-form').then((m) => m.DepartmentForm),
       },
       {
         path: 'staff-users',

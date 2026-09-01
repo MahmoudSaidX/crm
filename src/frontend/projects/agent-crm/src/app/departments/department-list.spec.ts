@@ -26,7 +26,12 @@ describe('DepartmentList', () => {
     createdAtUtc: '2026-08-29T00:00:00Z',
     updatedAtUtc: '2026-08-29T00:00:00Z',
   };
-  const departmentB = { ...departmentA, id: 'department-b', englishName: 'Support', isActive: false };
+  const departmentB = {
+    ...departmentA,
+    id: 'department-b',
+    englishName: 'Support',
+    isActive: false,
+  };
 
   let list: jasmine.SpyObj<DepartmentsService>;
 
@@ -37,7 +42,12 @@ describe('DepartmentList', () => {
       'activate',
       'deactivate',
     ]);
-    list.list.and.resolveTo({ items: [departmentA, departmentB], page: 1, pageSize: 20, totalCount: 2 });
+    list.list.and.resolveTo({
+      items: [departmentA, departmentB],
+      page: 1,
+      pageSize: 20,
+      totalCount: 2,
+    });
     list.activate.and.resolveTo({ ...departmentB, isActive: true });
     list.deactivate.and.resolveTo({ ...departmentA, isActive: false });
 
