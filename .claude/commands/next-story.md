@@ -37,10 +37,24 @@ architecture risk — never as a default step, and never merely because a story
 3. Query Linear for eligible candidates in the Squad CRM project. Order by:
    dependency readiness (every `blockedBy` issue Done) → milestone/sprint order
    → priority → position.
-4. Select the top eligible candidate. If the top candidate is blocked, report
-   the blocked chain and let the user choose rather than silently skipping to
-   an unrelated issue.
-5. Move exactly the selected issue to **In Progress**. Touch no other issue.
+4. If no eligible candidate exists in Todo/Ready, treat Backlog as the
+   candidate pool automatically. Invoking `/next-story` is explicit approval
+   to select and start exactly one eligible story from Todo, Ready, or
+   Backlog — do not ask the user merely because the candidates are in
+   Backlog.
+5. Select the top eligible candidate. If the top candidate in implementation
+   order is blocked, automatically walk its blocker chain and select the
+   earliest eligible unblocked prerequisite, choosing deterministically by:
+   dependency/implementation order → blocker satisfaction → priority →
+   Linear position/order as tie-breaker. Do not ask the user to choose between
+   ordinary eligible prerequisites.
+
+   Stop and ask the user only if:
+   - every candidate is blocked;
+   - a dependency cycle/conflict exists;
+   - dependency information is contradictory;
+   - selection requires a genuine product/architecture/security decision.
+6. Move exactly the selected issue to **In Progress**. Touch no other issue.
 
 Do not perform broad backlog analysis — this is a metadata-driven pick, not an
 audit of the whole backlog.
@@ -131,6 +145,15 @@ For a **STANDARD** feature story:
 
 Do not run the entire repository test suite merely as ceremony — CI is
 responsible for repository-wide regression gates.
+
+Before Step 7 (Completion Gate), run the repository's exact CI formatting
+verification as a mandatory lean local gate:
+
+- Frontend: `npm run format:check --prefix src/frontend`
+- Backend: `dotnet format src/backend/SquadCrm.sln --no-restore --verify-no-changes`
+
+This does not expand STANDARD verification into full repository regression
+testing.
 
 Automatically **expand** verification to the relevant integration/
 architecture/security suites when the story touches authentication,
