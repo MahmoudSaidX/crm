@@ -73,6 +73,14 @@ export const routes: Routes = [
         loadComponent: () => import('./staff-users/staff-user-roles').then((m) => m.StaffUserRoles),
       },
       {
+        path: 'system-configuration',
+        canActivate: [requirePermission('configuration.view')],
+        loadComponent: () =>
+          import('./system-configuration/system-configuration-list').then(
+            (m) => m.SystemConfigurationList,
+          ),
+      },
+      {
         path: 'audit',
         canActivate: [requirePermission('audit.view')],
         loadComponent: () => import('./audit/audit-list').then((m) => m.AuditList),

@@ -1,0 +1,114 @@
+<main class="system-configuration-page">
+  <header class="system-configuration-header">
+    <h1>{{ localization.translate('systemConfiguration.title') }}</h1>
+    <crm-agent-language-switcher />
+  </header>
+
+  @if (errorKey(); as key) {
+    <p-message severity="error">{{ localization.translate(key) }}</p-message>
+  }
+
+  <p-table [value]="values()" [loading]="loading()" dataKey="key" [scrollable]="true">
+    <ng-template #header>
+      <tr>
+        <th style="min-width: 14rem">
+          {{ localization.translate('systemConfiguration.fields.name') }}
+        </th>
+        <th style="min-width: 18rem">
+          {{ localization.translate('systemConfiguration.fields.description') }}
+        </th>
+        <th style="min-width: 12rem">
+          {{ localization.translate('systemConfiguration.fields.value') }}
+        </th>
+        <th style="min-width: 6rem"></th>
+        <th style="min-width: 10rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-item>
+      <tr>
+        <td>{{ displayName(item) }}</td>
+        <td>{{ description(item) || '—' }}</td>
+        <td>
+          @if (editingKey() === item.key) {
+            @switch (item.valueType) {
+              @case ('Boolean') {
+                <p-toggleswitch [(ngModel)]="editBoolean" />
+              }
+              @case ('Number') {
+                <p-inputnumber
+                  [(ngModel)]="editNumber"
+                  [min]="item.minNumber ?? undefined"
+                  [max]="item.maxNumber ?? undefined"
+                  [useGrouping]="false"
+                />
+              }
+              @default {
+                <input
+                  pInputText
+                  type="text"
+                  [(ngModel)]="editText"
+                  [attr.aria-label]="displayName(item)"
+                />
+              }
+            }
+          } @else if (item.isSensitive) {
+            <p-tag
+              [value]="
+                localization.translate(
+                  item.hasValue
+                    ? 'systemConfiguration.sensitive.set'
+                    : 'systemConfiguration.sensitive.notSet'
+                )
+              "
+              severity="secondary"
+            />
+          } @else {
+            {{ item.value }}
+          }
+        </td>
+        <td>
+          @if (item.requiresRestart) {
+            <p-tag
+              [value]="localization.translate('systemConfiguration.requiresRestart')"
+              severity="warn"
+            />
+          }
+        </td>
+        <td class="row-actions">
+          @if (authorization.has('configuration.manage')) {
+            @if (editingKey() === item.key) {
+              <p-button
+                [label]="localization.translate('common.actions.save')"
+                icon="pi pi-check"
+                size="small"
+                [loading]="saving()"
+                (onClick)="save(item)"
+              />
+              <p-button
+                [label]="localization.translate('common.actions.cancel')"
+                icon="pi pi-times"
+                severity="secondary"
+                size="small"
+                [disabled]="saving()"
+                (onClick)="cancelEdit()"
+              />
+            } @else {
+              <p-button
+                [label]="localization.translate('common.actions.edit')"
+                icon="pi pi-pencil"
+                severity="secondary"
+                size="small"
+                (onClick)="startEdit(item)"
+              />
+            }
+          }
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="5">{{ localization.translate('systemConfiguration.empty') }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</main>

@@ -22,6 +22,7 @@ import { DEPARTMENT_TRANSLATIONS } from './departments/department-translations';
 import { AGENT_TRANSLATIONS } from './i18n/agent-translations';
 import { ROLE_TRANSLATIONS } from './roles/role-translations';
 import { STAFF_USER_TRANSLATIONS } from './staff-users/staff-user-translations';
+import { SYSTEM_CONFIGURATION_TRANSLATIONS } from './system-configuration/system-configuration-translations';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -39,6 +40,7 @@ export const appConfig: ApplicationConfig = {
     provideTranslations(STAFF_USER_TRANSLATIONS),
     provideTranslations(AUDIT_TRANSLATIONS),
     provideTranslations(DEPARTMENT_TRANSLATIONS),
+    provideTranslations(SYSTEM_CONFIGURATION_TRANSLATIONS),
     providePrimeNgPlatform(),
     {
       provide: ENVIRONMENT_INITIALIZER,
