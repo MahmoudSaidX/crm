@@ -1,0 +1,36 @@
+import { TranslationResources } from '@squad-crm/platform';
+
+export const BRANCH_TRANSLATIONS: TranslationResources = {
+  en: {
+    'branches.title': 'Branches',
+    'branches.new': 'New branch',
+    'branches.edit': 'Edit branch',
+    'branches.fields.code': 'Code',
+    'branches.fields.arabicName': 'Arabic name',
+    'branches.fields.englishName': 'English name',
+    'branches.fields.description': 'Description',
+    'branches.fields.status': 'Status',
+    'branches.empty': 'No branches yet.',
+    'branches.validation.code': 'Code is required (max 64 characters).',
+    'branches.validation.arabicName': 'Arabic name is required (max 200 characters).',
+    'branches.validation.englishName': 'English name is required (max 200 characters).',
+    'branches.validation.description': 'Description must be at most 1000 characters.',
+    'branches.errors.duplicateCode': 'A branch with this code already exists.',
+  },
+  ar: {
+    'branches.title': 'الفروع',
+    'branches.new': 'فرع جديد',
+    'branches.edit': 'تعديل الفرع',
+    'branches.fields.code': 'الرمز',
+    'branches.fields.arabicName': 'الاسم بالعربية',
+    'branches.fields.englishName': 'الاسم بالإنجليزية',
+    'branches.fields.description': 'الوصف',
+    'branches.fields.status': 'الحالة',
+    'branches.empty': 'لا توجد فروع بعد.',
+    'branches.validation.code': 'الرمز مطلوب (بحد أقصى 64 حرفاً).',
+    'branches.validation.arabicName': 'الاسم بالعربية مطلوب (بحد أقصى 200 حرف).',
+    'branches.validation.englishName': 'الاسم بالإنجليزية مطلوب (بحد أقصى 200 حرف).',
+    'branches.validation.description': 'يجب ألا يتجاوز الوصف 1000 حرف.',
+    'branches.errors.duplicateCode': 'يوجد فرع بهذا الرمز بالفعل.',
+  },
+};

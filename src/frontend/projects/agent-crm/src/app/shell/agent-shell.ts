@@ -43,6 +43,15 @@ export class AgentShell {
           },
         ]
       : []),
+    ...(this.authorization.state.has('branches.view')
+      ? [
+          {
+            label: this.localization.translate('agent.navigation.branches'),
+            icon: 'pi pi-building',
+            routerLink: '/branches',
+          },
+        ]
+      : []),
     ...(this.authorization.state.has('configuration.view')
       ? [
           {

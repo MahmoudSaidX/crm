@@ -101,6 +101,20 @@ public sealed class RoleManagementDbContext(DbContextOptions<RoleManagementDbCon
                     Name = "Manage departments",
                     Module = "Department Management",
                     Description = "Create, update, activate and deactivate departments.",
+                },
+                new PermissionDefinition
+                {
+                    Code = Permissions.BranchesView,
+                    Name = "View branches",
+                    Module = "Branch Management",
+                    Description = "View branches and their active state.",
+                },
+                new PermissionDefinition
+                {
+                    Code = Permissions.BranchesManage,
+                    Name = "Manage branches",
+                    Module = "Branch Management",
+                    Description = "Create, update, activate and deactivate branches.",
                 });
         });
 

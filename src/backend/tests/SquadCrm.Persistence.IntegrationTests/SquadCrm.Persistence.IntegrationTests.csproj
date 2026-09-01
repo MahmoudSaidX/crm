@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\src\Modules\Audit\SquadCrm.Modules.Audit\SquadCrm.Modules.Audit.csproj" />
     <ProjectReference Include="..\..\src\Modules\Audit\SquadCrm.Modules.Audit.Contracts\SquadCrm.Modules.Audit.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\DepartmentManagement\SquadCrm.Modules.DepartmentManagement\SquadCrm.Modules.DepartmentManagement.csproj" />
+    <ProjectReference Include="..\..\src\Modules\BranchManagement\SquadCrm.Modules.BranchManagement\SquadCrm.Modules.BranchManagement.csproj" />
     <ProjectReference Include="..\..\src\Modules\SystemConfiguration\SquadCrm.Modules.SystemConfiguration\SquadCrm.Modules.SystemConfiguration.csproj" />
   </ItemGroup>
 

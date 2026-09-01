@@ -11,6 +11,8 @@ public static class Permissions
     public const string DepartmentsManage = "departments.manage";
     public const string ConfigurationView = "configuration.view";
     public const string ConfigurationManage = "configuration.manage";
+    public const string BranchesView = "branches.view";
+    public const string BranchesManage = "branches.manage";
 
     public static readonly IReadOnlyList<string> Bootstrap = [RolesView, RolesManage, UsersView, UsersManage];
 }
@@ -26,4 +28,6 @@ internal static class PermissionPolicies
     public const string DepartmentsManage = "permission:departments.manage";
     public const string ConfigurationView = "permission:configuration.view";
     public const string ConfigurationManage = "permission:configuration.manage";
+    public const string BranchesView = "permission:branches.view";
+    public const string BranchesManage = "permission:branches.manage";
 }
