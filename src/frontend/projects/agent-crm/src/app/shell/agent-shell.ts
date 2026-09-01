@@ -43,6 +43,15 @@ export class AgentShell {
           },
         ]
       : []),
+    ...(this.authorization.state.has('configuration.view')
+      ? [
+          {
+            label: this.localization.translate('agent.navigation.systemConfiguration'),
+            icon: 'pi pi-cog',
+            routerLink: '/system-configuration',
+          },
+        ]
+      : []),
     ...(this.authorization.state.has('users.view')
       ? [
           {

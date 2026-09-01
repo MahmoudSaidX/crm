@@ -31,6 +31,7 @@
     <ProjectReference Include="../../Modules/RoleManagement/SquadCrm.Modules.RoleManagement/SquadCrm.Modules.RoleManagement.csproj" />
     <ProjectReference Include="../../Modules/Audit/SquadCrm.Modules.Audit/SquadCrm.Modules.Audit.csproj" />
     <ProjectReference Include="../../Modules/DepartmentManagement/SquadCrm.Modules.DepartmentManagement/SquadCrm.Modules.DepartmentManagement.csproj" />
+    <ProjectReference Include="../../Modules/SystemConfiguration/SquadCrm.Modules.SystemConfiguration/SquadCrm.Modules.SystemConfiguration.csproj" />
   </ItemGroup>
 
 </Project>

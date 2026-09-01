@@ -18,6 +18,7 @@ using SquadCrm.Infrastructure.FileStorage;
 using SquadCrm.Modules.Audit;
 using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
 using SquadCrm.Modules.DepartmentManagement;
+using SquadCrm.Modules.SystemConfiguration;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -156,6 +157,7 @@ IModule[] modules =
     new SquadCrm.Modules.StaffIdentity.StaffIdentityModule(),
     new SquadCrm.Modules.RoleManagement.RoleManagementModule(),
     new DepartmentManagementModule(),
+    new SystemConfigurationModule(),
     new SquadCrm.Modules.ArchitectureFixture.ArchitectureFixtureModule(),
 ];
 

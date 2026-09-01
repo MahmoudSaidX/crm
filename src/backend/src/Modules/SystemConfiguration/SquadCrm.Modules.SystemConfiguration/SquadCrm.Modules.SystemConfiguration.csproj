@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>SquadCrm.Modules.SystemConfiguration</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../BuildingBlocks/SquadCrm.BuildingBlocks/SquadCrm.BuildingBlocks.csproj" />
+    <ProjectReference Include="../../../Infrastructure/SquadCrm.Infrastructure.Postgres/SquadCrm.Infrastructure.Postgres.csproj" />
+    <ProjectReference Include="../../Audit/SquadCrm.Modules.Audit.Contracts/SquadCrm.Modules.Audit.Contracts.csproj" />
+  </ItemGroup>
+</Project>
