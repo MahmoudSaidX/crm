@@ -1,0 +1,36 @@
+import { TranslationResources } from '@squad-crm/platform';
+
+export const DEPARTMENT_TRANSLATIONS: TranslationResources = {
+  en: {
+    'departments.title': 'Departments',
+    'departments.new': 'New department',
+    'departments.edit': 'Edit department',
+    'departments.fields.code': 'Code',
+    'departments.fields.arabicName': 'Arabic name',
+    'departments.fields.englishName': 'English name',
+    'departments.fields.description': 'Description',
+    'departments.fields.status': 'Status',
+    'departments.empty': 'No departments yet.',
+    'departments.validation.code': 'Code is required (max 64 characters).',
+    'departments.validation.arabicName': 'Arabic name is required (max 200 characters).',
+    'departments.validation.englishName': 'English name is required (max 200 characters).',
+    'departments.validation.description': 'Description must be at most 1000 characters.',
+    'departments.errors.duplicateCode': 'A department with this code already exists.',
+  },
+  ar: {
+    'departments.title': 'الأقسام',
+    'departments.new': 'قسم جديد',
+    'departments.edit': 'تعديل القسم',
+    'departments.fields.code': 'الرمز',
+    'departments.fields.arabicName': 'الاسم بالعربية',
+    'departments.fields.englishName': 'الاسم بالإنجليزية',
+    'departments.fields.description': 'الوصف',
+    'departments.fields.status': 'الحالة',
+    'departments.empty': 'لا توجد أقسام بعد.',
+    'departments.validation.code': 'الرمز مطلوب (بحد أقصى 64 حرفاً).',
+    'departments.validation.arabicName': 'الاسم بالعربية مطلوب (بحد أقصى 200 حرف).',
+    'departments.validation.englishName': 'الاسم بالإنجليزية مطلوب (بحد أقصى 200 حرف).',
+    'departments.validation.description': 'يجب ألا يتجاوز الوصف 1000 حرف.',
+    'departments.errors.duplicateCode': 'يوجد قسم بهذا الرمز بالفعل.',
+  },
+};
