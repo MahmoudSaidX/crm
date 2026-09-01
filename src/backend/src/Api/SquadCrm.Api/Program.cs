@@ -17,6 +17,7 @@ using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Infrastructure.FileStorage;
 using SquadCrm.Modules.Audit;
 using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
+using SquadCrm.Modules.BranchManagement;
 using SquadCrm.Modules.DepartmentManagement;
 using SquadCrm.Modules.SystemConfiguration;
 
@@ -157,6 +158,7 @@ IModule[] modules =
     new SquadCrm.Modules.StaffIdentity.StaffIdentityModule(),
     new SquadCrm.Modules.RoleManagement.RoleManagementModule(),
     new DepartmentManagementModule(),
+    new BranchManagementModule(),
     new SystemConfigurationModule(),
     new SquadCrm.Modules.ArchitectureFixture.ArchitectureFixtureModule(),
 ];

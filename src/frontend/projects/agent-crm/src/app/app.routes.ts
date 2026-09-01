@@ -53,6 +53,21 @@ export const routes: Routes = [
         loadComponent: () => import('./departments/department-form').then((m) => m.DepartmentForm),
       },
       {
+        path: 'branches',
+        canActivate: [requirePermission('branches.view')],
+        loadComponent: () => import('./branches/branch-list').then((m) => m.BranchList),
+      },
+      {
+        path: 'branches/new',
+        canActivate: [requirePermission('branches.manage')],
+        loadComponent: () => import('./branches/branch-form').then((m) => m.BranchForm),
+      },
+      {
+        path: 'branches/:id/edit',
+        canActivate: [requirePermission('branches.manage')],
+        loadComponent: () => import('./branches/branch-form').then((m) => m.BranchForm),
+      },
+      {
         path: 'staff-users',
         canActivate: [requirePermission('users.view')],
         loadComponent: () => import('./staff-users/staff-user-list').then((m) => m.StaffUserList),

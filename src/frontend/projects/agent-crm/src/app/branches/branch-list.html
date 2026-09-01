@@ -1,0 +1,88 @@
+<main class="branches-page">
+  <header class="branches-header">
+    <h1>{{ localization.translate('branches.title') }}</h1>
+    <crm-agent-language-switcher />
+    @if (authorization.has('branches.manage')) {
+      <p-button
+        [label]="localization.translate('branches.new')"
+        icon="pi pi-plus"
+        routerLink="/branches/new"
+      />
+    }
+  </header>
+
+  <p-table
+    [value]="branches()"
+    [lazy]="true"
+    [paginator]="true"
+    [rows]="pageSize"
+    [totalRecords]="totalRecords()"
+    [paginatorLocale]="localization.locale()"
+    [loading]="loading()"
+    [scrollable]="true"
+    (onLazyLoad)="onLazyLoad($event)"
+    dataKey="id"
+  >
+    <ng-template #header>
+      <tr>
+        <th style="min-width: 10rem">{{ localization.translate('branches.fields.code') }}</th>
+        <th style="min-width: 12rem">
+          {{ localization.translate('branches.fields.arabicName') }}
+        </th>
+        <th style="min-width: 12rem">
+          {{ localization.translate('branches.fields.englishName') }}
+        </th>
+        <th style="min-width: 16rem">
+          {{ localization.translate('branches.fields.description') }}
+        </th>
+        <th style="min-width: 8rem">{{ localization.translate('branches.fields.status') }}</th>
+        <th style="min-width: 12rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-branch>
+      <tr>
+        <td>{{ branch.code }}</td>
+        <td>{{ branch.arabicName }}</td>
+        <td>{{ branch.englishName }}</td>
+        <td>{{ branch.description || '—' }}</td>
+        <td>
+          <p-tag
+            [value]="
+              localization.translate(
+                branch.isActive ? 'common.status.active' : 'common.status.inactive'
+              )
+            "
+            [severity]="branch.isActive ? 'success' : 'danger'"
+          />
+        </td>
+        <td class="row-actions">
+          @if (authorization.has('branches.manage')) {
+            <p-button
+              [label]="localization.translate('common.actions.edit')"
+              icon="pi pi-pencil"
+              severity="secondary"
+              size="small"
+              [routerLink]="['/branches', branch.id, 'edit']"
+            />
+            <p-button
+              [label]="
+                localization.translate(
+                  branch.isActive ? 'common.actions.deactivate' : 'common.actions.activate'
+                )
+              "
+              [icon]="branch.isActive ? 'pi pi-ban' : 'pi pi-check'"
+              [severity]="branch.isActive ? 'danger' : 'success'"
+              size="small"
+              (onClick)="toggleActive(branch)"
+            />
+          }
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="6">{{ localization.translate('branches.empty') }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</main>

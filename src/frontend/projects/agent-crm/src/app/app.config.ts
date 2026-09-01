@@ -18,6 +18,7 @@ import { routes } from './app.routes';
 import { authInterceptor } from './auth/auth.interceptor';
 import { forbiddenInterceptor } from './auth/forbidden.interceptor';
 import { AUDIT_TRANSLATIONS } from './audit/audit-translations';
+import { BRANCH_TRANSLATIONS } from './branches/branch-translations';
 import { DEPARTMENT_TRANSLATIONS } from './departments/department-translations';
 import { AGENT_TRANSLATIONS } from './i18n/agent-translations';
 import { ROLE_TRANSLATIONS } from './roles/role-translations';
@@ -40,6 +41,7 @@ export const appConfig: ApplicationConfig = {
     provideTranslations(STAFF_USER_TRANSLATIONS),
     provideTranslations(AUDIT_TRANSLATIONS),
     provideTranslations(DEPARTMENT_TRANSLATIONS),
+    provideTranslations(BRANCH_TRANSLATIONS),
     provideTranslations(SYSTEM_CONFIGURATION_TRANSLATIONS),
     providePrimeNgPlatform(),
     {

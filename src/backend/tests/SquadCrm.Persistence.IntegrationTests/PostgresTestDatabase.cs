@@ -4,6 +4,7 @@ using Npgsql;
 using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Modules.ArchitectureFixture.Persistence;
 using SquadCrm.Modules.Audit.Persistence;
+using SquadCrm.Modules.BranchManagement.Persistence;
 using SquadCrm.Modules.DepartmentManagement.Persistence;
 using SquadCrm.Modules.RoleManagement.Persistence;
 using SquadCrm.Modules.StaffIdentity.Persistence;
@@ -93,6 +94,8 @@ public sealed class PostgresTestDatabase : IAsyncLifetime
         await audit.Database.MigrateAsync();
         await using DepartmentManagementDbContext departmentManagement = CreateDepartmentManagementContext();
         await departmentManagement.Database.MigrateAsync();
+        await using BranchManagementDbContext branchManagement = CreateBranchManagementContext();
+        await branchManagement.Database.MigrateAsync();
         await using SystemConfigurationDbContext systemConfiguration = CreateSystemConfigurationContext();
         await systemConfiguration.Database.MigrateAsync();
     }
@@ -137,6 +140,9 @@ public sealed class PostgresTestDatabase : IAsyncLifetime
 
     public static DepartmentManagementDbContext CreateDepartmentManagementContext() =>
         new DepartmentManagementDbContextFactory().CreateDbContext([]);
+
+    public static BranchManagementDbContext CreateBranchManagementContext() =>
+        new BranchManagementDbContextFactory().CreateDbContext([]);
 
     public static SystemConfigurationDbContext CreateSystemConfigurationContext() =>
         new SystemConfigurationDbContextFactory().CreateDbContext([]);
