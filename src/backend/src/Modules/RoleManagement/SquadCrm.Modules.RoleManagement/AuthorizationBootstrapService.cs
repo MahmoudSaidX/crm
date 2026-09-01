@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SquadCrm.Modules.Audit.Contracts;
 using SquadCrm.Modules.RoleManagement.Persistence;
 using SquadCrm.Modules.StaffIdentity.Contracts;
 
@@ -20,7 +21,8 @@ public readonly record struct AuthorizationBootstrapResult(AuthorizationBootstra
 
 public sealed class AuthorizationBootstrapService(
     RoleManagementDbContext dbContext,
-    IStaffSubjectReferenceReader subjectReader)
+    IStaffSubjectReferenceReader subjectReader,
+    IAuditRecorder auditRecorder)
 {
     public async Task<AuthorizationBootstrapResult> BootstrapAsync(
         string subjectEmail,
@@ -51,8 +53,9 @@ public sealed class AuthorizationBootstrapService(
             return new(AuthorizationBootstrapFailure.RoleInactive);
         }
 
-        if (!await dbContext.StaffSubjectRoles.AnyAsync(
-                item => item.StaffSubjectId == subject.Id && item.RoleId == role.Id, cancellationToken))
+        bool roleAssigned = !await dbContext.StaffSubjectRoles.AnyAsync(
+            item => item.StaffSubjectId == subject.Id && item.RoleId == role.Id, cancellationToken);
+        if (roleAssigned)
         {
             dbContext.StaffSubjectRoles.Add(new StaffSubjectRole
             {
@@ -84,6 +87,19 @@ public sealed class AuthorizationBootstrapService(
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
+
+        if (roleAssigned)
+        {
+            await auditRecorder.RecordAsync(
+                new AuditRecordRequest(
+                    "bootstrap-tool",
+                    "role_assigned",
+                    "StaffSubjectRole",
+                    $"{subject.Id}:{role.Id}",
+                    new Dictionary<string, string> { ["roleCode"] = role.Code }),
+                cancellationToken);
+        }
+
         return new(AuthorizationBootstrapFailure.None);
     }
 }

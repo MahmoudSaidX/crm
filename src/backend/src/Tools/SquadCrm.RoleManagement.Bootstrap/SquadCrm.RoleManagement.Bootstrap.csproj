@@ -8,5 +8,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../Modules/RoleManagement/SquadCrm.Modules.RoleManagement/SquadCrm.Modules.RoleManagement.csproj" />
     <ProjectReference Include="../../Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity/SquadCrm.Modules.StaffIdentity.csproj" />
+    <ProjectReference Include="../../Modules/Audit/SquadCrm.Modules.Audit/SquadCrm.Modules.Audit.csproj" />
+    <ProjectReference Include="../../Modules/Audit/SquadCrm.Modules.Audit.Contracts/SquadCrm.Modules.Audit.Contracts.csproj" />
   </ItemGroup>
 </Project>

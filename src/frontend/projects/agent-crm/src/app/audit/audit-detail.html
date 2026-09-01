@@ -1,0 +1,48 @@
+<main class="audit-detail-page">
+  <header class="audit-detail-header">
+    <h1>{{ localization.translate('audit.detail.title') }}</h1>
+    <crm-agent-language-switcher />
+  </header>
+
+  @if (notFound()) {
+    <p>{{ localization.translate('audit.detail.notFound') }}</p>
+  } @else if (auditRecord(); as record) {
+    <dl class="audit-detail-fields">
+      <dt>{{ localization.translate('audit.fields.occurredAt') }}</dt>
+      <dd>{{ record.occurredAtUtc | date: 'medium' }}</dd>
+
+      <dt>{{ localization.translate('audit.fields.actor') }}</dt>
+      <dd>{{ record.actorHandle }}</dd>
+
+      <dt>{{ localization.translate('audit.fields.action') }}</dt>
+      <dd>{{ record.action }}</dd>
+
+      <dt>{{ localization.translate('audit.fields.entityType') }}</dt>
+      <dd>{{ record.entityType }}</dd>
+
+      <dt>{{ localization.translate('audit.fields.entityId') }}</dt>
+      <dd>{{ record.entityId }}</dd>
+    </dl>
+
+    @if (record.metadata) {
+      <section class="audit-detail-metadata">
+        <h2>{{ localization.translate('audit.fields.metadata') }}</h2>
+        <dl class="audit-detail-fields">
+          @for (entry of record.metadata | keyvalue; track entry.key) {
+            <dt>{{ entry.key }}</dt>
+            <dd>{{ entry.value }}</dd>
+          }
+        </dl>
+      </section>
+    }
+  }
+
+  <div class="audit-detail-actions">
+    <p-button
+      [label]="localization.translate('audit.detail.back')"
+      icon="pi pi-arrow-left"
+      severity="secondary"
+      routerLink="/audit"
+    />
+  </div>
+</main>

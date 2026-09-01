@@ -118,6 +118,13 @@ namespace SquadCrm.Modules.RoleManagement.Persistence.Migrations
                             Description = "Create, update, activate, deactivate staff users, and assign roles.",
                             Module = "Staff Management",
                             Name = "Manage staff users"
+                        },
+                        new
+                        {
+                            Code = "audit.view",
+                            Description = "View the audit trail of administrative actions.",
+                            Module = "Audit",
+                            Name = "View audit records"
                         });
                 });
 

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Npgsql;
 using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Modules.ArchitectureFixture.Persistence;
+using SquadCrm.Modules.Audit.Persistence;
 using SquadCrm.Modules.RoleManagement.Persistence;
 using SquadCrm.Modules.StaffIdentity.Persistence;
 
@@ -86,6 +87,8 @@ public sealed class PostgresTestDatabase : IAsyncLifetime
         await staffIdentity.Database.MigrateAsync();
         await using RoleManagementDbContext roleManagement = CreateRoleManagementContext();
         await roleManagement.Database.MigrateAsync();
+        await using AuditDbContext audit = CreateAuditContext();
+        await audit.Database.MigrateAsync();
     }
 
     public async Task DisposeAsync()
@@ -122,6 +125,9 @@ public sealed class PostgresTestDatabase : IAsyncLifetime
 
     public static RoleManagementDbContext CreateRoleManagementContext() =>
         new RoleManagementDbContextFactory().CreateDbContext([]);
+
+    public static AuditDbContext CreateAuditContext() =>
+        new AuditDbContextFactory().CreateDbContext([]);
 
     /// <summary>Opens a raw connection for <c>information_schema</c> assertions.</summary>
     public async Task<NpgsqlConnection> OpenConnectionAsync()

@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+
+.audit-detail-page {
+  box-sizing: border-box;
+  padding: clamp(1rem, 4vw, 2rem);
+  max-inline-size: 48rem;
+}
+
+.audit-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-end: 1rem;
+  flex-wrap: wrap;
+}
+
+.audit-detail-header h1 {
+  margin: 0;
+}
+
+.audit-detail-fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0 0 1.5rem;
+}
+
+.audit-detail-fields dt {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.audit-detail-fields dd {
+  margin: 0;
+}
+
+.audit-detail-metadata h2 {
+  font-size: 1.1rem;
+  margin-block-end: 0.5rem;
+}
+
+.audit-detail-actions {
+  margin-block-start: 1rem;
+}
