@@ -87,6 +87,20 @@ public sealed class RoleManagementDbContext(DbContextOptions<RoleManagementDbCon
                     Name = "View audit records",
                     Module = "Audit",
                     Description = "View the audit trail of administrative actions.",
+                },
+                new PermissionDefinition
+                {
+                    Code = Permissions.DepartmentsView,
+                    Name = "View departments",
+                    Module = "Department Management",
+                    Description = "View departments and their active state.",
+                },
+                new PermissionDefinition
+                {
+                    Code = Permissions.DepartmentsManage,
+                    Name = "Manage departments",
+                    Module = "Department Management",
+                    Description = "Create, update, activate and deactivate departments.",
                 });
         });
 

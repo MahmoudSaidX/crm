@@ -1,0 +1,88 @@
+<main class="departments-page">
+  <header class="departments-header">
+    <h1>{{ localization.translate('departments.title') }}</h1>
+    <crm-agent-language-switcher />
+    @if (authorization.has('departments.manage')) {
+      <p-button
+        [label]="localization.translate('departments.new')"
+        icon="pi pi-plus"
+        routerLink="/departments/new"
+      />
+    }
+  </header>
+
+  <p-table
+    [value]="departments()"
+    [lazy]="true"
+    [paginator]="true"
+    [rows]="pageSize"
+    [totalRecords]="totalRecords()"
+    [paginatorLocale]="localization.locale()"
+    [loading]="loading()"
+    [scrollable]="true"
+    (onLazyLoad)="onLazyLoad($event)"
+    dataKey="id"
+  >
+    <ng-template #header>
+      <tr>
+        <th style="min-width: 10rem">{{ localization.translate('departments.fields.code') }}</th>
+        <th style="min-width: 12rem">
+          {{ localization.translate('departments.fields.arabicName') }}
+        </th>
+        <th style="min-width: 12rem">
+          {{ localization.translate('departments.fields.englishName') }}
+        </th>
+        <th style="min-width: 16rem">
+          {{ localization.translate('departments.fields.description') }}
+        </th>
+        <th style="min-width: 8rem">{{ localization.translate('departments.fields.status') }}</th>
+        <th style="min-width: 12rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-department>
+      <tr>
+        <td>{{ department.code }}</td>
+        <td>{{ department.arabicName }}</td>
+        <td>{{ department.englishName }}</td>
+        <td>{{ department.description || '—' }}</td>
+        <td>
+          <p-tag
+            [value]="
+              localization.translate(
+                department.isActive ? 'common.status.active' : 'common.status.inactive'
+              )
+            "
+            [severity]="department.isActive ? 'success' : 'danger'"
+          />
+        </td>
+        <td class="row-actions">
+          @if (authorization.has('departments.manage')) {
+            <p-button
+              [label]="localization.translate('common.actions.edit')"
+              icon="pi pi-pencil"
+              severity="secondary"
+              size="small"
+              [routerLink]="['/departments', department.id, 'edit']"
+            />
+            <p-button
+              [label]="
+                localization.translate(
+                  department.isActive ? 'common.actions.deactivate' : 'common.actions.activate'
+                )
+              "
+              [icon]="department.isActive ? 'pi pi-ban' : 'pi pi-check'"
+              [severity]="department.isActive ? 'danger' : 'success'"
+              size="small"
+              (onClick)="toggleActive(department)"
+            />
+          }
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="6">{{ localization.translate('departments.empty') }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</main>

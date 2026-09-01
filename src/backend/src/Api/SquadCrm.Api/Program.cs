@@ -17,6 +17,7 @@ using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Infrastructure.FileStorage;
 using SquadCrm.Modules.Audit;
 using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
+using SquadCrm.Modules.DepartmentManagement;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -154,6 +155,7 @@ IModule[] modules =
     new AuditModule(),
     new SquadCrm.Modules.StaffIdentity.StaffIdentityModule(),
     new SquadCrm.Modules.RoleManagement.RoleManagementModule(),
+    new DepartmentManagementModule(),
     new SquadCrm.Modules.ArchitectureFixture.ArchitectureFixtureModule(),
 ];
 

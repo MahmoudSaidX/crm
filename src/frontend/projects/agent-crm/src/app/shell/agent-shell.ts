@@ -34,6 +34,15 @@ export class AgentShell {
           },
         ]
       : []),
+    ...(this.authorization.state.has('departments.view')
+      ? [
+          {
+            label: this.localization.translate('agent.navigation.departments'),
+            icon: 'pi pi-sitemap',
+            routerLink: '/departments',
+          },
+        ]
+      : []),
     ...(this.authorization.state.has('users.view')
       ? [
           {
