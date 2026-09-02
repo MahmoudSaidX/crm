@@ -62,10 +62,22 @@
     />
 
     <label for="primaryColor">{{ localization.translate('branding.fields.primaryColor') }}</label>
-    <input pInputText id="primaryColor" type="text" formControlName="primaryColor" placeholder="#1D4ED8" />
+    <input
+      pInputText
+      id="primaryColor"
+      type="text"
+      formControlName="primaryColor"
+      placeholder="#1D4ED8"
+    />
 
     <label for="accentColor">{{ localization.translate('branding.fields.accentColor') }}</label>
-    <input pInputText id="accentColor" type="text" formControlName="accentColor" placeholder="#0EA5E9" />
+    <input
+      pInputText
+      id="accentColor"
+      type="text"
+      formControlName="accentColor"
+      placeholder="#0EA5E9"
+    />
 
     @if (authorization.has('branding.manage')) {
       <p-button

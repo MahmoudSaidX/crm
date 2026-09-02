@@ -17,7 +17,13 @@ const LOGO_KINDS: readonly BrandingLogoKind[] = ['primary', 'compact', 'favicon'
 
 @Component({
   selector: 'crm-branding-settings',
-  imports: [ReactiveFormsModule, ButtonModule, InputTextModule, MessageModule, AgentLanguageSwitcher],
+  imports: [
+    ReactiveFormsModule,
+    ButtonModule,
+    InputTextModule,
+    MessageModule,
+    AgentLanguageSwitcher,
+  ],
   templateUrl: './branding-settings.html',
   styleUrl: './branding-settings.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -100,9 +106,11 @@ export class BrandingSettings {
 
       const settings = await this.brandingSettingsService.update({
         organizationDisplayNameEn: raw.organizationDisplayNameEn,
-        organizationDisplayNameAr: raw.organizationDisplayNameAr.trim() === '' ? null : raw.organizationDisplayNameAr,
+        organizationDisplayNameAr:
+          raw.organizationDisplayNameAr.trim() === '' ? null : raw.organizationDisplayNameAr,
         productDisplayNameEn: raw.productDisplayNameEn,
-        productDisplayNameAr: raw.productDisplayNameAr.trim() === '' ? null : raw.productDisplayNameAr,
+        productDisplayNameAr:
+          raw.productDisplayNameAr.trim() === '' ? null : raw.productDisplayNameAr,
         themeTokens,
       });
       this.applySettings(settings);

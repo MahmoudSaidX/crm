@@ -9,7 +9,8 @@ export const BRANDING_TRANSLATIONS: TranslationResources = {
     'branding.fields.productDisplayNameAr': 'Product name (Arabic)',
     'branding.fields.primaryColor': 'Primary color',
     'branding.fields.accentColor': 'Accent color',
-    'branding.validation.productDisplayNameEn': 'Product name (English) is required (max 200 characters).',
+    'branding.validation.productDisplayNameEn':
+      'Product name (English) is required (max 200 characters).',
     'branding.logos.primary': 'Primary logo',
     'branding.logos.compact': 'Compact logo',
     'branding.logos.favicon': 'Favicon',

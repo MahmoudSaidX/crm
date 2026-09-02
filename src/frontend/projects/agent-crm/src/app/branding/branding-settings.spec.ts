@@ -21,12 +21,10 @@ describe('BrandingSettings', () => {
   };
 
   function configure(): void {
-    brandingSettingsService = jasmine.createSpyObj<BrandingSettingsService>('BrandingSettingsService', [
-      'get',
-      'update',
-      'uploadLogo',
-      'deleteLogo',
-    ]);
+    brandingSettingsService = jasmine.createSpyObj<BrandingSettingsService>(
+      'BrandingSettingsService',
+      ['get', 'update', 'uploadLogo', 'deleteLogo'],
+    );
     brandingSettingsService.get.and.resolveTo(existing);
 
     TestBed.configureTestingModule({
@@ -77,7 +75,10 @@ describe('BrandingSettings', () => {
 
   it('applies the returned settings and shows the saved message on success', async () => {
     configure();
-    brandingSettingsService.update.and.resolveTo({ ...existing, productDisplayNameEn: 'Updated CRM' });
+    brandingSettingsService.update.and.resolveTo({
+      ...existing,
+      productDisplayNameEn: 'Updated CRM',
+    });
     const fixture = TestBed.createComponent(BrandingSettings);
     fixture.detectChanges();
     await fixture.whenStable();
