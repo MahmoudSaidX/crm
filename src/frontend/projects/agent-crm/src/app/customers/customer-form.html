@@ -1,0 +1,68 @@
+<main class="customer-form-page">
+  <header>
+    <h1>{{ localization.translate('customers.new') }}</h1>
+    <crm-agent-language-switcher />
+  </header>
+
+  @if (errorKey(); as key) {
+    <p-message severity="error">{{ localization.translate(key) }}</p-message>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label for="firstName">{{ localization.translate('customers.fields.firstName') }}</label>
+    <input pInputText id="firstName" type="text" formControlName="firstName" />
+    @if (form.controls.firstName.touched && form.controls.firstName.invalid) {
+      <small class="field-error">{{
+        localization.translate('customers.validation.firstName')
+      }}</small>
+    }
+
+    <label for="lastName">{{ localization.translate('customers.fields.lastName') }}</label>
+    <input pInputText id="lastName" type="text" formControlName="lastName" />
+    @if (form.controls.lastName.touched && form.controls.lastName.invalid) {
+      <small class="field-error">{{
+        localization.translate('customers.validation.lastName')
+      }}</small>
+    }
+
+    <label for="preferredLanguage">{{
+      localization.translate('customers.fields.preferredLanguage')
+    }}</label>
+    <p-select
+      id="preferredLanguage"
+      formControlName="preferredLanguage"
+      [options]="languageOptions"
+      optionLabel="label"
+      optionValue="value"
+      [showClear]="true"
+    />
+
+    <label for="departmentId">{{ localization.translate('customers.fields.department') }}</label>
+    <p-select
+      id="departmentId"
+      formControlName="departmentId"
+      [options]="departmentOptions()"
+      optionLabel="label"
+      optionValue="value"
+      [showClear]="true"
+    />
+
+    <label for="branchId">{{ localization.translate('customers.fields.branch') }}</label>
+    <p-select
+      id="branchId"
+      formControlName="branchId"
+      [options]="branchOptions()"
+      optionLabel="label"
+      optionValue="value"
+      [showClear]="true"
+    />
+
+    <p-button
+      type="submit"
+      [label]="localization.translate('common.actions.save')"
+      icon="pi pi-check"
+      [loading]="submitting()"
+      [disabled]="form.invalid"
+    />
+  </form>
+</main>

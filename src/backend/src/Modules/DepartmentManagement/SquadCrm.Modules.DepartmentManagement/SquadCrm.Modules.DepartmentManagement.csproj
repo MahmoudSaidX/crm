@@ -14,5 +14,6 @@
     <ProjectReference Include="../../../BuildingBlocks/SquadCrm.BuildingBlocks/SquadCrm.BuildingBlocks.csproj" />
     <ProjectReference Include="../../../Infrastructure/SquadCrm.Infrastructure.Postgres/SquadCrm.Infrastructure.Postgres.csproj" />
     <ProjectReference Include="../../Audit/SquadCrm.Modules.Audit.Contracts/SquadCrm.Modules.Audit.Contracts.csproj" />
+    <ProjectReference Include="../SquadCrm.Modules.DepartmentManagement.Contracts/SquadCrm.Modules.DepartmentManagement.Contracts.csproj" />
   </ItemGroup>
 </Project>

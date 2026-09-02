@@ -32,6 +32,7 @@
     <ProjectReference Include="../../Modules/Audit/SquadCrm.Modules.Audit/SquadCrm.Modules.Audit.csproj" />
     <ProjectReference Include="../../Modules/DepartmentManagement/SquadCrm.Modules.DepartmentManagement/SquadCrm.Modules.DepartmentManagement.csproj" />
     <ProjectReference Include="../../Modules/BranchManagement/SquadCrm.Modules.BranchManagement/SquadCrm.Modules.BranchManagement.csproj" />
+    <ProjectReference Include="../../Modules/CustomerManagement/SquadCrm.Modules.CustomerManagement/SquadCrm.Modules.CustomerManagement.csproj" />
     <ProjectReference Include="../../Modules/SystemConfiguration/SquadCrm.Modules.SystemConfiguration/SquadCrm.Modules.SystemConfiguration.csproj" />
     <ProjectReference Include="../../Modules/BrandingManagement/SquadCrm.Modules.BrandingManagement/SquadCrm.Modules.BrandingManagement.csproj" />
   </ItemGroup>
