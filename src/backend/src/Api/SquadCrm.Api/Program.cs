@@ -20,6 +20,7 @@ using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
 using SquadCrm.Modules.BranchManagement;
 using SquadCrm.Modules.DepartmentManagement;
 using SquadCrm.Modules.SystemConfiguration;
+using SquadCrm.Modules.BrandingManagement;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -160,6 +161,7 @@ IModule[] modules =
     new DepartmentManagementModule(),
     new BranchManagementModule(),
     new SystemConfigurationModule(),
+    new BrandingManagementModule(),
     new SquadCrm.Modules.ArchitectureFixture.ArchitectureFixtureModule(),
 ];
 

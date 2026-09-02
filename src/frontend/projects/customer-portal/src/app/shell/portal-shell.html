@@ -1,5 +1,6 @@
 <sc-responsive-shell
-  [title]="localization.translate('portal.shell.title')"
+  [title]="shellTitle()"
+  [logoUrl]="branding.value().compactLogoUrl"
   [menuLabel]="localization.translate('common.navigation.openMenu')"
   [closeMenuLabel]="localization.translate('common.navigation.closeMenu')"
   [navigationLabel]="localization.translate('common.navigation.primary')"

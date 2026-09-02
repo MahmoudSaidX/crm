@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { LocalizationService } from '@squad-crm/platform';
+import { BrandingService, LocalizationService } from '@squad-crm/platform';
 import { ResponsiveShell, ShellNavigationItem } from '@squad-crm/shared-ui';
 import { ButtonModule } from 'primeng/button';
 import { AuthService } from '../auth/auth.service';
@@ -18,6 +18,16 @@ export class AgentShell {
   private readonly router = inject(Router);
   protected readonly authorization = inject(AuthorizationService);
   protected readonly localization = inject(LocalizationService);
+  protected readonly branding = inject(BrandingService);
+  protected readonly shellTitle = computed(() => {
+    const branding = this.branding.value();
+    if (branding.isDefault) {
+      return this.localization.translate('agent.shell.title');
+    }
+    return this.localization.locale() === 'ar' && branding.productDisplayNameAr
+      ? branding.productDisplayNameAr
+      : branding.productDisplayNameEn;
+  });
   protected readonly navigationItems = computed<readonly ShellNavigationItem[]>(() => [
     {
       label: this.localization.translate('agent.navigation.home'),
@@ -61,6 +71,15 @@ export class AgentShell {
           },
         ]
       : []),
+    ...(this.authorization.state.has('branding.view')
+      ? [
+          {
+            label: this.localization.translate('agent.navigation.branding'),
+            icon: 'pi pi-palette',
+            routerLink: '/branding',
+          },
+        ]
+      : []),
     ...(this.authorization.state.has('users.view')
       ? [
           {
@@ -83,6 +102,8 @@ export class AgentShell {
 
   constructor() {
     void this.authorization.load();
+    void this.branding.load();
+    effect(() => (document.title = this.shellTitle()));
   }
 
   protected async signOut(): Promise<void> {

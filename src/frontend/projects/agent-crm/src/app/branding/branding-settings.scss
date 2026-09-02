@@ -1,0 +1,61 @@
+.branding-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-inline-size: 32rem;
+}
+
+.field-error {
+  color: var(--p-red-500);
+}
+
+.branding-logos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-inline-size: 32rem;
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo-label {
+  min-inline-size: 8rem;
+  font-weight: 600;
+}
+
+.logo-file {
+  flex: 1;
+  color: var(--p-text-muted-color);
+}
+
+.logo-row input[type='file'] {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.logo-upload-label {
+  cursor: pointer;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--p-border-radius-md);
+  border: 1px solid var(--p-content-border-color);
+}

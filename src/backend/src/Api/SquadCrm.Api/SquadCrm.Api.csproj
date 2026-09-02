@@ -33,6 +33,7 @@
     <ProjectReference Include="../../Modules/DepartmentManagement/SquadCrm.Modules.DepartmentManagement/SquadCrm.Modules.DepartmentManagement.csproj" />
     <ProjectReference Include="../../Modules/BranchManagement/SquadCrm.Modules.BranchManagement/SquadCrm.Modules.BranchManagement.csproj" />
     <ProjectReference Include="../../Modules/SystemConfiguration/SquadCrm.Modules.SystemConfiguration/SquadCrm.Modules.SystemConfiguration.csproj" />
+    <ProjectReference Include="../../Modules/BrandingManagement/SquadCrm.Modules.BrandingManagement/SquadCrm.Modules.BrandingManagement.csproj" />
   </ItemGroup>
 
 </Project>

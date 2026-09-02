@@ -1,0 +1,43 @@
+import { TranslationResources } from '@squad-crm/platform';
+
+export const BRANDING_TRANSLATIONS: TranslationResources = {
+  en: {
+    'branding.title': 'Branding',
+    'branding.fields.organizationDisplayNameEn': 'Organization name (English)',
+    'branding.fields.organizationDisplayNameAr': 'Organization name (Arabic)',
+    'branding.fields.productDisplayNameEn': 'Product name (English)',
+    'branding.fields.productDisplayNameAr': 'Product name (Arabic)',
+    'branding.fields.primaryColor': 'Primary color',
+    'branding.fields.accentColor': 'Accent color',
+    'branding.validation.productDisplayNameEn':
+      'Product name (English) is required (max 200 characters).',
+    'branding.logos.primary': 'Primary logo',
+    'branding.logos.compact': 'Compact logo',
+    'branding.logos.favicon': 'Favicon',
+    'branding.logos.upload': 'Upload',
+    'branding.logos.remove': 'Remove',
+    'branding.logos.none': 'No file uploaded.',
+    'branding.errors.invalidFile': 'This file type or size is not allowed.',
+    'branding.errors.invalidThemeToken': 'One or more theme colors are not valid.',
+    'branding.saved': 'Branding settings saved.',
+  },
+  ar: {
+    'branding.title': 'الهوية البصرية',
+    'branding.fields.organizationDisplayNameEn': 'اسم المؤسسة (بالإنجليزية)',
+    'branding.fields.organizationDisplayNameAr': 'اسم المؤسسة (بالعربية)',
+    'branding.fields.productDisplayNameEn': 'اسم المنتج (بالإنجليزية)',
+    'branding.fields.productDisplayNameAr': 'اسم المنتج (بالعربية)',
+    'branding.fields.primaryColor': 'اللون الأساسي',
+    'branding.fields.accentColor': 'اللون الثانوي',
+    'branding.validation.productDisplayNameEn': 'اسم المنتج بالإنجليزية مطلوب (بحد أقصى 200 حرف).',
+    'branding.logos.primary': 'الشعار الأساسي',
+    'branding.logos.compact': 'الشعار المصغر',
+    'branding.logos.favicon': 'أيقونة المتصفح',
+    'branding.logos.upload': 'رفع',
+    'branding.logos.remove': 'إزالة',
+    'branding.logos.none': 'لم يتم رفع ملف.',
+    'branding.errors.invalidFile': 'نوع أو حجم هذا الملف غير مسموح به.',
+    'branding.errors.invalidThemeToken': 'أحد ألوان السمة غير صالح.',
+    'branding.saved': 'تم حفظ إعدادات الهوية البصرية.',
+  },
+};

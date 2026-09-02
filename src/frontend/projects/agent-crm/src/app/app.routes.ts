@@ -68,6 +68,11 @@ export const routes: Routes = [
         loadComponent: () => import('./branches/branch-form').then((m) => m.BranchForm),
       },
       {
+        path: 'branding',
+        canActivate: [requirePermission('branding.view')],
+        loadComponent: () => import('./branding/branding-settings').then((m) => m.BrandingSettings),
+      },
+      {
         path: 'staff-users',
         canActivate: [requirePermission('users.view')],
         loadComponent: () => import('./staff-users/staff-user-list').then((m) => m.StaffUserList),
