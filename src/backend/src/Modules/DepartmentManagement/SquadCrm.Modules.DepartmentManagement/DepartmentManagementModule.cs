@@ -8,6 +8,7 @@ using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Validation;
 using SquadCrm.Infrastructure.Postgres;
+using SquadCrm.Modules.DepartmentManagement.Contracts;
 using SquadCrm.Modules.DepartmentManagement.Persistence;
 
 namespace SquadCrm.Modules.DepartmentManagement;
@@ -29,6 +30,7 @@ public sealed class DepartmentManagementModule : IModule
                     DepartmentManagementSchema.MigrationsHistoryTable,
                     DepartmentManagementSchema.Name)));
         services.AddScoped<DepartmentService>();
+        services.AddScoped<IDepartmentActiveLookup, DepartmentActiveLookup>();
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule;
         // DI resolves that same registration. No duplicate registration and

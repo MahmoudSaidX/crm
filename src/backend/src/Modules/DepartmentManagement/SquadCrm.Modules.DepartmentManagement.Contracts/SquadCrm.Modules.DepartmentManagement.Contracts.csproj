@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>SquadCrm.Modules.DepartmentManagement.Contracts</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../BuildingBlocks/SquadCrm.BuildingBlocks.Abstractions/SquadCrm.BuildingBlocks.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

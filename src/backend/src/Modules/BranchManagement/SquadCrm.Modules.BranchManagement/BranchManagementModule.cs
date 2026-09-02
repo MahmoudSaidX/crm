@@ -8,6 +8,7 @@ using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Validation;
 using SquadCrm.Infrastructure.Postgres;
+using SquadCrm.Modules.BranchManagement.Contracts;
 using SquadCrm.Modules.BranchManagement.Persistence;
 
 namespace SquadCrm.Modules.BranchManagement;
@@ -29,6 +30,7 @@ public sealed class BranchManagementModule : IModule
                     BranchManagementSchema.MigrationsHistoryTable,
                     BranchManagementSchema.Name)));
         services.AddScoped<BranchService>();
+        services.AddScoped<IBranchActiveLookup, BranchActiveLookup>();
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule;
         // DI resolves that same registration. No duplicate registration and

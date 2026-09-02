@@ -18,6 +18,7 @@ using SquadCrm.Infrastructure.FileStorage;
 using SquadCrm.Modules.Audit;
 using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
 using SquadCrm.Modules.BranchManagement;
+using SquadCrm.Modules.CustomerManagement;
 using SquadCrm.Modules.DepartmentManagement;
 using SquadCrm.Modules.SystemConfiguration;
 using SquadCrm.Modules.BrandingManagement;
@@ -160,6 +161,7 @@ IModule[] modules =
     new SquadCrm.Modules.RoleManagement.RoleManagementModule(),
     new DepartmentManagementModule(),
     new BranchManagementModule(),
+    new CustomerManagementModule(),
     new SystemConfigurationModule(),
     new BrandingManagementModule(),
     new SquadCrm.Modules.ArchitectureFixture.ArchitectureFixtureModule(),
