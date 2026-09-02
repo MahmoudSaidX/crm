@@ -115,6 +115,20 @@ public sealed class RoleManagementDbContext(DbContextOptions<RoleManagementDbCon
                     Name = "Manage branches",
                     Module = "Branch Management",
                     Description = "Create, update, activate and deactivate branches.",
+                },
+                new PermissionDefinition
+                {
+                    Code = Permissions.BrandingView,
+                    Name = "View branding",
+                    Module = "Branding Management",
+                    Description = "View organization/product branding configuration.",
+                },
+                new PermissionDefinition
+                {
+                    Code = Permissions.BrandingManage,
+                    Name = "Manage branding",
+                    Module = "Branding Management",
+                    Description = "Update organization/product branding, logos and theme settings.",
                 });
         });
 

@@ -1,0 +1,111 @@
+<main class="branding-page">
+  <header>
+    <h1>{{ localization.translate('branding.title') }}</h1>
+    <crm-agent-language-switcher />
+  </header>
+
+  @if (errorKey(); as key) {
+    <p-message severity="error">{{ localization.translate(key) }}</p-message>
+  }
+  @if (savedMessage()) {
+    <p-message severity="success">{{ localization.translate('branding.saved') }}</p-message>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label for="organizationDisplayNameEn">{{
+      localization.translate('branding.fields.organizationDisplayNameEn')
+    }}</label>
+    <input
+      pInputText
+      id="organizationDisplayNameEn"
+      type="text"
+      formControlName="organizationDisplayNameEn"
+      dir="ltr"
+    />
+
+    <label for="organizationDisplayNameAr">{{
+      localization.translate('branding.fields.organizationDisplayNameAr')
+    }}</label>
+    <input
+      pInputText
+      id="organizationDisplayNameAr"
+      type="text"
+      formControlName="organizationDisplayNameAr"
+      dir="rtl"
+    />
+
+    <label for="productDisplayNameEn">{{
+      localization.translate('branding.fields.productDisplayNameEn')
+    }}</label>
+    <input
+      pInputText
+      id="productDisplayNameEn"
+      type="text"
+      formControlName="productDisplayNameEn"
+      dir="ltr"
+    />
+    @if (form.controls.productDisplayNameEn.touched && form.controls.productDisplayNameEn.invalid) {
+      <small class="field-error">{{
+        localization.translate('branding.validation.productDisplayNameEn')
+      }}</small>
+    }
+
+    <label for="productDisplayNameAr">{{
+      localization.translate('branding.fields.productDisplayNameAr')
+    }}</label>
+    <input
+      pInputText
+      id="productDisplayNameAr"
+      type="text"
+      formControlName="productDisplayNameAr"
+      dir="rtl"
+    />
+
+    <label for="primaryColor">{{ localization.translate('branding.fields.primaryColor') }}</label>
+    <input pInputText id="primaryColor" type="text" formControlName="primaryColor" placeholder="#1D4ED8" />
+
+    <label for="accentColor">{{ localization.translate('branding.fields.accentColor') }}</label>
+    <input pInputText id="accentColor" type="text" formControlName="accentColor" placeholder="#0EA5E9" />
+
+    @if (authorization.has('branding.manage')) {
+      <p-button
+        type="submit"
+        [label]="localization.translate('common.actions.save')"
+        icon="pi pi-check"
+        [loading]="submitting()"
+        [disabled]="form.invalid"
+      />
+    }
+  </form>
+
+  <section class="branding-logos">
+    @for (kind of logoKinds; track kind) {
+      <div class="logo-row">
+        <span class="logo-label">{{ localization.translate('branding.logos.' + kind) }}</span>
+        <span class="logo-file">{{
+          assetFor(kind)?.originalFileName ?? localization.translate('branding.logos.none')
+        }}</span>
+        @if (authorization.has('branding.manage')) {
+          <input
+            type="file"
+            accept="image/png,image/jpeg"
+            [id]="'logo-input-' + kind"
+            (change)="onLogoSelected(kind, $event)"
+          />
+          <label [for]="'logo-input-' + kind" class="logo-upload-label">
+            {{ localization.translate('branding.logos.upload') }}
+          </label>
+          @if (assetFor(kind)) {
+            <p-button
+              [label]="localization.translate('branding.logos.remove')"
+              icon="pi pi-trash"
+              severity="danger"
+              size="small"
+              (onClick)="removeLogo(kind)"
+            />
+          }
+        }
+      </div>
+    }
+  </section>
+</main>

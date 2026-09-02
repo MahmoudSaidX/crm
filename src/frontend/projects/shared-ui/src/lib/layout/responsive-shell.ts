@@ -19,6 +19,7 @@ export interface ShellNavigationItem {
 })
 export class ResponsiveShell {
   readonly title = input.required<string>();
+  readonly logoUrl = input<string | null>(null);
   readonly menuLabel = input.required<string>();
   readonly closeMenuLabel = input.required<string>();
   readonly navigationLabel = input.required<string>();

@@ -14,4 +14,6 @@ export * from './lib/i18n/locale.service';
 export * from './lib/i18n/localization';
 export * from './lib/i18n/localization.service';
 export * from './lib/i18n/bilingual-value';
+export * from './lib/branding/branding';
+export * from './lib/branding/branding.service';
 export * from './lib/platform.providers';

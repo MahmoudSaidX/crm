@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { LocalizationService } from '@squad-crm/platform';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import { BrandingService, LocalizationService } from '@squad-crm/platform';
 import { ResponsiveShell, ShellNavigationItem } from '@squad-crm/shared-ui';
 import { PortalLanguageSwitcher } from '../i18n/portal-language-switcher';
 
@@ -11,6 +11,16 @@ import { PortalLanguageSwitcher } from '../i18n/portal-language-switcher';
 })
 export class PortalShell {
   protected readonly localization = inject(LocalizationService);
+  protected readonly branding = inject(BrandingService);
+  protected readonly shellTitle = computed(() => {
+    const branding = this.branding.value();
+    if (branding.isDefault) {
+      return this.localization.translate('portal.shell.title');
+    }
+    return this.localization.locale() === 'ar' && branding.organizationDisplayNameAr
+      ? branding.organizationDisplayNameAr
+      : branding.organizationDisplayNameEn;
+  });
   protected readonly navigationItems = computed<readonly ShellNavigationItem[]>(() => [
     {
       label: this.localization.translate('portal.navigation.home'),
@@ -19,4 +29,9 @@ export class PortalShell {
       exact: true,
     },
   ]);
+
+  constructor() {
+    void this.branding.load();
+    effect(() => (document.title = this.shellTitle()));
+  }
 }

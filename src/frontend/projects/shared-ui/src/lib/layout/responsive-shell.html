@@ -9,7 +9,12 @@
       data-testid="mobile-menu-trigger"
       (onClick)="mobileNavigationVisible.set(true)"
     />
-    <a class="brand" routerLink="/">{{ title() }}</a>
+    <a class="brand" routerLink="/">
+      @if (logoUrl(); as logo) {
+        <img class="brand-logo" [src]="logo" alt="" />
+      }
+      {{ title() }}
+    </a>
     <div class="topbar-actions"><ng-content select="[shell-actions]" /></div>
   </header>
 
