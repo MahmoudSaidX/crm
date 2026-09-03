@@ -65,9 +65,12 @@ pinned by the sibling Sprint 0 stories that introduce them.
 4.  Edit both files with local values. They are git-ignored and must never
     be committed.
 5.  Install the frontend workspace: `cd src/frontend && npm ci`.
-6.  Start the local infrastructure from the repository root:
-    `export COMPOSE_ENV_FILES=env/backend.env && docker compose up -d`
-    (see [Local infrastructure](#local-infrastructure-docker-compose)).
+6.  Start the complete local stack from the repository root:
+    `docker compose up --build` (see
+    [Local infrastructure](#local-infrastructure-docker-compose)). To start
+    only PostgreSQL, use
+    `export COMPOSE_ENV_FILES=env/backend.env && docker compose up -d postgres`
+    instead.
 7.  .NET restore/build (CRM-105) becomes available when that story lands;
     this README is updated at that time.
 
@@ -89,25 +92,66 @@ documented in [`src/frontend/README.md`](src/frontend/README.md).
 
 ## Local infrastructure (Docker Compose)
 
-`docker-compose.yml` at the repository root provides the single local
-dependency Squad CRM needs today: **PostgreSQL**. It is pinned to the
-concrete, verified image tag `postgres:18.6-alpine3.24` --- an `-alpine`
-variant for image size, and a fixed patch/base tag so two developers
-pulling on different days get the same server. No locally installed
-PostgreSQL server is required.
+`docker-compose.yml` at the repository root now runs the **complete local
+Squad CRM stack**: **PostgreSQL**, the **backend API**, **Agent CRM** and
+**Customer Portal**. PostgreSQL is pinned to the concrete, verified image
+tag `postgres:18.6-alpine3.24` --- an `-alpine` variant for image size, and
+a fixed patch/base tag so two developers pulling on different days get the
+same server. No locally installed PostgreSQL server is required, and no
+locally installed .NET SDK or Node.js is required either if you only use
+Docker.
 
-Compose reads values from `env/backend.env` (git-ignored). Every variable
-also has a developer-safe default, so a fresh clone starts without that
-file --- but step 1 below is still the documented first step, because the
-backend and `dotnet ef` read these values from the process environment.
+### Full stack
+
+The `backend` service loads **every** value from `env/backend.env`
+directly, so that file must exist before `docker compose up --build` is
+run — this is now a hard prerequisite, not just a developer-safe fallback.
+
+```bash
+# 1. Prepare local environment values (once per clone) — required.
+cp env/backend.env.example env/backend.env
+
+# 2. Build and start the complete stack (from the repository root)
+docker compose up --build
+
+# 3. Open:
+#    - Agent CRM:          http://localhost:4200
+#    - Customer Portal:    http://localhost:4300
+#    - Backend API health: http://localhost:5080/health/ready
+
+# 4. Stop, preserving all data
+docker compose down
+```
+
+Stack-wide reset uses the same destructive `docker compose down -v`
+documented below; it also removes the built application containers, not
+just PostgreSQL.
+
+After the **first** `docker compose up --build` against a fresh
+`squadcrm-pgdata` volume, apply module migrations from the host once ---
+`dotnet ef database update --project … --context …` per
+[`src/backend/README.md`](src/backend/README.md) --- before exercising
+data-backed features. The `backend` service does not run migrations
+automatically; it stays consistent with the explicit, non-destructive
+migration workflow described there.
+
+### PostgreSQL only
+
+To start just the database (for example, while running the backend or
+Angular apps directly with `dotnet run` / `npm run start:agent-crm`),
+Compose still reads values from `env/backend.env` (git-ignored). Every
+PostgreSQL variable also has a developer-safe default, so a fresh clone
+starts without that file --- but step 1 below is still the documented
+first step, because the backend and `dotnet ef` read these values from the
+process environment.
 
 ```bash
 # 1. Prepare local environment values (once per clone)
 cp env/backend.env.example env/backend.env
 
-# 2. Start infrastructure (from the repository root)
+# 2. Start PostgreSQL only (from the repository root)
 export COMPOSE_ENV_FILES=env/backend.env   # PowerShell: $env:COMPOSE_ENV_FILES="env/backend.env"
-docker compose up -d
+docker compose up -d postgres
 
 # 3. Check status and health
 docker compose ps
@@ -118,9 +162,9 @@ docker compose down
 ```
 
 Instead of the environment variable you may pass the env file per command:
-`docker compose --env-file env/backend.env up -d`. **Compose v2 or newer is
-required** --- `COMPOSE_ENV_FILES` and the top-level `name:` key do not
-exist in the hyphenated Compose v1.
+`docker compose --env-file env/backend.env up -d postgres`. **Compose v2 or
+newer is required** --- `COMPOSE_ENV_FILES` and the top-level `name:` key do
+not exist in the hyphenated Compose v1.
 
 ```bash
 # DESTRUCTIVE — deletes the squadcrm-pgdata volume and every local database row.
@@ -195,9 +239,10 @@ developer-safe local defaults only.
 | Backend restore / run | Restore and run the modular monolith | CRM-105 |
 | `cd src/backend && dotnet tool restore` | Restore the pinned `dotnet-ef` local tool | available today |
 | `cd src/backend && dotnet ef database update --project … --context …` | Apply one module's migrations | available today |
-| `docker compose up -d` | Start the local PostgreSQL infrastructure | available today |
-| `docker compose ps` | Show infrastructure status and health | available today |
-| `docker compose down` | Stop the infrastructure, preserving all data | available today |
+| `docker compose up --build` | Build and start the full local stack (PostgreSQL + backend + both Angular apps) | available today |
+| `docker compose up -d postgres` | Start only the local PostgreSQL infrastructure | available today |
+| `docker compose ps` | Show stack status and health | available today |
+| `docker compose down` | Stop the stack, preserving all data | available today |
 | `docker compose down -v` | **DESTRUCTIVE** --- stop and delete the `squadcrm-pgdata` volume | available today |
 | `scripts/migrate` | Apply every current module migration | available today |
 | `scripts/seed` | Idempotently add synthetic development/test fixture data | available today |

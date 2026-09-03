@@ -1,12 +1,21 @@
-# Squad CRM — local development infrastructure (CRM-197).
+# Squad CRM — local development infrastructure (CRM-197) and full local
+# application stack (CRM-205).
 #
-# PostgreSQL only. EF Core, schemas, migrations and application persistence
-# are owned by CRM-106; Hangfire by CRM-199; observability by CRM-201.
+# `postgres` provides the database only; EF Core, schemas, migrations and
+# application persistence are owned by the modules, Hangfire storage is
+# wired by the backend itself, and observability is owned by CRM-201.
+# `backend`, `agent-crm` and `customer-portal` (CRM-205) build and run the
+# ASP.NET Core API and both Angular apps from source for local development
+# and demos — `docker compose up --build` starts the complete stack.
 #
 # Values are substituted from `env/backend.env` (git-ignored):
 #   export COMPOSE_ENV_FILES=env/backend.env   # or: --env-file env/backend.env
-# Every variable has a developer-safe default, so plain `docker compose up -d`
-# also works on a fresh clone. Never put a production credential here.
+# Every `postgres` variable has a developer-safe default, so plain
+# `docker compose up -d postgres` still works on a fresh clone. `backend`
+# additionally loads every value from `env/backend.env` directly (see its
+# `env_file:` below), so that file must exist before `docker compose up
+# --build` is run — `cp env/backend.env.example env/backend.env` first.
+# Never put a production credential here.
 
 name: ${COMPOSE_PROJECT_NAME:-squadcrm}
 
@@ -36,6 +45,57 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  backend:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    env_file:
+      - env/backend.env
+    environment:
+      # Docker-network overrides: env/backend.env keeps POSTGRES_HOST=localhost
+      # for host-run `dotnet run`; these two values win here via `environment:`
+      # taking precedence over `env_file:`.
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      # Same host port `dotnet run` already publishes, so both Angular apps'
+      # committed config.json (apiBaseUrl) needs no change.
+      - "127.0.0.1:${BACKEND_PORT:-5080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  agent-crm:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+      args:
+        APP_PROJECT: agent-crm
+    ports:
+      - "127.0.0.1:4200:80"
+    depends_on:
+      backend:
+        condition: service_started
+
+  customer-portal:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+      args:
+        APP_PROJECT: customer-portal
+    ports:
+      - "127.0.0.1:4300:80"
+    depends_on:
+      backend:
+        condition: service_started
 
 volumes:
   squadcrm-pgdata:
