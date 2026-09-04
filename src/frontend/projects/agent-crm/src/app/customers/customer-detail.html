@@ -1,0 +1,40 @@
+<main class="customer-detail-page">
+  <header class="customer-detail-header">
+    <a routerLink="/customers">{{ localization.translate('customers.detail.back') }}</a>
+    <crm-agent-language-switcher />
+  </header>
+
+  @if (loading()) {
+    <p>{{ localization.translate('customers.detail.loading') }}</p>
+  } @else if (notFound()) {
+    <p>{{ localization.translate('customers.detail.notFound') }}</p>
+  } @else if (customer()) {
+    <h1>{{ customer()!.firstName }} {{ customer()!.lastName }}</h1>
+    <dl class="customer-fields">
+      <dt>{{ localization.translate('customers.fields.customerNumber') }}</dt>
+      <dd>{{ customer()!.customerNumber }}</dd>
+
+      <dt>{{ localization.translate('customers.fields.preferredLanguage') }}</dt>
+      <dd>
+        {{
+          customer()!.preferredLanguage === 'Arabic'
+            ? localization.translate('customers.language.arabic')
+            : customer()!.preferredLanguage === 'English'
+              ? localization.translate('customers.language.english')
+              : '—'
+        }}
+      </dd>
+
+      <dt>{{ localization.translate('customers.fields.department') }}</dt>
+      <dd>{{ customer()!.departmentId || '—' }}</dd>
+
+      <dt>{{ localization.translate('customers.fields.branch') }}</dt>
+      <dd>{{ customer()!.branchId || '—' }}</dd>
+
+      <dt>{{ localization.translate('customers.fields.status') }}</dt>
+      <dd>
+        <p-tag [value]="localization.translate('common.status.active')" severity="success" />
+      </dd>
+    </dl>
+  }
+</main>

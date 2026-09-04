@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
 using SquadCrm.Modules.BranchManagement.Contracts;
@@ -95,6 +96,66 @@ internal sealed class CustomerService(
         await RecordAuditAsync(customer.Id, "created", cancellationToken);
         return CustomerMutationResult.Success(customer);
     }
+
+    public async Task<PagedResult<Customer>> ListAsync(
+        CustomerListQuery query,
+        PaginationRequest pagination,
+        CancellationToken cancellationToken)
+    {
+        IQueryable<Customer> filtered = dbContext.Customers.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            string normalizedSearch = Normalize(query.Search);
+            filtered = filtered.Where(customer =>
+                customer.CustomerNumber.Contains(normalizedSearch)
+                || customer.NormalizedFirstName.Contains(normalizedSearch)
+                || customer.NormalizedLastName.Contains(normalizedSearch));
+        }
+
+        if (query.DepartmentIds is { Length: > 0 })
+        {
+            filtered = filtered.Where(customer =>
+                customer.DepartmentId != null && query.DepartmentIds.Contains(customer.DepartmentId.Value));
+        }
+
+        if (query.BranchIds is { Length: > 0 })
+        {
+            filtered = filtered.Where(customer =>
+                customer.BranchId != null && query.BranchIds.Contains(customer.BranchId.Value));
+        }
+
+        if (query.Status is { Length: > 0 })
+        {
+            filtered = filtered.Where(customer => query.Status.Contains(customer.Status));
+        }
+
+        // Every branch orders by CustomerNumber (unique) as a stable
+        // tiebreaker after the requested sort key, so paginated results
+        // never reorder across pages regardless of SortBy/SortDirection.
+        IOrderedQueryable<Customer> sorted = (query.SortBy, query.SortDirection) switch
+        {
+            (CustomerSortBy.FirstName, SortDirection.Desc) => filtered.OrderByDescending(c => c.FirstName),
+            (CustomerSortBy.FirstName, _) => filtered.OrderBy(c => c.FirstName),
+            (CustomerSortBy.LastName, SortDirection.Desc) => filtered.OrderByDescending(c => c.LastName),
+            (CustomerSortBy.LastName, _) => filtered.OrderBy(c => c.LastName),
+            (CustomerSortBy.CreatedAtUtc, SortDirection.Desc) => filtered.OrderByDescending(c => c.CreatedAtUtc),
+            (CustomerSortBy.CreatedAtUtc, _) => filtered.OrderBy(c => c.CreatedAtUtc),
+            (_, SortDirection.Desc) => filtered.OrderByDescending(c => c.CustomerNumber),
+            _ => filtered.OrderBy(c => c.CustomerNumber),
+        };
+        IOrderedQueryable<Customer> ordered = sorted.ThenBy(c => c.CustomerNumber);
+
+        int totalCount = await ordered.CountAsync(cancellationToken);
+        List<Customer> items = await ordered
+            .Skip((pagination.Page - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
+            .ToListAsync(cancellationToken);
+        return new PagedResult<Customer>(items, pagination.Page, pagination.PageSize, totalCount);
+    }
+
+    public async Task<Customer?> GetAsync(Guid id, CancellationToken cancellationToken) =>
+        await dbContext.Customers.AsNoTracking().SingleOrDefaultAsync(customer => customer.Id == id, cancellationToken);
 
     private async Task<bool> CheckDuplicateAsync(
         string normalizedFirstName,
