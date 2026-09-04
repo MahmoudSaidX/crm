@@ -128,12 +128,11 @@ documented below; it also removes the built application containers, not
 just PostgreSQL.
 
 After the **first** `docker compose up --build` against a fresh
-`squadcrm-pgdata` volume, apply module migrations from the host once ---
-`dotnet ef database update --project … --context …` per
-[`src/backend/README.md`](src/backend/README.md) --- before exercising
-data-backed features. The `backend` service does not run migrations
-automatically; it stays consistent with the explicit, non-destructive
-migration workflow described there.
+`squadcrm-pgdata` volume, run `scripts/migrate` from the repository root to
+apply every current module's migrations before exercising data-backed
+features. The `backend` service does not run migrations automatically; it
+stays consistent with the explicit, non-destructive migration workflow
+described in [`src/backend/README.md`](src/backend/README.md).
 
 ### PostgreSQL only
 
@@ -254,6 +253,12 @@ developer-safe local defaults only.
 EF Core migrations are live. Each module owns its own schema and its own
 migrations; there is no shared `DbContext` and nothing is applied at
 application startup. Automated test orchestration in CI remains CRM-202's.
+
+The steps below show the underlying `dotnet ef` mechanics for one
+representative module (`ArchitectureFixture`); running it by hand per module
+is not the documented workflow. `scripts/migrate` (introduced below) applies
+every current module's migrations in one command — that is what a developer
+actually runs.
 
 ```bash
 # 1. Infrastructure up (from the repository root)
