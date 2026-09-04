@@ -64,7 +64,7 @@ public sealed class AuditTests
             new AuditRecorder(auditContext, NullLogger<AuditRecorder>.Instance));
 
         AuthorizationBootstrapResult result = await service.BootstrapAsync(
-            "agent@example.test", role.Code, CancellationToken.None);
+            "agent@example.test", role.Code, null, CancellationToken.None);
 
         Assert.True(result.Succeeded);
         List<AuditRecord> records = await auditContext.AuditRecords
@@ -88,7 +88,7 @@ public sealed class AuditTests
 
         AuthorizationBootstrapService first = new(
             roleManagementContext, subjectReader, new AuditRecorder(auditContext, NullLogger<AuditRecorder>.Instance));
-        Assert.True((await first.BootstrapAsync("agent@example.test", role.Code, CancellationToken.None)).Succeeded);
+        Assert.True((await first.BootstrapAsync("agent@example.test", role.Code, null, CancellationToken.None)).Succeeded);
 
         int countAfterFirst = await auditContext.AuditRecords.CountAsync(
             record => record.EntityId == $"{subjectId}:{role.Id}");
@@ -99,7 +99,7 @@ public sealed class AuditTests
         // skipped and IAuditRecorder.RecordAsync must not be called again.
         AuthorizationBootstrapService second = new(
             roleManagementContext, subjectReader, new AuditRecorder(auditContext, NullLogger<AuditRecorder>.Instance));
-        Assert.True((await second.BootstrapAsync("agent@example.test", role.Code, CancellationToken.None)).Succeeded);
+        Assert.True((await second.BootstrapAsync("agent@example.test", role.Code, null, CancellationToken.None)).Succeeded);
 
         int countAfterSecond = await auditContext.AuditRecords.CountAsync(
             record => record.EntityId == $"{subjectId}:{role.Id}");

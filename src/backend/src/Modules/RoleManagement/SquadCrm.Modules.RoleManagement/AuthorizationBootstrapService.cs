@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using SquadCrm.Modules.Audit.Contracts;
 using SquadCrm.Modules.RoleManagement.Persistence;
 using SquadCrm.Modules.StaffIdentity.Contracts;
@@ -10,8 +11,8 @@ public enum AuthorizationBootstrapFailure
     None,
     SubjectNotFound,
     SubjectInactive,
-    RoleNotFound,
     RoleInactive,
+    RoleConflict,
 }
 
 public readonly record struct AuthorizationBootstrapResult(AuthorizationBootstrapFailure Failure)
@@ -24,9 +25,12 @@ public sealed class AuthorizationBootstrapService(
     IStaffSubjectReferenceReader subjectReader,
     IAuditRecorder auditRecorder)
 {
+    private const string PostgresUniqueViolationSqlState = "23505";
+
     public async Task<AuthorizationBootstrapResult> BootstrapAsync(
         string subjectEmail,
         string roleCode,
+        string? roleName,
         CancellationToken cancellationToken)
     {
         string normalizedEmail = subjectEmail.Trim().ToUpperInvariant();
@@ -46,9 +50,30 @@ public sealed class AuthorizationBootstrapService(
             item => item.NormalizedCode == normalizedRoleCode, cancellationToken);
         if (role is null)
         {
-            return new(AuthorizationBootstrapFailure.RoleNotFound);
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            string effectiveName = string.IsNullOrWhiteSpace(roleName) ? roleCode : roleName;
+            role = new Role
+            {
+                Id = Guid.NewGuid(),
+                Name = effectiveName.Trim(),
+                NormalizedName = RoleService.Normalize(effectiveName),
+                Code = roleCode.Trim(),
+                NormalizedCode = normalizedRoleCode,
+                Description = "Bootstrapped by the RoleManagement.Bootstrap operator tool.",
+                IsActive = true,
+                CreatedAtUtc = now,
+                UpdatedAtUtc = now,
+            };
+            dbContext.Roles.Add(role);
+            dbContext.RoleAuditEvents.Add(new RoleAuditEvent
+            {
+                RoleId = role.Id,
+                EventType = "created",
+                ChangedByHandle = null,
+                OccurredAtUtc = now,
+            });
         }
-        if (!role.IsActive)
+        else if (!role.IsActive)
         {
             return new(AuthorizationBootstrapFailure.RoleInactive);
         }
@@ -64,11 +89,14 @@ public sealed class AuthorizationBootstrapService(
             });
         }
 
-        string[] existing = await dbContext.RolePermissions
-            .Where(item => item.RoleId == role.Id && Permissions.Bootstrap.Contains(item.PermissionCode))
+        string[] catalogCodes = await dbContext.PermissionDefinitions
+            .Select(item => item.Code)
+            .ToArrayAsync(cancellationToken);
+        string[] existingGrants = await dbContext.RolePermissions
+            .Where(item => item.RoleId == role.Id)
             .Select(item => item.PermissionCode)
             .ToArrayAsync(cancellationToken);
-        string[] missingPermissions = Permissions.Bootstrap.Except(existing, StringComparer.Ordinal).ToArray();
+        string[] missingPermissions = catalogCodes.Except(existingGrants, StringComparer.Ordinal).ToArray();
         foreach (string code in missingPermissions)
         {
             dbContext.RolePermissions.Add(new RolePermission { RoleId = role.Id, PermissionCode = code });
@@ -86,7 +114,14 @@ public sealed class AuthorizationBootstrapService(
             });
         }
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsUniqueViolation(exception))
+        {
+            return new(AuthorizationBootstrapFailure.RoleConflict);
+        }
 
         if (roleAssigned)
         {
@@ -102,4 +137,8 @@ public sealed class AuthorizationBootstrapService(
 
         return new(AuthorizationBootstrapFailure.None);
     }
+
+    private static bool IsUniqueViolation(DbUpdateException exception) =>
+        exception.InnerException is PostgresException postgresException
+        && postgresException.SqlState == PostgresUniqueViolationSqlState;
 }

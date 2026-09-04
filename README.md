@@ -338,21 +338,27 @@ them the command fails fast naming the missing keys and printing no value.
 
 ### Bootstrap the first role administrator
 
-This is privileged operator tooling, not a user-management workflow. First create an
-active staff subject and an active global role through the normal CRM-110/CRM-112
-paths. Then, with the `POSTGRES_*` environment loaded, explicitly assign that subject
-to the role and grant the minimum `roles.view` and `roles.manage` capabilities:
+This is privileged operator tooling, not a user-management workflow. On a fresh
+database there are no roles yet, so this tool is the only supported way to bootstrap
+the first administrator: migrate the database, bootstrap a `StaffIdentity` account for
+the target operator through the existing StaffIdentity bootstrap tooling, then, with
+the `POSTGRES_*` environment loaded, run this tool to create the role (if it doesn't
+already exist), grant it the complete current permission catalog, and assign the
+staff subject to it, all in one explicit invocation:
 
 ```bash
 dotnet run \
   --project src/backend/src/Tools/SquadCrm.RoleManagement.Bootstrap \
-  -- --subject-email agent@example.test --role-code ADMINISTRATOR
+  -- --subject-email agent@example.test --role-code ADMINISTRATOR --role-name Administrator
 ```
 
-The command is safe to repeat. It rejects missing/inactive subjects or roles, accepts
-no credential, creates no default administrator, and is never run by API startup,
-seed, migration, or reset scripts. Treat access to this command and its database
-configuration as privileged production operator access.
+`--role-name` is optional; when omitted, `--role-code` is reused as the display name.
+If the named role already exists and is active, it is reused as-is. The command is
+safe to repeat: re-running with identical arguments adds no duplicate role, grant, or
+assignment row. It rejects a missing/inactive subject or an existing-but-inactive role
+without any write, accepts no credential, creates no default administrator, and is
+never run by API startup, seed, migration, or reset scripts. Treat access to this
+command and its database configuration as privileged production operator access.
 
 The full backend test run **requires** the database to be up --- the
 persistence suite creates and removes an isolated `squadcrm_tests_*` database
