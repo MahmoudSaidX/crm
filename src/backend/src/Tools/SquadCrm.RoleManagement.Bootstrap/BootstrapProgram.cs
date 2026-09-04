@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Modules.Audit;
 using SquadCrm.Modules.Audit.Contracts;
@@ -17,21 +17,28 @@ public static class BootstrapProgram
 {
     public static async Task<int> RunAsync(string[] args, CancellationToken cancellationToken)
     {
-        if (args.Length != 4
+        if (args.Length is not (4 or 6)
             || !TryReadOption(args, "--subject-email", out string? subjectEmail)
             || !TryReadOption(args, "--role-code", out string? roleCode)
             || string.IsNullOrWhiteSpace(subjectEmail)
             || string.IsNullOrWhiteSpace(roleCode))
         {
-            Console.Error.WriteLine("Usage: --subject-email <existing-email> --role-code <existing-active-role-code>");
+            Console.Error.WriteLine(
+                "Usage: --subject-email <existing-email> --role-code <role-code> [--role-name <role-name>]");
             return 2;
         }
 
-        IConfiguration configuration = new ConfigurationBuilder().AddEnvironmentVariables().Build();
+        TryReadOption(args, "--role-name", out string? roleName);
+
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder();
         string connectionString;
         try
         {
-            connectionString = configuration.GetSquadCrmPostgresConnectionString();
+            // Same derivation the API composition root uses (CRM-197): reads and
+            // validates POSTGRES_*, then publishes ConnectionStrings:SquadCrmPostgres
+            // for GetSquadCrmPostgresConnectionString() to read below.
+            builder.AddSquadCrmPostgres();
+            connectionString = builder.Configuration.GetSquadCrmPostgresConnectionString();
         }
         catch (Exception exception) when (exception is InvalidOperationException or FormatException)
         {
@@ -39,19 +46,18 @@ public static class BootstrapProgram
             return 2;
         }
 
-        ServiceCollection services = new();
-        services.AddDbContext<StaffIdentityDbContext>(options => options.UseNpgsql(connectionString));
-        services.AddDbContext<RoleManagementDbContext>(options => options.UseNpgsql(connectionString));
-        services.AddDbContext<AuditDbContext>(options => options.UseNpgsql(connectionString));
-        services.AddScoped<IStaffSubjectReferenceReader, StaffSubjectReferenceReader>();
-        services.AddScoped<IAuditRecorder, AuditRecorder>();
-        services.AddScoped<AuthorizationBootstrapService>();
+        builder.Services.AddDbContext<StaffIdentityDbContext>(options => options.UseNpgsql(connectionString));
+        builder.Services.AddDbContext<RoleManagementDbContext>(options => options.UseNpgsql(connectionString));
+        builder.Services.AddDbContext<AuditDbContext>(options => options.UseNpgsql(connectionString));
+        builder.Services.AddScoped<IStaffSubjectReferenceReader, StaffSubjectReferenceReader>();
+        builder.Services.AddScoped<IAuditRecorder, AuditRecorder>();
+        builder.Services.AddScoped<AuthorizationBootstrapService>();
 
-        await using ServiceProvider provider = services.BuildServiceProvider();
-        await using AsyncServiceScope scope = provider.CreateAsyncScope();
+        using IHost host = builder.Build();
+        await using AsyncServiceScope scope = host.Services.CreateAsyncScope();
         AuthorizationBootstrapResult result = await scope.ServiceProvider
             .GetRequiredService<AuthorizationBootstrapService>()
-            .BootstrapAsync(subjectEmail, roleCode, cancellationToken);
+            .BootstrapAsync(subjectEmail, roleCode, roleName, cancellationToken);
 
         if (!result.Succeeded)
         {
@@ -59,8 +65,9 @@ public static class BootstrapProgram
             {
                 AuthorizationBootstrapFailure.SubjectNotFound => "The target staff subject was not found.",
                 AuthorizationBootstrapFailure.SubjectInactive => "The target staff subject is inactive.",
-                AuthorizationBootstrapFailure.RoleNotFound => "The target role was not found.",
                 AuthorizationBootstrapFailure.RoleInactive => "The target role is inactive.",
+                AuthorizationBootstrapFailure.RoleConflict =>
+                    "The role could not be created due to a concurrent bootstrap run; re-run the command.",
                 _ => "Authorization bootstrap failed.",
             });
             return 1;

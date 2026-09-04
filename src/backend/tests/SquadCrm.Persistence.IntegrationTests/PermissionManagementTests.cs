@@ -94,10 +94,10 @@ public sealed class PermissionManagementTests
         Guid subjectId = Guid.NewGuid();
         AuthorizationBootstrapService valid = new(context, new StubSubjectReader(new(subjectId, true)), new NoOpAuditRecorder());
 
-        Assert.True((await valid.BootstrapAsync("agent@example.test", role.Code, CancellationToken.None)).Succeeded);
-        Assert.True((await valid.BootstrapAsync("agent@example.test", role.Code, CancellationToken.None)).Succeeded);
+        Assert.True((await valid.BootstrapAsync("agent@example.test", role.Code, null, CancellationToken.None)).Succeeded);
+        Assert.True((await valid.BootstrapAsync("agent@example.test", role.Code, null, CancellationToken.None)).Succeeded);
         Assert.Single(await context.StaffSubjectRoles.Where(item => item.StaffSubjectId == subjectId).ToListAsync());
-        Assert.Equal(Permissions.Bootstrap.Count, await context.RolePermissions.CountAsync(item => item.RoleId == role.Id));
+        Assert.Equal(await context.PermissionDefinitions.CountAsync(), await context.RolePermissions.CountAsync(item => item.RoleId == role.Id));
         Assert.Single(await context.PermissionChangeAuditEvents.Where(
             item => item.RoleId == role.Id && item.EventType == "bootstrap_permissions_granted").ToListAsync());
 
@@ -105,10 +105,57 @@ public sealed class PermissionManagementTests
         AuthorizationBootstrapService inactive = new(
             context, new StubSubjectReader(new(Guid.NewGuid(), false)), new NoOpAuditRecorder());
         Assert.Equal(AuthorizationBootstrapFailure.SubjectNotFound,
-            (await missing.BootstrapAsync("missing@example.test", role.Code, CancellationToken.None)).Failure);
+            (await missing.BootstrapAsync("missing@example.test", role.Code, null, CancellationToken.None)).Failure);
         Assert.Equal(AuthorizationBootstrapFailure.SubjectInactive,
-            (await inactive.BootstrapAsync("inactive@example.test", role.Code, CancellationToken.None)).Failure);
+            (await inactive.BootstrapAsync("inactive@example.test", role.Code, null, CancellationToken.None)).Failure);
         Assert.Single(await context.StaffSubjectRoles.Where(item => item.RoleId == role.Id).ToListAsync());
+    }
+
+    [Fact]
+    public async Task Bootstrap_CreatesMissingRole_GrantsFullCatalog_AndIsIdempotent()
+    {
+        await using RoleManagementDbContext context = PostgresTestDatabase.CreateRoleManagementContext();
+        Guid subjectId = Guid.NewGuid();
+        AuthorizationBootstrapService service = new(context, new StubSubjectReader(new(subjectId, true)), new NoOpAuditRecorder());
+
+        AuthorizationBootstrapResult result = await service.BootstrapAsync(
+            "agent@example.test", "FIRST_ADMIN", "First Administrator", CancellationToken.None);
+        Assert.True(result.Succeeded);
+
+        Role role = await context.Roles.SingleAsync(item => item.NormalizedCode == "FIRST_ADMIN");
+        Assert.True(role.IsActive);
+        int catalogCount = await context.PermissionDefinitions.CountAsync();
+        int grantCount = await context.RolePermissions.CountAsync(item => item.RoleId == role.Id);
+        Assert.Equal(catalogCount, grantCount);
+        Assert.Single(await context.RoleAuditEvents.Where(
+            item => item.RoleId == role.Id && item.EventType == "created").ToListAsync());
+
+        AuthorizationBootstrapResult secondResult = await service.BootstrapAsync(
+            "agent@example.test", "FIRST_ADMIN", "First Administrator", CancellationToken.None);
+        Assert.True(secondResult.Succeeded);
+
+        Assert.Equal(1, await context.Roles.CountAsync(item => item.NormalizedCode == "FIRST_ADMIN"));
+        Assert.Equal(grantCount, await context.RolePermissions.CountAsync(item => item.RoleId == role.Id));
+        Assert.Single(await context.RoleAuditEvents.Where(
+            item => item.RoleId == role.Id && item.EventType == "created").ToListAsync());
+    }
+
+    [Fact]
+    public async Task Bootstrap_ExistingInactiveRole_FailsWithoutWrites()
+    {
+        await using RoleManagementDbContext context = PostgresTestDatabase.CreateRoleManagementContext();
+        Role role = await CreateRoleAsync(context);
+        role.IsActive = false;
+        await context.SaveChangesAsync();
+        Guid subjectId = Guid.NewGuid();
+        AuthorizationBootstrapService service = new(context, new StubSubjectReader(new(subjectId, true)), new NoOpAuditRecorder());
+
+        AuthorizationBootstrapResult result = await service.BootstrapAsync(
+            "agent@example.test", role.Code, null, CancellationToken.None);
+
+        Assert.Equal(AuthorizationBootstrapFailure.RoleInactive, result.Failure);
+        Assert.Empty(await context.RolePermissions.Where(item => item.RoleId == role.Id).ToListAsync());
+        Assert.Empty(await context.StaffSubjectRoles.Where(item => item.RoleId == role.Id).ToListAsync());
     }
 
     private static async Task<Role> CreateRoleAsync(RoleManagementDbContext context)
