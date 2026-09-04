@@ -27,7 +27,12 @@ describe('CustomerList', () => {
     createdAtUtc: '2026-09-02T00:00:00Z',
     updatedAtUtc: '2026-09-02T00:00:00Z',
   };
-  const customerB = { ...customerA, id: 'customer-b', customerNumber: 'CUS-BBB222', firstName: 'Omar' };
+  const customerB = {
+    ...customerA,
+    id: 'customer-b',
+    customerNumber: 'CUS-BBB222',
+    firstName: 'Omar',
+  };
 
   let customersService: jasmine.SpyObj<CustomersService>;
   let router: Router;
@@ -40,7 +45,9 @@ describe('CustomerList', () => {
       pageSize: 20,
       totalCount: 2,
     });
-    const departmentsService = jasmine.createSpyObj<DepartmentsService>('DepartmentsService', ['list']);
+    const departmentsService = jasmine.createSpyObj<DepartmentsService>('DepartmentsService', [
+      'list',
+    ]);
     departmentsService.list.and.resolveTo({ items: [], page: 1, pageSize: 200, totalCount: 0 });
     const branchesService = jasmine.createSpyObj<BranchesService>('BranchesService', ['list']);
     branchesService.list.and.resolveTo({ items: [], page: 1, pageSize: 200, totalCount: 0 });
@@ -73,7 +80,11 @@ describe('CustomerList', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.customers().length).toBe(2);
-    expect(customersService.list).toHaveBeenCalledWith({ search: undefined, departmentIds: undefined, branchIds: undefined }, 1, 20);
+    expect(customersService.list).toHaveBeenCalledWith(
+      { search: undefined, departmentIds: undefined, branchIds: undefined },
+      1,
+      20,
+    );
   });
 
   it('applies the search term on the next load', async () => {

@@ -62,9 +62,14 @@ export class CustomerList {
       this.branchesService.list(1, 200),
     ]);
     this.departmentOptions.set(
-      departments.items.map((department) => ({ label: department.englishName, value: department.id })),
+      departments.items.map((department) => ({
+        label: department.englishName,
+        value: department.id,
+      })),
     );
-    this.branchOptions.set(branches.items.map((branch) => ({ label: branch.englishName, value: branch.id })));
+    this.branchOptions.set(
+      branches.items.map((branch) => ({ label: branch.englishName, value: branch.id })),
+    );
   }
 
   async load(page = 1): Promise<void> {

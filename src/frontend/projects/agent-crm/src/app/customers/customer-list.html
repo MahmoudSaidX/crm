@@ -57,10 +57,14 @@
   >
     <ng-template #header>
       <tr>
-        <th style="min-width: 10rem">{{ localization.translate('customers.fields.customerNumber') }}</th>
+        <th style="min-width: 10rem">
+          {{ localization.translate('customers.fields.customerNumber') }}
+        </th>
         <th style="min-width: 12rem">{{ localization.translate('customers.fields.firstName') }}</th>
         <th style="min-width: 12rem">{{ localization.translate('customers.fields.lastName') }}</th>
-        <th style="min-width: 10rem">{{ localization.translate('customers.fields.department') }}</th>
+        <th style="min-width: 10rem">
+          {{ localization.translate('customers.fields.department') }}
+        </th>
         <th style="min-width: 10rem">{{ localization.translate('customers.fields.branch') }}</th>
         <th style="min-width: 8rem">{{ localization.translate('customers.fields.status') }}</th>
       </tr>
@@ -73,10 +77,7 @@
         <td>{{ customer.departmentId || '—' }}</td>
         <td>{{ customer.branchId || '—' }}</td>
         <td>
-          <p-tag
-            [value]="localization.translate('common.status.active')"
-            severity="success"
-          />
+          <p-tag [value]="localization.translate('common.status.active')" severity="success" />
         </td>
       </tr>
     </ng-template>

@@ -3,7 +3,12 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { CustomerDetail } from './customer-detail';
 import { CustomersService } from './customers.service';
-import { provideAppConfig, provideTranslations, validateAppConfig, AppConfigStore } from '@squad-crm/platform';
+import {
+  provideAppConfig,
+  provideTranslations,
+  validateAppConfig,
+  AppConfigStore,
+} from '@squad-crm/platform';
 import { COMMON_TRANSLATIONS } from '@squad-crm/shared-ui';
 import { CUSTOMER_TRANSLATIONS } from './customer-translations';
 

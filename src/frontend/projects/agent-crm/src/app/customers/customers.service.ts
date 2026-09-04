@@ -57,7 +57,10 @@ export class CustomersService {
   }
 
   list(query: CustomerListQuery, page: number, pageSize: number): Promise<PagedResult<Customer>> {
-    let params: Record<string, string | readonly string[]> = { page: String(page), pageSize: String(pageSize) };
+    let params: Record<string, string | readonly string[]> = {
+      page: String(page),
+      pageSize: String(pageSize),
+    };
     if (query.search) {
       params = { ...params, search: query.search };
     }
