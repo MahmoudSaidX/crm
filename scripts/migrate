@@ -20,11 +20,34 @@ export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-change-me}"
 
 cd "$repo_root/src/backend"
 dotnet tool restore
-dotnet ef database update \
-  --project src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture \
-  --startup-project src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture \
-  --context ArchitectureFixtureDbContext
-dotnet ef database update \
-  --project src/Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity \
-  --startup-project src/Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity \
-  --context StaffIdentityDbContext
+
+apply_module_migrations() {
+  local module_name="$1"
+  local module_dir="$2"
+  local context="${module_name}DbContext"
+  echo "==> Applying ${module_name} migrations (${context})"
+  dotnet ef database update \
+    --project "$module_dir" \
+    --startup-project "$module_dir" \
+    --context "$context"
+}
+
+# ArchitectureFixture is a test/fixture module, not an application module —
+# applied first and named explicitly, not discovered by the loop below.
+apply_module_migrations "ArchitectureFixture" \
+  "src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture"
+
+# Application modules: discovered from the repository structure so this list
+# cannot silently drift from the modules that actually own migrations — every
+# module directory with a Persistence/Migrations folder is applied. See
+# src/backend/README.md ("Adding persistence to a new module") for the
+# convention this scan relies on.
+shopt -s nullglob
+for migrations_dir in src/Modules/*/SquadCrm.Modules.*/Persistence/Migrations; do
+  module_dir="${migrations_dir%/Persistence/Migrations}"
+  module_name="$(basename "$module_dir")"
+  module_name="${module_name#SquadCrm.Modules.}"
+  [[ "$module_name" == "ArchitectureFixture" ]] && continue
+  apply_module_migrations "$module_name" "$module_dir"
+done
+shopt -u nullglob

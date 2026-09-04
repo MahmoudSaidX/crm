@@ -25,3 +25,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | audit-user-administrative-actions | [`audit-user-administrative-actions/00-overview.md`](audit-user-administrative-actions/00-overview.md) | 19 |
 | dockerize-full-local-application-stack | [`dockerize-full-local-application-stack/00-overview.md`](dockerize-full-local-application-stack/00-overview.md) | 21 |
 | first-admin-bootstrap | [`first-admin-bootstrap/00-overview.md`](first-admin-bootstrap/00-overview.md) | 22 |
+| cover-migrate-all-modules | [`cover-migrate-all-modules/00-overview.md`](cover-migrate-all-modules/00-overview.md) | 23 |
