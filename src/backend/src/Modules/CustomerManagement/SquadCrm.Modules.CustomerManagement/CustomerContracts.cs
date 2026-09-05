@@ -34,17 +34,17 @@ public sealed record CustomerListQuery(
 public sealed record CreateCustomerRequest(
     [property: Required, MaxLength(200)] string FirstName,
     [property: Required, MaxLength(200)] string LastName,
-    CustomerPreferredLanguage? PreferredLanguage,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] CustomerPreferredLanguage? PreferredLanguage,
     Guid? DepartmentId,
     Guid? BranchId);
 
 public sealed record UpdateCustomerRequest(
     [property: Required, MaxLength(200)] string FirstName,
     [property: Required, MaxLength(200)] string LastName,
-    CustomerPreferredLanguage? PreferredLanguage,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] CustomerPreferredLanguage? PreferredLanguage,
     Guid? DepartmentId,
     Guid? BranchId,
-    CustomerStatus Status,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] CustomerStatus Status,
     uint Version);
 
 public sealed record CustomerResponse(
@@ -52,10 +52,10 @@ public sealed record CustomerResponse(
     string CustomerNumber,
     string FirstName,
     string LastName,
-    CustomerPreferredLanguage? PreferredLanguage,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] CustomerPreferredLanguage? PreferredLanguage,
     Guid? DepartmentId,
     Guid? BranchId,
-    CustomerStatus Status,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] CustomerStatus Status,
     uint Version,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
