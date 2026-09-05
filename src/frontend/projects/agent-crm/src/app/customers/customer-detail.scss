@@ -15,6 +15,26 @@
   margin-block-end: 1.5rem;
 }
 
+.customer-detail-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.customer-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 28rem;
+  margin-block: 1rem 1.5rem;
+}
+
+.customer-edit-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .customer-fields {
   display: grid;
   grid-template-columns: max-content 1fr;

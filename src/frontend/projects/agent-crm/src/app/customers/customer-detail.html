@@ -9,7 +9,106 @@
   } @else if (notFound()) {
     <p>{{ localization.translate('customers.detail.notFound') }}</p>
   } @else if (customer()) {
-    <h1>{{ customer()!.firstName }} {{ customer()!.lastName }}</h1>
+    <div class="customer-detail-title">
+      <h1>{{ customer()!.firstName }} {{ customer()!.lastName }}</h1>
+      @if (authorization.has('customers.manage') && !editing()) {
+        <p-button
+          [label]="localization.translate('common.actions.edit')"
+          icon="pi pi-pencil"
+          severity="secondary"
+          size="small"
+          (onClick)="startEdit()"
+        />
+      }
+    </div>
+
+    @if (editErrorKey()) {
+      <p-message severity="error">{{ localization.translate(editErrorKey()!) }}</p-message>
+    }
+
+    @if (editing()) {
+      <form class="customer-edit-form" [formGroup]="editForm" (ngSubmit)="submitEdit()" novalidate>
+        <label for="edit-firstName">{{
+          localization.translate('customers.fields.firstName')
+        }}</label>
+        <input pInputText id="edit-firstName" type="text" formControlName="firstName" />
+        @if (editForm.controls.firstName.touched && editForm.controls.firstName.invalid) {
+          <small class="field-error">{{
+            localization.translate('customers.validation.firstName')
+          }}</small>
+        }
+
+        <label for="edit-lastName">{{ localization.translate('customers.fields.lastName') }}</label>
+        <input pInputText id="edit-lastName" type="text" formControlName="lastName" />
+        @if (editForm.controls.lastName.touched && editForm.controls.lastName.invalid) {
+          <small class="field-error">{{
+            localization.translate('customers.validation.lastName')
+          }}</small>
+        }
+
+        <label for="edit-preferredLanguage">{{
+          localization.translate('customers.fields.preferredLanguage')
+        }}</label>
+        <p-select
+          id="edit-preferredLanguage"
+          formControlName="preferredLanguage"
+          [options]="languageOptions"
+          optionLabel="label"
+          optionValue="value"
+          [showClear]="true"
+        />
+
+        <label for="edit-departmentId">{{
+          localization.translate('customers.fields.department')
+        }}</label>
+        <p-select
+          id="edit-departmentId"
+          formControlName="departmentId"
+          [options]="departmentOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [showClear]="true"
+        />
+
+        <label for="edit-branchId">{{ localization.translate('customers.fields.branch') }}</label>
+        <p-select
+          id="edit-branchId"
+          formControlName="branchId"
+          [options]="branchOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [showClear]="true"
+        />
+
+        <label for="edit-status">{{ localization.translate('customers.fields.status') }}</label>
+        <p-select
+          id="edit-status"
+          formControlName="status"
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+        />
+
+        <div class="customer-edit-form-actions">
+          <p-button
+            type="submit"
+            [label]="localization.translate('common.actions.save')"
+            icon="pi pi-check"
+            size="small"
+            [loading]="editSubmitting()"
+            [disabled]="editForm.invalid"
+          />
+          <p-button
+            type="button"
+            [label]="localization.translate('customers.contacts.cancel')"
+            severity="secondary"
+            size="small"
+            (onClick)="cancelEdit()"
+          />
+        </div>
+      </form>
+    }
+
     <dl class="customer-fields">
       <dt>{{ localization.translate('customers.fields.customerNumber') }}</dt>
       <dd>{{ customer()!.customerNumber }}</dd>
@@ -33,7 +132,14 @@
 
       <dt>{{ localization.translate('customers.fields.status') }}</dt>
       <dd>
-        <p-tag [value]="localization.translate('common.status.active')" severity="success" />
+        <p-tag
+          [value]="
+            localization.translate(
+              customer()!.status === 'Active' ? 'common.status.active' : 'common.status.inactive'
+            )
+          "
+          [severity]="customer()!.status === 'Active' ? 'success' : 'danger'"
+        />
       </dd>
     </dl>
 

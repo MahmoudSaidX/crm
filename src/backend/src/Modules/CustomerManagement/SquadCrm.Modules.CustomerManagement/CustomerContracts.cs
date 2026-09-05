@@ -38,6 +38,15 @@ public sealed record CreateCustomerRequest(
     Guid? DepartmentId,
     Guid? BranchId);
 
+public sealed record UpdateCustomerRequest(
+    [property: Required, MaxLength(200)] string FirstName,
+    [property: Required, MaxLength(200)] string LastName,
+    CustomerPreferredLanguage? PreferredLanguage,
+    Guid? DepartmentId,
+    Guid? BranchId,
+    CustomerStatus Status,
+    uint Version);
+
 public sealed record CustomerResponse(
     Guid Id,
     string CustomerNumber,
@@ -47,6 +56,7 @@ public sealed record CustomerResponse(
     Guid? DepartmentId,
     Guid? BranchId,
     CustomerStatus Status,
+    uint Version,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
 

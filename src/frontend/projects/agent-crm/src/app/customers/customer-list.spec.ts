@@ -24,6 +24,7 @@ describe('CustomerList', () => {
     departmentId: null,
     branchId: null,
     status: 'Active' as const,
+    version: 1,
     createdAtUtc: '2026-09-02T00:00:00Z',
     updatedAtUtc: '2026-09-02T00:00:00Z',
   };

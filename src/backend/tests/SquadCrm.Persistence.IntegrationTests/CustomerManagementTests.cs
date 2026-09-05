@@ -190,6 +190,124 @@ public sealed class CustomerManagementTests
         Assert.Null(result);
     }
 
+    [Fact]
+    public async Task Update_Succeeds_ChangesFieldsAndStatus_AndRecordsOneUpdatedAuditEntry()
+    {
+        await using CustomerManagementDbContext context = PostgresTestDatabase.CreateCustomerManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        CustomerService service = CreateService(context, auditRecorder, "agent@example.test");
+        CustomerMutationResult created = await service.CreateAsync(
+            new CreateCustomerRequest("Rania", "Fathy", CustomerPreferredLanguage.Arabic, null, null),
+            CancellationToken.None);
+        Guid departmentId = Guid.NewGuid();
+        Guid branchId = Guid.NewGuid();
+
+        CustomerMutationResult result = await service.UpdateAsync(
+            created.Customer!.Id,
+            new UpdateCustomerRequest(
+                "Sara2", "Ahmed2", CustomerPreferredLanguage.English, departmentId, branchId,
+                CustomerStatus.Inactive, created.Customer.Version),
+            CancellationToken.None);
+
+        Assert.Equal(CustomerMutationFailure.None, result.Failure);
+        Assert.Equal("Sara2", result.Customer!.FirstName);
+        Assert.Equal("Ahmed2", result.Customer.LastName);
+        Assert.Equal(CustomerPreferredLanguage.English, result.Customer.PreferredLanguage);
+        Assert.Equal(departmentId, result.Customer.DepartmentId);
+        Assert.Equal(branchId, result.Customer.BranchId);
+        Assert.Equal(CustomerStatus.Inactive, result.Customer.Status);
+        Assert.Equal(created.Customer.CustomerNumber, result.Customer.CustomerNumber);
+        Assert.Single(auditRecorder.Requests, request =>
+            request.Action == "updated" && request.EntityId == result.Customer.Id.ToString());
+    }
+
+    [Fact]
+    public async Task Update_UnknownId_ReturnsNotFound()
+    {
+        await using CustomerManagementDbContext context = PostgresTestDatabase.CreateCustomerManagementContext();
+        CustomerService service = CreateService(context, new RecordingAuditRecorder(), "agent@example.test");
+
+        CustomerMutationResult result = await service.UpdateAsync(
+            Guid.NewGuid(),
+            new UpdateCustomerRequest("A", "B", null, null, null, CustomerStatus.Active, 0),
+            CancellationToken.None);
+
+        Assert.Equal(CustomerMutationFailure.NotFound, result.Failure);
+    }
+
+    [Fact]
+    public async Task Update_InactiveDepartment_IsRejected()
+    {
+        await using CustomerManagementDbContext context = PostgresTestDatabase.CreateCustomerManagementContext();
+        CustomerService service = CreateService(context, new RecordingAuditRecorder(), "agent@example.test");
+        CustomerMutationResult created = await service.CreateAsync(
+            new CreateCustomerRequest("Salma", "Naeem", null, null, null), CancellationToken.None);
+        CustomerService serviceWithInactiveDepartment = CreateService(
+            context, new RecordingAuditRecorder(), "agent@example.test", departmentActive: false);
+
+        CustomerMutationResult result = await serviceWithInactiveDepartment.UpdateAsync(
+            created.Customer!.Id,
+            new UpdateCustomerRequest(
+                "Salma", "Naeem", null, Guid.NewGuid(), null, CustomerStatus.Active, created.Customer.Version),
+            CancellationToken.None);
+
+        Assert.Equal(CustomerMutationFailure.InactiveDepartment, result.Failure);
+    }
+
+    [Fact]
+    public async Task Update_InactiveBranch_IsRejected()
+    {
+        await using CustomerManagementDbContext context = PostgresTestDatabase.CreateCustomerManagementContext();
+        CustomerService service = CreateService(context, new RecordingAuditRecorder(), "agent@example.test");
+        CustomerMutationResult created = await service.CreateAsync(
+            new CreateCustomerRequest("Tarek", "Younes", null, null, null), CancellationToken.None);
+        CustomerService serviceWithInactiveBranch = CreateService(
+            context, new RecordingAuditRecorder(), "agent@example.test", branchActive: false);
+
+        CustomerMutationResult result = await serviceWithInactiveBranch.UpdateAsync(
+            created.Customer!.Id,
+            new UpdateCustomerRequest(
+                "Tarek", "Younes", null, null, Guid.NewGuid(), CustomerStatus.Active, created.Customer.Version),
+            CancellationToken.None);
+
+        Assert.Equal(CustomerMutationFailure.InactiveBranch, result.Failure);
+    }
+
+    [Fact]
+    public async Task Update_StaleVersion_ReturnsConcurrencyConflict()
+    {
+        await using CustomerManagementDbContext setupContext = PostgresTestDatabase.CreateCustomerManagementContext();
+        CustomerService setupService = CreateService(setupContext, new RecordingAuditRecorder(), "agent@example.test");
+        CustomerMutationResult created = await setupService.CreateAsync(
+            new CreateCustomerRequest("Dina", "Farouk", null, null, null), CancellationToken.None);
+
+        // Two separate contexts simulate two agents who each read the
+        // customer once, then both try to save — the second must be
+        // rejected because its read is now stale.
+        await using CustomerManagementDbContext firstReaderContext = PostgresTestDatabase.CreateCustomerManagementContext();
+        await using CustomerManagementDbContext secondReaderContext = PostgresTestDatabase.CreateCustomerManagementContext();
+        CustomerService firstReaderService = CreateService(firstReaderContext, new RecordingAuditRecorder(), "agent-one@example.test");
+        CustomerService secondReaderService = CreateService(secondReaderContext, new RecordingAuditRecorder(), "agent-two@example.test");
+
+        Customer firstRead = (await firstReaderService.GetAsync(created.Customer!.Id, CancellationToken.None))!;
+        Customer secondRead = (await secondReaderService.GetAsync(created.Customer.Id, CancellationToken.None))!;
+
+        CustomerMutationResult firstUpdate = await firstReaderService.UpdateAsync(
+            created.Customer.Id,
+            new UpdateCustomerRequest(
+                "Dina2", "Farouk", null, null, null, CustomerStatus.Active, firstRead.Version),
+            CancellationToken.None);
+        Assert.Equal(CustomerMutationFailure.None, firstUpdate.Failure);
+
+        CustomerMutationResult staleUpdate = await secondReaderService.UpdateAsync(
+            created.Customer.Id,
+            new UpdateCustomerRequest(
+                "Dina3", "Farouk", null, null, null, CustomerStatus.Active, secondRead.Version),
+            CancellationToken.None);
+
+        Assert.Equal(CustomerMutationFailure.ConcurrencyConflict, staleUpdate.Failure);
+    }
+
     private static CustomerService CreateService(
         CustomerManagementDbContext context,
         IAuditRecorder auditRecorder,

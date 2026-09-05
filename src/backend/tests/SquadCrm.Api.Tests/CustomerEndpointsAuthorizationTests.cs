@@ -47,6 +47,29 @@ public sealed class CustomerEndpointsAuthorizationTests
     }
 
     [Fact]
+    public async Task Update_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.PutAsJsonAsync(
+            $"/api/v1/customers/{Guid.NewGuid()}",
+            new
+            {
+                firstName = "Sara",
+                lastName = "Ahmed",
+                preferredLanguage = (string?)null,
+                departmentId = (Guid?)null,
+                branchId = (Guid?)null,
+                status = "Active",
+                version = 0,
+            },
+            CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task AddContact_RejectsAnonymousRequest()
     {
         await using SquadCrmApiFactory factory = new();

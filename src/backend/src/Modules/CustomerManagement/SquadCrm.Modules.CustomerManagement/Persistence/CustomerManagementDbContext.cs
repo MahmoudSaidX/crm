@@ -67,6 +67,15 @@ public sealed class CustomerManagementDbContext(DbContextOptions<CustomerManagem
                 .HasConversion<string>().HasMaxLength(16);
             entity.Property(customer => customer.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(customer => customer.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+            // Optimistic concurrency via Postgres's native xmin system column
+            // (no physical column/migration added) — required by CRM-125's
+            // "conflicting concurrent edits return a clear conflict response".
+            entity.Property(customer => customer.Version)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .ValueGeneratedOnAddOrUpdate()
+                .IsConcurrencyToken();
         });
     }
 }
