@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { CustomerDetail } from './customer-detail';
-import { CustomersService } from './customers.service';
+import { CustomerContact, CustomersService } from './customers.service';
 import {
   provideAppConfig,
   provideTranslations,
@@ -11,12 +11,21 @@ import {
 } from '@squad-crm/platform';
 import { COMMON_TRANSLATIONS } from '@squad-crm/shared-ui';
 import { CUSTOMER_TRANSLATIONS } from './customer-translations';
+import { AuthorizationState } from '../auth/authorization.state';
 
 describe('CustomerDetail', () => {
   let customersService: jasmine.SpyObj<CustomersService>;
+  let authorization: AuthorizationState;
 
   function configure(id: string | null): void {
-    customersService = jasmine.createSpyObj<CustomersService>('CustomersService', ['get']);
+    customersService = jasmine.createSpyObj<CustomersService>('CustomersService', [
+      'get',
+      'listContacts',
+      'addContact',
+      'updateContact',
+      'deactivateContact',
+    ]);
+    customersService.listContacts.and.resolveTo([]);
 
     TestBed.configureTestingModule({
       providers: [
@@ -38,22 +47,37 @@ describe('CustomerDetail', () => {
         appSurface: 'agent-crm',
       }),
     );
+    authorization = TestBed.inject(AuthorizationState);
   }
+
+  const customer = {
+    id: 'customer-a',
+    customerNumber: 'CUS-AAA111',
+    firstName: 'Sara',
+    lastName: 'Ahmed',
+    preferredLanguage: 'Arabic' as const,
+    departmentId: null,
+    branchId: null,
+    status: 'Active' as const,
+    createdAtUtc: '2026-09-02T00:00:00Z',
+    updatedAtUtc: '2026-09-02T00:00:00Z',
+  };
+
+  const emailContact: CustomerContact = {
+    id: 'contact-1',
+    customerId: 'customer-a',
+    type: 'Email',
+    value: 'sara@example.test',
+    label: null,
+    isPrimary: true,
+    isActive: true,
+    createdAtUtc: '2026-09-02T00:00:00Z',
+    updatedAtUtc: '2026-09-02T00:00:00Z',
+  };
 
   it('renders customer fields on successful load', async () => {
     configure('customer-a');
-    customersService.get.and.resolveTo({
-      id: 'customer-a',
-      customerNumber: 'CUS-AAA111',
-      firstName: 'Sara',
-      lastName: 'Ahmed',
-      preferredLanguage: 'Arabic',
-      departmentId: null,
-      branchId: null,
-      status: 'Active',
-      createdAtUtc: '2026-09-02T00:00:00Z',
-      updatedAtUtc: '2026-09-02T00:00:00Z',
-    });
+    customersService.get.and.resolveTo(customer);
     const fixture = TestBed.createComponent(CustomerDetail);
 
     fixture.detectChanges();
@@ -75,5 +99,78 @@ describe('CustomerDetail', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.notFound()).toBeTrue();
+  });
+
+  it('shows an empty state when the customer has no contacts', async () => {
+    configure('customer-a');
+    customersService.get.and.resolveTo(customer);
+    const fixture = TestBed.createComponent(CustomerDetail);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No contacts yet.');
+  });
+
+  it('renders existing contacts and hides mutation actions without permission', async () => {
+    configure('customer-a');
+    customersService.get.and.resolveTo(customer);
+    customersService.listContacts.and.resolveTo([emailContact]);
+    const fixture = TestBed.createComponent(CustomerDetail);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('sara@example.test');
+    expect(fixture.nativeElement.textContent).toContain('Primary');
+    expect(fixture.nativeElement.querySelector('p-button[label="Add contact"]')).toBeNull();
+  });
+
+  it('adds a contact through the form when permitted', async () => {
+    configure('customer-a');
+    authorization.set(['customers.manage']);
+    customersService.get.and.resolveTo(customer);
+    customersService.listContacts.and.resolveTo([]);
+    customersService.addContact.and.resolveTo(emailContact);
+    const fixture = TestBed.createComponent(CustomerDetail);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const component = fixture.componentInstance;
+    component.startAddContact();
+    component.contactForm.setValue({
+      type: 'Email',
+      value: 'sara@example.test',
+      label: null,
+      isPrimary: true,
+    });
+    await component.submitContact();
+
+    expect(customersService.addContact).toHaveBeenCalledWith('customer-a', {
+      type: 'Email',
+      value: 'sara@example.test',
+      label: null,
+      isPrimary: true,
+    });
+    expect(component.showContactForm()).toBeFalse();
+  });
+
+  it('requires selecting a new primary before deactivating the only primary with others active', async () => {
+    configure('customer-a');
+    authorization.set(['customers.manage']);
+    const secondary: CustomerContact = { ...emailContact, id: 'contact-2', isPrimary: false };
+    customersService.get.and.resolveTo(customer);
+    customersService.listContacts.and.resolveTo([emailContact, secondary]);
+    const fixture = TestBed.createComponent(CustomerDetail);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const component = fixture.componentInstance;
+    component.requestDeactivateContact(emailContact);
+
+    expect(component.deactivatingContactId()).toBe('contact-1');
+    expect(customersService.deactivateContact).not.toHaveBeenCalled();
   });
 });

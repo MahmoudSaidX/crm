@@ -44,9 +44,37 @@ export interface PagedResult<T> {
   readonly totalCount: number;
 }
 
+export type CustomerContactType = 'Email' | 'Phone';
+
+export interface CustomerContact {
+  readonly id: string;
+  readonly customerId: string;
+  readonly type: CustomerContactType;
+  readonly value: string;
+  readonly label: string | null;
+  readonly isPrimary: boolean;
+  readonly isActive: boolean;
+  readonly createdAtUtc: string;
+  readonly updatedAtUtc: string;
+}
+
+export interface AddCustomerContactRequest {
+  readonly type: CustomerContactType;
+  readonly value: string;
+  readonly label: string | null;
+  readonly isPrimary: boolean;
+}
+
+export interface UpdateCustomerContactRequest {
+  readonly value: string;
+  readonly label: string | null;
+  readonly isPrimary: boolean;
+}
+
 /**
  * Edit/notes/attachments/interaction history are added by later stories
- * (CRM-125/126/127/128/129); this covers create/list/detail (CRM-122/123).
+ * (CRM-125/127/128/129); this covers create/list/detail (CRM-122/123/124)
+ * plus contact management (CRM-126).
  */
 @Injectable({ providedIn: 'root' })
 export class CustomersService {
@@ -84,5 +112,43 @@ export class CustomersService {
 
   get(id: string): Promise<Customer> {
     return firstValueFrom(this.http.get<Customer>(`/api/v1/customers/${id}`));
+  }
+
+  listContacts(customerId: string): Promise<CustomerContact[]> {
+    return firstValueFrom(
+      this.http.get<CustomerContact[]>(`/api/v1/customers/${customerId}/contacts`),
+    );
+  }
+
+  addContact(customerId: string, request: AddCustomerContactRequest): Promise<CustomerContact> {
+    return firstValueFrom(
+      this.http.post<CustomerContact>(`/api/v1/customers/${customerId}/contacts`, request),
+    );
+  }
+
+  updateContact(
+    customerId: string,
+    contactId: string,
+    request: UpdateCustomerContactRequest,
+  ): Promise<CustomerContact> {
+    return firstValueFrom(
+      this.http.put<CustomerContact>(
+        `/api/v1/customers/${customerId}/contacts/${contactId}`,
+        request,
+      ),
+    );
+  }
+
+  deactivateContact(
+    customerId: string,
+    contactId: string,
+    newPrimaryContactId: string | null,
+  ): Promise<CustomerContact> {
+    return firstValueFrom(
+      this.http.post<CustomerContact>(
+        `/api/v1/customers/${customerId}/contacts/${contactId}/deactivate`,
+        { newPrimaryContactId },
+      ),
+    );
   }
 }

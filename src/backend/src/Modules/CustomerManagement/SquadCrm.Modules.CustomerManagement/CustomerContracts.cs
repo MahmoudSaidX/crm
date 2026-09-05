@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using SquadCrm.Modules.CustomerManagement.Persistence;
 
 namespace SquadCrm.Modules.CustomerManagement;
@@ -46,5 +47,29 @@ public sealed record CustomerResponse(
     Guid? DepartmentId,
     Guid? BranchId,
     CustomerStatus Status,
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset UpdatedAtUtc);
+
+public sealed record AddCustomerContactRequest(
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] CustomerContactType Type,
+    [property: Required, MaxLength(320)] string Value,
+    [property: MaxLength(100)] string? Label,
+    bool IsPrimary);
+
+public sealed record UpdateCustomerContactRequest(
+    [property: Required, MaxLength(320)] string Value,
+    [property: MaxLength(100)] string? Label,
+    bool IsPrimary);
+
+public sealed record DeactivateCustomerContactRequest(Guid? NewPrimaryContactId);
+
+public sealed record CustomerContactResponse(
+    Guid Id,
+    Guid CustomerId,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] CustomerContactType Type,
+    string Value,
+    string? Label,
+    bool IsPrimary,
+    bool IsActive,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
