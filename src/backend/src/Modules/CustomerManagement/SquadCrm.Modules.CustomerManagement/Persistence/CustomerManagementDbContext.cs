@@ -6,10 +6,38 @@ public sealed class CustomerManagementDbContext(DbContextOptions<CustomerManagem
     : DbContext(options)
 {
     public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<CustomerContact> CustomerContacts => Set<CustomerContact>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(CustomerManagementSchema.Name);
+
+        modelBuilder.Entity<CustomerContact>(entity =>
+        {
+            entity.ToTable("customer_contact");
+            entity.HasKey(contact => contact.Id);
+            entity.Property(contact => contact.Id).HasColumnName("id");
+            entity.Property(contact => contact.CustomerId).HasColumnName("customer_id");
+            entity.HasOne<Customer>().WithMany().HasForeignKey(contact => contact.CustomerId).OnDelete(DeleteBehavior.Cascade);
+            entity.Property(contact => contact.Type).HasColumnName("type").HasConversion<string>().HasMaxLength(16);
+            entity.Property(contact => contact.Value).HasColumnName("value").HasMaxLength(320);
+            entity.Property(contact => contact.NormalizedValue).HasColumnName("normalized_value").HasMaxLength(320);
+            entity.Property(contact => contact.Label).HasColumnName("label").HasMaxLength(100);
+            entity.Property(contact => contact.IsPrimary).HasColumnName("is_primary");
+            entity.Property(contact => contact.IsActive).HasColumnName("is_active");
+            entity.Property(contact => contact.VerifiedAtUtc).HasColumnName("verified_at_utc");
+            entity.Property(contact => contact.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(contact => contact.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+            // Enforces "at most one active primary contact per type per
+            // customer" at the database layer; a partial index is required
+            // because plain uniqueness would also forbid multiple inactive/
+            // non-primary rows of the same type.
+            entity.HasIndex(contact => new { contact.CustomerId, contact.Type })
+                .HasDatabaseName("ix_customer_contact_active_primary")
+                .IsUnique()
+                .HasFilter("is_primary = true AND is_active = true");
+        });
 
         modelBuilder.Entity<Customer>(entity =>
         {
