@@ -68,9 +68,19 @@ export const routes: Routes = [
         loadComponent: () => import('./branches/branch-form').then((m) => m.BranchForm),
       },
       {
+        path: 'customers',
+        canActivate: [requirePermission('customers.view')],
+        loadComponent: () => import('./customers/customer-list').then((m) => m.CustomerList),
+      },
+      {
         path: 'customers/new',
         canActivate: [requirePermission('customers.manage')],
         loadComponent: () => import('./customers/customer-form').then((m) => m.CustomerForm),
+      },
+      {
+        path: 'customers/:id',
+        canActivate: [requirePermission('customers.view')],
+        loadComponent: () => import('./customers/customer-detail').then((m) => m.CustomerDetail),
       },
       {
         path: 'branding',

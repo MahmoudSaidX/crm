@@ -3,6 +3,33 @@ using SquadCrm.Modules.CustomerManagement.Persistence;
 
 namespace SquadCrm.Modules.CustomerManagement;
 
+public enum CustomerSortBy
+{
+    CustomerNumber,
+    FirstName,
+    LastName,
+    CreatedAtUtc,
+}
+
+public enum SortDirection
+{
+    Asc,
+    Desc,
+}
+
+/// <summary>
+/// Bound via <c>[AsParameters]</c> alongside <see cref="SquadCrm.BuildingBlocks.Http.PaginationRequest"/>.
+/// A positional record, for the same minimal-API binder reason documented on
+/// <see cref="SquadCrm.BuildingBlocks.Http.PaginationRequest"/>.
+/// </summary>
+public sealed record CustomerListQuery(
+    string? Search = null,
+    Guid[]? DepartmentIds = null,
+    Guid[]? BranchIds = null,
+    CustomerStatus[]? Status = null,
+    CustomerSortBy SortBy = CustomerSortBy.CustomerNumber,
+    SortDirection SortDirection = SortDirection.Asc);
+
 public sealed record CreateCustomerRequest(
     [property: Required, MaxLength(200)] string FirstName,
     [property: Required, MaxLength(200)] string LastName,

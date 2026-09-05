@@ -25,9 +25,28 @@ export interface CreateCustomerRequest {
   readonly branchId: string | null;
 }
 
+export type CustomerSortBy = 'CustomerNumber' | 'FirstName' | 'LastName' | 'CreatedAtUtc';
+export type SortDirection = 'Asc' | 'Desc';
+
+export interface CustomerListQuery {
+  readonly search?: string;
+  readonly departmentIds?: readonly string[];
+  readonly branchIds?: readonly string[];
+  readonly status?: readonly Customer['status'][];
+  readonly sortBy?: CustomerSortBy;
+  readonly sortDirection?: SortDirection;
+}
+
+export interface PagedResult<T> {
+  readonly items: readonly T[];
+  readonly page: number;
+  readonly pageSize: number;
+  readonly totalCount: number;
+}
+
 /**
- * Create-only: view/edit/list/contact details/notes/attachments/interaction
- * history are added by later stories (CRM-123/124/125/126/127/128/129).
+ * Edit/notes/attachments/interaction history are added by later stories
+ * (CRM-125/126/127/128/129); this covers create/list/detail (CRM-122/123).
  */
 @Injectable({ providedIn: 'root' })
 export class CustomersService {
@@ -35,5 +54,35 @@ export class CustomersService {
 
   create(request: CreateCustomerRequest): Promise<Customer> {
     return firstValueFrom(this.http.post<Customer>('/api/v1/customers', request));
+  }
+
+  list(query: CustomerListQuery, page: number, pageSize: number): Promise<PagedResult<Customer>> {
+    let params: Record<string, string | readonly string[]> = {
+      page: String(page),
+      pageSize: String(pageSize),
+    };
+    if (query.search) {
+      params = { ...params, search: query.search };
+    }
+    if (query.departmentIds?.length) {
+      params = { ...params, departmentIds: query.departmentIds };
+    }
+    if (query.branchIds?.length) {
+      params = { ...params, branchIds: query.branchIds };
+    }
+    if (query.status?.length) {
+      params = { ...params, status: query.status };
+    }
+    if (query.sortBy) {
+      params = { ...params, sortBy: query.sortBy };
+    }
+    if (query.sortDirection) {
+      params = { ...params, sortDirection: query.sortDirection };
+    }
+    return firstValueFrom(this.http.get<PagedResult<Customer>>('/api/v1/customers', { params }));
+  }
+
+  get(id: string): Promise<Customer> {
+    return firstValueFrom(this.http.get<Customer>(`/api/v1/customers/${id}`));
   }
 }

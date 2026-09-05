@@ -1,3 +1,4 @@
+using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
 using SquadCrm.Modules.BranchManagement.Contracts;
@@ -87,6 +88,82 @@ public sealed class CustomerManagementTests
 
         Assert.Single(results, result => result.Failure == CustomerMutationFailure.None);
         Assert.Single(results, result => result.Failure == CustomerMutationFailure.DuplicateCustomer);
+    }
+
+    [Fact]
+    public async Task List_SearchByCustomerNumberNameCaseInsensitive_ReturnsMatch()
+    {
+        await using CustomerManagementDbContext context = PostgresTestDatabase.CreateCustomerManagementContext();
+        CustomerService service = CreateService(context, new RecordingAuditRecorder(), "agent@example.test");
+        CustomerMutationResult created = await service.CreateAsync(
+            new CreateCustomerRequest("Fatima", "Zahra", null, null, null), CancellationToken.None);
+
+        PagedResult<Customer> byName = await service.ListAsync(
+            new CustomerListQuery(Search: "fatima"), new PaginationRequest(), CancellationToken.None);
+        PagedResult<Customer> byNumber = await service.ListAsync(
+            new CustomerListQuery(Search: created.Customer!.CustomerNumber.ToLowerInvariant()),
+            new PaginationRequest(),
+            CancellationToken.None);
+
+        Assert.Single(byName.Items, customer => customer.Id == created.Customer.Id);
+        Assert.Single(byNumber.Items, customer => customer.Id == created.Customer.Id);
+    }
+
+    [Fact]
+    public async Task List_FiltersByDepartmentBranchAndStatus()
+    {
+        await using CustomerManagementDbContext context = PostgresTestDatabase.CreateCustomerManagementContext();
+        CustomerService service = CreateService(context, new RecordingAuditRecorder(), "agent@example.test");
+        Guid departmentId = Guid.NewGuid();
+        Guid branchId = Guid.NewGuid();
+        CustomerMutationResult scoped = await service.CreateAsync(
+            new CreateCustomerRequest("Huda", "Ali", null, departmentId, branchId), CancellationToken.None);
+        await service.CreateAsync(new CreateCustomerRequest("Huda", "Ali2", null, null, null), CancellationToken.None);
+
+        PagedResult<Customer> byDepartment = await service.ListAsync(
+            new CustomerListQuery(DepartmentIds: [departmentId]), new PaginationRequest(), CancellationToken.None);
+        PagedResult<Customer> byBranch = await service.ListAsync(
+            new CustomerListQuery(BranchIds: [branchId]), new PaginationRequest(), CancellationToken.None);
+        PagedResult<Customer> byStatus = await service.ListAsync(
+            new CustomerListQuery(Status: [CustomerStatus.Active]), new PaginationRequest(), CancellationToken.None);
+
+        Assert.Single(byDepartment.Items, customer => customer.Id == scoped.Customer!.Id);
+        Assert.Single(byBranch.Items, customer => customer.Id == scoped.Customer!.Id);
+        Assert.True(byStatus.TotalCount >= 2);
+    }
+
+    [Fact]
+    public async Task List_IsDeterministicallySortedAndPaginated_AcrossPages()
+    {
+        await using CustomerManagementDbContext context = PostgresTestDatabase.CreateCustomerManagementContext();
+        CustomerService service = CreateService(context, new RecordingAuditRecorder(), "agent@example.test");
+        for (int index = 0; index < 5; index++)
+        {
+            await service.CreateAsync(
+                new CreateCustomerRequest($"First{index}", $"Last{index}", null, null, null), CancellationToken.None);
+        }
+
+        PagedResult<Customer> pageOne = await service.ListAsync(
+            new CustomerListQuery(), new PaginationRequest(Page: 1, PageSize: 2), CancellationToken.None);
+        PagedResult<Customer> pageTwo = await service.ListAsync(
+            new CustomerListQuery(), new PaginationRequest(Page: 2, PageSize: 2), CancellationToken.None);
+
+        Assert.Equal(2, pageOne.Items.Count);
+        Assert.Equal(2, pageTwo.Items.Count);
+        Assert.Empty(pageOne.Items.Select(customer => customer.Id).Intersect(pageTwo.Items.Select(customer => customer.Id)));
+        List<string> ordered = [.. pageOne.Items.Select(c => c.CustomerNumber), .. pageTwo.Items.Select(c => c.CustomerNumber)];
+        Assert.Equal(ordered.OrderBy(number => number, StringComparer.Ordinal), ordered);
+    }
+
+    [Fact]
+    public async Task Get_UnknownId_ReturnsNull()
+    {
+        await using CustomerManagementDbContext context = PostgresTestDatabase.CreateCustomerManagementContext();
+        CustomerService service = CreateService(context, new RecordingAuditRecorder(), "agent@example.test");
+
+        Customer? result = await service.GetAsync(Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Null(result);
     }
 
     private static CustomerService CreateService(

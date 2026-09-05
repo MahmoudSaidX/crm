@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Validation;
 using SquadCrm.Infrastructure.Postgres;
@@ -41,7 +42,32 @@ public sealed class CustomerManagementModule : IModule
 
         customers.MapPost("", CreateAsync).ValidatesDataAnnotations<CreateCustomerRequest>()
             .RequireAuthorization(PermissionPolicies.CustomersManage);
+        customers.MapGet("", ListAsync).RequireAuthorization(PermissionPolicies.CustomersView);
+        customers.MapGet("/{id:guid}", GetAsync).RequireAuthorization(PermissionPolicies.CustomersView);
     }
+
+    private static async Task<IResult> ListAsync(
+        [AsParameters] CustomerListQuery query,
+        [AsParameters] PaginationRequest pagination,
+        CustomerService customerService,
+        CancellationToken cancellationToken)
+    {
+        PagedResult<Customer> page = await customerService.ListAsync(query, pagination, cancellationToken);
+        return Results.Ok(new PagedResult<CustomerResponse>(
+            page.Items.Select(ToResponse).ToList(), page.Page, page.PageSize, page.TotalCount));
+    }
+
+    private static async Task<IResult> GetAsync(
+        Guid id, CustomerService customerService, CancellationToken cancellationToken)
+    {
+        Customer? customer = await customerService.GetAsync(id, cancellationToken);
+        return customer is null ? NotFoundProblem() : Results.Ok(ToResponse(customer));
+    }
+
+    private static IResult NotFoundProblem() => Results.Problem(
+        statusCode: StatusCodes.Status404NotFound,
+        title: "Customer not found.",
+        extensions: new Dictionary<string, object?> { ["code"] = "customers.not_found" });
 
     private static async Task<IResult> CreateAsync(
         CreateCustomerRequest request,

@@ -1,0 +1,90 @@
+<main class="customers-page">
+  <header class="customers-header">
+    <h1>{{ localization.translate('customers.title') }}</h1>
+    <crm-agent-language-switcher />
+    @if (authorization.has('customers.manage')) {
+      <p-button
+        [label]="localization.translate('customers.new')"
+        icon="pi pi-plus"
+        routerLink="/customers/new"
+      />
+    }
+  </header>
+
+  <div class="customers-filters">
+    <input
+      pInputText
+      type="search"
+      [placeholder]="localization.translate('customers.search')"
+      [(ngModel)]="search"
+      (keyup.enter)="onFilter()"
+    />
+    <p-select
+      [options]="departmentOptions()"
+      [(ngModel)]="departmentId"
+      [showClear]="true"
+      [placeholder]="localization.translate('customers.fields.department')"
+      (onChange)="onFilter()"
+      (onClear)="onFilter()"
+    />
+    <p-select
+      [options]="branchOptions()"
+      [(ngModel)]="branchId"
+      [showClear]="true"
+      [placeholder]="localization.translate('customers.fields.branch')"
+      (onChange)="onFilter()"
+      (onClear)="onFilter()"
+    />
+    <p-button
+      [label]="localization.translate('common.actions.search')"
+      icon="pi pi-search"
+      severity="secondary"
+      (onClick)="onFilter()"
+    />
+  </div>
+
+  <p-table
+    [value]="customers()"
+    [lazy]="true"
+    [paginator]="true"
+    [rows]="pageSize"
+    [totalRecords]="totalRecords()"
+    [paginatorLocale]="localization.locale()"
+    [loading]="loading()"
+    [scrollable]="true"
+    (onLazyLoad)="onLazyLoad($event)"
+    dataKey="id"
+  >
+    <ng-template #header>
+      <tr>
+        <th style="min-width: 10rem">
+          {{ localization.translate('customers.fields.customerNumber') }}
+        </th>
+        <th style="min-width: 12rem">{{ localization.translate('customers.fields.firstName') }}</th>
+        <th style="min-width: 12rem">{{ localization.translate('customers.fields.lastName') }}</th>
+        <th style="min-width: 10rem">
+          {{ localization.translate('customers.fields.department') }}
+        </th>
+        <th style="min-width: 10rem">{{ localization.translate('customers.fields.branch') }}</th>
+        <th style="min-width: 8rem">{{ localization.translate('customers.fields.status') }}</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-customer>
+      <tr class="customer-row" (click)="openCustomer(customer)">
+        <td>{{ customer.customerNumber }}</td>
+        <td>{{ customer.firstName }}</td>
+        <td>{{ customer.lastName }}</td>
+        <td>{{ customer.departmentId || '—' }}</td>
+        <td>{{ customer.branchId || '—' }}</td>
+        <td>
+          <p-tag [value]="localization.translate('common.status.active')" severity="success" />
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="6">{{ localization.translate('customers.empty') }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</main>
