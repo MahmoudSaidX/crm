@@ -230,7 +230,10 @@ describe('CustomerDetail', () => {
     configure('customer-a');
     authorization.set(['customers.manage']);
     customersService.get.and.resolveTo(customer);
-    const conflictError = new HttpErrorResponse({ status: 409, error: { code: 'customers.update_conflict' } });
+    const conflictError = new HttpErrorResponse({
+      status: 409,
+      error: { code: 'customers.update_conflict' },
+    });
     customersService.update.and.rejectWith(conflictError);
     const fixture = TestBed.createComponent(CustomerDetail);
     fixture.detectChanges();

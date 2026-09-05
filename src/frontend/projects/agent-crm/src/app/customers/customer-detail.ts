@@ -200,7 +200,10 @@ export class CustomerDetail implements OnInit {
       this.customer.set(updated);
       this.editing.set(false);
     } catch (error) {
-      if (error instanceof HttpErrorResponse && (error.error as { code?: string })?.code === 'customers.update_conflict') {
+      if (
+        error instanceof HttpErrorResponse &&
+        (error.error as { code?: string })?.code === 'customers.update_conflict'
+      ) {
         this.customer.set(await this.customersService.get(customer.id));
       }
       this.editErrorKey.set(this.resolveEditErrorKey(error));

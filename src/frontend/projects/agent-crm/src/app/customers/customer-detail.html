@@ -28,7 +28,9 @@
 
     @if (editing()) {
       <form class="customer-edit-form" [formGroup]="editForm" (ngSubmit)="submitEdit()" novalidate>
-        <label for="edit-firstName">{{ localization.translate('customers.fields.firstName') }}</label>
+        <label for="edit-firstName">{{
+          localization.translate('customers.fields.firstName')
+        }}</label>
         <input pInputText id="edit-firstName" type="text" formControlName="firstName" />
         @if (editForm.controls.firstName.touched && editForm.controls.firstName.invalid) {
           <small class="field-error">{{
@@ -56,7 +58,9 @@
           [showClear]="true"
         />
 
-        <label for="edit-departmentId">{{ localization.translate('customers.fields.department') }}</label>
+        <label for="edit-departmentId">{{
+          localization.translate('customers.fields.department')
+        }}</label>
         <p-select
           id="edit-departmentId"
           formControlName="departmentId"
