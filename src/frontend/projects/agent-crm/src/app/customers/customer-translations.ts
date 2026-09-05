@@ -35,10 +35,12 @@ export const CUSTOMER_TRANSLATIONS: TranslationResources = {
     'customers.contacts.fields.value': 'Value',
     'customers.contacts.fields.label': 'Label',
     'customers.contacts.fields.isPrimary': 'Primary',
-    'customers.contacts.errors.invalidValue': 'The contact value is not valid for the selected type.',
+    'customers.contacts.errors.invalidValue':
+      'The contact value is not valid for the selected type.',
     'customers.contacts.errors.requiresNewPrimary':
       'Select another active contact of this type to become primary first.',
-    'customers.contacts.errors.invalidNewPrimary': 'The selected replacement primary contact is not valid.',
+    'customers.contacts.errors.invalidNewPrimary':
+      'The selected replacement primary contact is not valid.',
   },
   ar: {
     'customers.title': 'العملاء',
@@ -77,6 +79,7 @@ export const CUSTOMER_TRANSLATIONS: TranslationResources = {
     'customers.contacts.errors.invalidValue': 'قيمة وسيلة التواصل غير صالحة للنوع المحدد.',
     'customers.contacts.errors.requiresNewPrimary':
       'يرجى اختيار وسيلة تواصل نشطة أخرى من نفس النوع لتكون الأساسية أولاً.',
-    'customers.contacts.errors.invalidNewPrimary': 'وسيلة التواصل الأساسية البديلة المحددة غير صالحة.',
+    'customers.contacts.errors.invalidNewPrimary':
+      'وسيلة التواصل الأساسية البديلة المحددة غير صالحة.',
   },
 };
