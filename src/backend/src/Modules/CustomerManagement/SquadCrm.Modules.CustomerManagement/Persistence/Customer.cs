@@ -9,6 +9,7 @@ public enum CustomerPreferredLanguage
 public enum CustomerStatus
 {
     Active,
+    Inactive,
 }
 
 /// <summary>
@@ -39,6 +40,14 @@ public sealed class Customer
     /// <summary>Non-nullable mirror of <see cref="BranchId"/>; see <see cref="DepartmentMatchId"/>.</summary>
     public Guid BranchMatchId { get; set; }
     public CustomerStatus Status { get; set; } = CustomerStatus.Active;
+
+    /// <summary>
+    /// Optimistic concurrency token mapped to Postgres's native <c>xmin</c>
+    /// system column — no extra column/migration needed, and (unlike a
+    /// shadow property) readable from plain <c>AsNoTracking</c> queries.
+    /// </summary>
+    public uint Version { get; set; }
+
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
 }

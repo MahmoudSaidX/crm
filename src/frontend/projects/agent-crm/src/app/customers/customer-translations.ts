@@ -20,6 +20,8 @@ export const CUSTOMER_TRANSLATIONS: TranslationResources = {
     'customers.errors.duplicateCustomer': 'A matching customer already exists.',
     'customers.errors.inactiveDepartment': 'The selected department is not active.',
     'customers.errors.inactiveBranch': 'The selected branch is not active.',
+    'customers.errors.updateConflict':
+      'This customer was updated by someone else. The latest version has been loaded — please review and save again.',
     'customers.detail.back': '← Back to customers',
     'customers.detail.loading': 'Loading customer…',
     'customers.detail.notFound': 'Customer not found.',
@@ -61,6 +63,8 @@ export const CUSTOMER_TRANSLATIONS: TranslationResources = {
     'customers.errors.duplicateCustomer': 'يوجد عميل مطابق بالفعل.',
     'customers.errors.inactiveDepartment': 'القسم المحدد غير نشط.',
     'customers.errors.inactiveBranch': 'الفرع المحدد غير نشط.',
+    'customers.errors.updateConflict':
+      'تم تحديث هذا العميل من قبل مستخدم آخر. تم تحميل أحدث نسخة — يرجى المراجعة والحفظ مرة أخرى.',
     'customers.detail.back': '← العودة إلى العملاء',
     'customers.detail.loading': 'جاري تحميل بيانات العميل…',
     'customers.detail.notFound': 'العميل غير موجود.',

@@ -3,6 +3,8 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { CustomerDetail } from './customer-detail';
 import { CustomerContact, CustomersService } from './customers.service';
+import { DepartmentsService } from '../departments/departments.service';
+import { BranchesService } from '../branches/branches.service';
 import {
   provideAppConfig,
   provideTranslations,
@@ -15,17 +17,24 @@ import { AuthorizationState } from '../auth/authorization.state';
 
 describe('CustomerDetail', () => {
   let customersService: jasmine.SpyObj<CustomersService>;
+  let departmentsService: jasmine.SpyObj<DepartmentsService>;
+  let branchesService: jasmine.SpyObj<BranchesService>;
   let authorization: AuthorizationState;
 
   function configure(id: string | null): void {
     customersService = jasmine.createSpyObj<CustomersService>('CustomersService', [
       'get',
+      'update',
       'listContacts',
       'addContact',
       'updateContact',
       'deactivateContact',
     ]);
     customersService.listContacts.and.resolveTo([]);
+    departmentsService = jasmine.createSpyObj<DepartmentsService>('DepartmentsService', ['list']);
+    departmentsService.list.and.resolveTo({ items: [], page: 1, pageSize: 200, totalCount: 0 });
+    branchesService = jasmine.createSpyObj<BranchesService>('BranchesService', ['list']);
+    branchesService.list.and.resolveTo({ items: [], page: 1, pageSize: 200, totalCount: 0 });
 
     TestBed.configureTestingModule({
       providers: [
@@ -33,6 +42,8 @@ describe('CustomerDetail', () => {
         provideTranslations(COMMON_TRANSLATIONS),
         provideTranslations(CUSTOMER_TRANSLATIONS),
         { provide: CustomersService, useValue: customersService },
+        { provide: DepartmentsService, useValue: departmentsService },
+        { provide: BranchesService, useValue: branchesService },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: convertToParamMap(id ? { id } : {}) } },
@@ -59,6 +70,7 @@ describe('CustomerDetail', () => {
     departmentId: null,
     branchId: null,
     status: 'Active' as const,
+    version: 1,
     createdAtUtc: '2026-09-02T00:00:00Z',
     updatedAtUtc: '2026-09-02T00:00:00Z',
   };
@@ -172,5 +184,65 @@ describe('CustomerDetail', () => {
 
     expect(component.deactivatingContactId()).toBe('contact-1');
     expect(customersService.deactivateContact).not.toHaveBeenCalled();
+  });
+
+  it('hides the edit action without permission', async () => {
+    configure('customer-a');
+    customersService.get.and.resolveTo(customer);
+    const fixture = TestBed.createComponent(CustomerDetail);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('p-button[label="Edit"]')).toBeNull();
+  });
+
+  it('submits an edit with the current version and reloads the customer', async () => {
+    configure('customer-a');
+    authorization.set(['customers.manage']);
+    customersService.get.and.resolveTo(customer);
+    const updated = { ...customer, firstName: 'Sara2', status: 'Inactive' as const, version: 2 };
+    customersService.update.and.resolveTo(updated);
+    const fixture = TestBed.createComponent(CustomerDetail);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const component = fixture.componentInstance;
+    component.startEdit();
+    component.editForm.patchValue({ firstName: 'Sara2', status: 'Inactive' });
+    await component.submitEdit();
+
+    expect(customersService.update).toHaveBeenCalledWith('customer-a', {
+      firstName: 'Sara2',
+      lastName: 'Ahmed',
+      preferredLanguage: 'Arabic',
+      departmentId: null,
+      branchId: null,
+      status: 'Inactive',
+      version: 1,
+    });
+    expect(component.editing()).toBeFalse();
+    expect(component.customer()).toEqual(updated);
+  });
+
+  it('reloads the customer and reports a conflict on a stale-version update', async () => {
+    configure('customer-a');
+    authorization.set(['customers.manage']);
+    customersService.get.and.resolveTo(customer);
+    const conflictError = new HttpErrorResponse({ status: 409, error: { code: 'customers.update_conflict' } });
+    customersService.update.and.rejectWith(conflictError);
+    const fixture = TestBed.createComponent(CustomerDetail);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const refreshed = { ...customer, version: 2 };
+    customersService.get.and.resolveTo(refreshed);
+    const component = fixture.componentInstance;
+    component.startEdit();
+    await component.submitEdit();
+
+    expect(component.editErrorKey()).toBe('customers.errors.updateConflict');
+    expect(component.customer()).toEqual(refreshed);
   });
 });

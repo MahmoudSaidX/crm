@@ -16,6 +16,8 @@ public enum CustomerMutationFailure
     DuplicateCustomer,
     InactiveDepartment,
     InactiveBranch,
+    NotFound,
+    ConcurrencyConflict,
 }
 
 public readonly record struct CustomerMutationResult(Customer? Customer, CustomerMutationFailure Failure)
@@ -94,6 +96,57 @@ internal sealed class CustomerService(
         }
 
         await RecordAuditAsync(customer.Id, "created", cancellationToken);
+        return CustomerMutationResult.Success(customer);
+    }
+
+    public async Task<CustomerMutationResult> UpdateAsync(
+        Guid id,
+        UpdateCustomerRequest request,
+        CancellationToken cancellationToken)
+    {
+        Customer? customer = await dbContext.Customers.SingleOrDefaultAsync(
+            c => c.Id == id, cancellationToken);
+        if (customer is null)
+        {
+            return CustomerMutationResult.Failed(CustomerMutationFailure.NotFound);
+        }
+
+        if (request.DepartmentId is Guid departmentId
+            && !await departmentActiveLookup.IsActiveAsync(departmentId, cancellationToken))
+        {
+            return CustomerMutationResult.Failed(CustomerMutationFailure.InactiveDepartment);
+        }
+
+        if (request.BranchId is Guid branchId
+            && !await branchActiveLookup.IsActiveAsync(branchId, cancellationToken))
+        {
+            return CustomerMutationResult.Failed(CustomerMutationFailure.InactiveBranch);
+        }
+
+        dbContext.Entry(customer).Property(c => c.Version).OriginalValue = request.Version;
+
+        customer.FirstName = request.FirstName.Trim();
+        customer.LastName = request.LastName.Trim();
+        customer.NormalizedFirstName = Normalize(request.FirstName);
+        customer.NormalizedLastName = Normalize(request.LastName);
+        customer.PreferredLanguage = request.PreferredLanguage;
+        customer.DepartmentId = request.DepartmentId;
+        customer.BranchId = request.BranchId;
+        customer.DepartmentMatchId = request.DepartmentId ?? Guid.Empty;
+        customer.BranchMatchId = request.BranchId ?? Guid.Empty;
+        customer.Status = request.Status;
+        customer.UpdatedAtUtc = DateTimeOffset.UtcNow;
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return CustomerMutationResult.Failed(CustomerMutationFailure.ConcurrencyConflict);
+        }
+
+        await RecordAuditAsync(customer.Id, "updated", cancellationToken);
         return CustomerMutationResult.Success(customer);
     }
 

@@ -77,7 +77,14 @@
         <td>{{ customer.departmentId || '—' }}</td>
         <td>{{ customer.branchId || '—' }}</td>
         <td>
-          <p-tag [value]="localization.translate('common.status.active')" severity="success" />
+          <p-tag
+            [value]="
+              localization.translate(
+                customer.status === 'Active' ? 'common.status.active' : 'common.status.inactive'
+              )
+            "
+            [severity]="customer.status === 'Active' ? 'success' : 'danger'"
+          />
         </td>
       </tr>
     </ng-template>

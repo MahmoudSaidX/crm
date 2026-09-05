@@ -45,6 +45,8 @@ public sealed class CustomerManagementModule : IModule
             .RequireAuthorization(PermissionPolicies.CustomersManage);
         customers.MapGet("", ListAsync).RequireAuthorization(PermissionPolicies.CustomersView);
         customers.MapGet("/{id:guid}", GetAsync).RequireAuthorization(PermissionPolicies.CustomersView);
+        customers.MapPut("/{id:guid}", UpdateAsync).ValidatesDataAnnotations<UpdateCustomerRequest>()
+            .RequireAuthorization(PermissionPolicies.CustomersManage);
 
         RouteGroupBuilder contacts = customers.MapGroup("/{customerId:guid}/contacts").WithTags("CustomerContacts");
         contacts.MapPost("", AddContactAsync).ValidatesDataAnnotations<AddCustomerContactRequest>()
@@ -177,6 +179,27 @@ public sealed class CustomerManagementModule : IModule
         };
     }
 
+    private static async Task<IResult> UpdateAsync(
+        Guid id,
+        UpdateCustomerRequest request,
+        CustomerService customerService,
+        CancellationToken cancellationToken)
+    {
+        CustomerMutationResult result = await customerService.UpdateAsync(id, request, cancellationToken);
+        return result.Failure switch
+        {
+            CustomerMutationFailure.None => Results.Ok(ToResponse(result.Customer!)),
+            CustomerMutationFailure.NotFound => NotFoundProblem(),
+            CustomerMutationFailure.InactiveDepartment => InactiveReferenceProblem("department"),
+            CustomerMutationFailure.InactiveBranch => InactiveReferenceProblem("branch"),
+            CustomerMutationFailure.ConcurrencyConflict => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "This customer was updated by someone else. Reload and try again.",
+                extensions: new Dictionary<string, object?> { ["code"] = "customers.update_conflict" }),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
     private static IResult DuplicateProblem() => Results.Problem(
         statusCode: StatusCodes.Status409Conflict,
         title: "A matching customer already exists.",
@@ -196,6 +219,7 @@ public sealed class CustomerManagementModule : IModule
         customer.DepartmentId,
         customer.BranchId,
         customer.Status,
+        customer.Version,
         customer.CreatedAtUtc,
         customer.UpdatedAtUtc);
 }

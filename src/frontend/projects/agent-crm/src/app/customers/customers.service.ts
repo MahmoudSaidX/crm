@@ -4,6 +4,8 @@ import { firstValueFrom } from 'rxjs';
 
 export type CustomerPreferredLanguage = 'Arabic' | 'English';
 
+export type CustomerStatus = 'Active' | 'Inactive';
+
 export interface Customer {
   readonly id: string;
   readonly customerNumber: string;
@@ -12,7 +14,8 @@ export interface Customer {
   readonly preferredLanguage: CustomerPreferredLanguage | null;
   readonly departmentId: string | null;
   readonly branchId: string | null;
-  readonly status: 'Active';
+  readonly status: CustomerStatus;
+  readonly version: number;
   readonly createdAtUtc: string;
   readonly updatedAtUtc: string;
 }
@@ -23,6 +26,16 @@ export interface CreateCustomerRequest {
   readonly preferredLanguage: CustomerPreferredLanguage | null;
   readonly departmentId: string | null;
   readonly branchId: string | null;
+}
+
+export interface UpdateCustomerRequest {
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly preferredLanguage: CustomerPreferredLanguage | null;
+  readonly departmentId: string | null;
+  readonly branchId: string | null;
+  readonly status: CustomerStatus;
+  readonly version: number;
 }
 
 export type CustomerSortBy = 'CustomerNumber' | 'FirstName' | 'LastName' | 'CreatedAtUtc';
@@ -72,9 +85,9 @@ export interface UpdateCustomerContactRequest {
 }
 
 /**
- * Edit/notes/attachments/interaction history are added by later stories
- * (CRM-125/127/128/129); this covers create/list/detail (CRM-122/123/124)
- * plus contact management (CRM-126).
+ * Notes/attachments/interaction history are added by later stories
+ * (CRM-127/128/129); this covers create/list/detail/update
+ * (CRM-122/123/124/125) plus contact management (CRM-126).
  */
 @Injectable({ providedIn: 'root' })
 export class CustomersService {
@@ -112,6 +125,10 @@ export class CustomersService {
 
   get(id: string): Promise<Customer> {
     return firstValueFrom(this.http.get<Customer>(`/api/v1/customers/${id}`));
+  }
+
+  update(id: string, request: UpdateCustomerRequest): Promise<Customer> {
+    return firstValueFrom(this.http.put<Customer>(`/api/v1/customers/${id}`, request));
   }
 
   listContacts(customerId: string): Promise<CustomerContact[]> {
