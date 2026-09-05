@@ -74,3 +74,46 @@ endpoints — no new module.
 - Frontend `ng test` for updated specs; `ng build`/lint.
 - Browser smoke: edit a customer's fields/status in English and Arabic (RTL),
   verify immediate reflect and a conflict message on stale-version resubmit.
+
+## Deviation — post-approval, publication-verification fix
+
+Publication verification (after initial merge approval) discovered that
+`CustomerContracts.cs` never applied `[JsonConverter(typeof(JsonStringEnumConverter))]`
+to `CustomerStatus`/`CustomerPreferredLanguage` (only `CustomerContactType`,
+from CRM-126, had it), and no global enum-string converter is registered
+anywhere in the API. System.Text.Json's default behavior for an undecorated
+enum is to serialize/deserialize it as an **integer**, not its name. This
+pre-existing contract defect (present since CRM-122 for `PreferredLanguage`)
+was invisible until now because `CustomerStatus` only ever had one value and
+no test exercised a real authenticated HTTP round trip. CRM-125 made it
+release-blocking: `Status` became a genuinely two-valued, user-editable field
+sent by the frontend as `"Active"`/`"Inactive"` strings, which the backend
+would have rejected (400 on bind) or misrepresented (integers on read) over
+the real wire.
+
+**Fix, scoped intentionally to `CustomerManagement` contracts only:**
+`[property: JsonConverter(typeof(JsonStringEnumConverter))]` added to
+`CustomerStatus`/`CustomerPreferredLanguage` on `CreateCustomerRequest`,
+`UpdateCustomerRequest`, and `CustomerResponse` — the same per-property
+pattern already established by `CustomerContactType`. No global
+`JsonStringEnumConverter` was registered for the API, and no other module's
+enums were touched; that remains a separate cross-cutting decision.
+
+New `SquadCrm.Persistence.IntegrationTests/CustomerHttpContractTests.cs` hosts
+the real API (`WebApplicationFactory<Program>`) against the same real,
+migrated Postgres this test project already owns, with a real seeded staff
+user/role/permission grant and a real signed-in JWT — proving the actual JSON
+bytes on the wire (not just C# enum equality) for create/get/update. Verified:
+`preferredLanguage`/`status` round-trip as names, not integers; the existing
+`CustomerContactType` behavior is unchanged.
+
+**A second, separate defect surfaced during this same verification**, also
+pre-existing and cross-cutting rather than Customer-specific: an invalid
+enum string produces `Microsoft.AspNetCore.Http.BadHttpRequestException`
+(which carries its own 400 status), but the shared `GlobalExceptionHandler`
+treats every exception identically and always writes a generic 500 —
+regardless of enum converters, and for any endpoint in the app. Fixing that
+handler is a global exception-handling decision outside this fix's declared
+scope, so it was left unfixed and is instead documented by a test that
+asserts today's actual (500) behavior, with a recommendation to address it
+as its own follow-up.

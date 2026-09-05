@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
@@ -34,6 +35,16 @@
     <ProjectReference Include="..\..\src\Modules\DepartmentManagement\SquadCrm.Modules.DepartmentManagement.Contracts\SquadCrm.Modules.DepartmentManagement.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\BranchManagement\SquadCrm.Modules.BranchManagement.Contracts\SquadCrm.Modules.BranchManagement.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Infrastructure\SquadCrm.Infrastructure.FileStorage\SquadCrm.Infrastructure.FileStorage.csproj" />
+    <!-- Only CustomerHttpContractTests.cs hosts the real API in-process (over
+         the real Postgres this project already owns) to prove the actual JSON
+         wire representation through the ASP.NET pipeline — service-level
+         assertions cannot catch a System.Text.Json enum contract defect. -->
+    <ProjectReference Include="..\..\src\Api\SquadCrm.Api\SquadCrm.Api.csproj" />
+  </ItemGroup>
+
+  <!-- Required only for the in-process API host in CustomerHttpContractTests.cs. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
 </Project>
