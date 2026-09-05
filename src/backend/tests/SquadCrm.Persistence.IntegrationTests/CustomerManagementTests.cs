@@ -156,6 +156,30 @@ public sealed class CustomerManagementTests
     }
 
     [Fact]
+    public async Task Get_ExistingCustomer_ReturnsCustomer()
+    {
+        await using CustomerManagementDbContext context = PostgresTestDatabase.CreateCustomerManagementContext();
+        CustomerService service = CreateService(context, new RecordingAuditRecorder(), "agent@example.test");
+        Guid departmentId = Guid.NewGuid();
+        Guid branchId = Guid.NewGuid();
+        CustomerMutationResult created = await service.CreateAsync(
+            new CreateCustomerRequest("Mona", "Adel", CustomerPreferredLanguage.English, departmentId, branchId),
+            CancellationToken.None);
+
+        Customer? result = await service.GetAsync(created.Customer!.Id, CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.Equal(created.Customer.Id, result!.Id);
+        Assert.Equal(created.Customer.CustomerNumber, result.CustomerNumber);
+        Assert.Equal("Mona", result.FirstName);
+        Assert.Equal("Adel", result.LastName);
+        Assert.Equal(CustomerPreferredLanguage.English, result.PreferredLanguage);
+        Assert.Equal(departmentId, result.DepartmentId);
+        Assert.Equal(branchId, result.BranchId);
+        Assert.Equal(CustomerStatus.Active, result.Status);
+    }
+
+    [Fact]
     public async Task Get_UnknownId_ReturnsNull()
     {
         await using CustomerManagementDbContext context = PostgresTestDatabase.CreateCustomerManagementContext();
