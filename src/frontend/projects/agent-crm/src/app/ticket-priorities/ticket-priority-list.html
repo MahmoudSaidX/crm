@@ -1,0 +1,92 @@
+<main class="ticket-priorities-page">
+  <header class="ticket-priorities-header">
+    <h1>{{ localization.translate('ticketPriorities.title') }}</h1>
+    <crm-agent-language-switcher />
+    @if (authorization.has('ticketpriorities.manage')) {
+      <p-button
+        [label]="localization.translate('ticketPriorities.new')"
+        icon="pi pi-plus"
+        routerLink="/ticket-priorities/new"
+      />
+    }
+  </header>
+
+  <p-table
+    [value]="priorities()"
+    [lazy]="true"
+    [paginator]="true"
+    [rows]="pageSize"
+    [totalRecords]="totalRecords()"
+    [paginatorLocale]="localization.locale()"
+    [loading]="loading()"
+    [scrollable]="true"
+    (onLazyLoad)="onLazyLoad($event)"
+    dataKey="id"
+  >
+    <ng-template #header>
+      <tr>
+        <th style="min-width: 10rem">
+          {{ localization.translate('ticketPriorities.fields.code') }}
+        </th>
+        <th style="min-width: 12rem">
+          {{ localization.translate('ticketPriorities.fields.arabicName') }}
+        </th>
+        <th style="min-width: 12rem">
+          {{ localization.translate('ticketPriorities.fields.englishName') }}
+        </th>
+        <th style="min-width: 6rem">
+          {{ localization.translate('ticketPriorities.fields.rank') }}
+        </th>
+        <th style="min-width: 8rem">
+          {{ localization.translate('ticketPriorities.fields.status') }}
+        </th>
+        <th style="min-width: 12rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-priority>
+      <tr>
+        <td>{{ priority.code }}</td>
+        <td>{{ priority.arabicName }}</td>
+        <td>{{ priority.englishName }}</td>
+        <td>{{ priority.rank }}</td>
+        <td>
+          <p-tag
+            [value]="
+              localization.translate(
+                priority.isActive ? 'common.status.active' : 'common.status.inactive'
+              )
+            "
+            [severity]="priority.isActive ? 'success' : 'danger'"
+          />
+        </td>
+        <td class="row-actions">
+          @if (authorization.has('ticketpriorities.manage')) {
+            <p-button
+              [label]="localization.translate('common.actions.edit')"
+              icon="pi pi-pencil"
+              severity="secondary"
+              size="small"
+              [routerLink]="['/ticket-priorities', priority.id, 'edit']"
+            />
+            <p-button
+              [label]="
+                localization.translate(
+                  priority.isActive ? 'common.actions.deactivate' : 'common.actions.activate'
+                )
+              "
+              [icon]="priority.isActive ? 'pi pi-ban' : 'pi pi-check'"
+              [severity]="priority.isActive ? 'danger' : 'success'"
+              size="small"
+              (onClick)="toggleActive(priority)"
+            />
+          }
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="6">{{ localization.translate('ticketPriorities.empty') }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</main>

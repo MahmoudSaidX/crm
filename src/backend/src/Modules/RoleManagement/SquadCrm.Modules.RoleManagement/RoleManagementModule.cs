@@ -65,6 +65,10 @@ public sealed class RoleManagementModule : IModule
                 policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.TicketCategoriesView)));
             options.AddPolicy(PermissionPolicies.TicketCategoriesManage, policy =>
                 policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.TicketCategoriesManage)));
+            options.AddPolicy(PermissionPolicies.TicketPrioritiesView, policy =>
+                policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.TicketPrioritiesView)));
+            options.AddPolicy(PermissionPolicies.TicketPrioritiesManage, policy =>
+                policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.TicketPrioritiesManage)));
         });
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule
