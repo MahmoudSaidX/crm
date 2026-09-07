@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { CustomerDetail } from './customer-detail';
-import { CustomerContact, CustomersService } from './customers.service';
+import { CustomerContact, CustomerNote, CustomersService } from './customers.service';
 import { DepartmentsService } from '../departments/departments.service';
 import { BranchesService } from '../branches/branches.service';
 import {
@@ -29,8 +29,11 @@ describe('CustomerDetail', () => {
       'addContact',
       'updateContact',
       'deactivateContact',
+      'listNotes',
+      'addNote',
     ]);
     customersService.listContacts.and.resolveTo([]);
+    customersService.listNotes.and.resolveTo([]);
     departmentsService = jasmine.createSpyObj<DepartmentsService>('DepartmentsService', ['list']);
     departmentsService.list.and.resolveTo({ items: [], page: 1, pageSize: 200, totalCount: 0 });
     branchesService = jasmine.createSpyObj<BranchesService>('BranchesService', ['list']);
@@ -85,6 +88,14 @@ describe('CustomerDetail', () => {
     isActive: true,
     createdAtUtc: '2026-09-02T00:00:00Z',
     updatedAtUtc: '2026-09-02T00:00:00Z',
+  };
+
+  const note: CustomerNote = {
+    id: 'note-1',
+    customerId: 'customer-a',
+    body: 'Customer called about billing.',
+    authorUserId: 'author-1',
+    createdAtUtc: '2026-09-05T00:00:00Z',
   };
 
   it('renders customer fields on successful load', async () => {
@@ -247,5 +258,52 @@ describe('CustomerDetail', () => {
 
     expect(component.editErrorKey()).toBe('customers.errors.updateConflict');
     expect(component.customer()).toEqual(refreshed);
+  });
+
+  it('shows an empty state when the customer has no notes', async () => {
+    configure('customer-a');
+    customersService.get.and.resolveTo(customer);
+    const fixture = TestBed.createComponent(CustomerDetail);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No notes yet.');
+  });
+
+  it('renders existing notes and hides the add action without permission', async () => {
+    configure('customer-a');
+    customersService.get.and.resolveTo(customer);
+    customersService.listNotes.and.resolveTo([note]);
+    const fixture = TestBed.createComponent(CustomerDetail);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Customer called about billing.');
+    expect(fixture.nativeElement.querySelector('p-button[label="Add note"]')).toBeNull();
+  });
+
+  it('adds a note through the form when permitted', async () => {
+    configure('customer-a');
+    authorization.set(['customers.manage']);
+    customersService.get.and.resolveTo(customer);
+    customersService.listNotes.and.resolveTo([]);
+    customersService.addNote.and.resolveTo(note);
+    const fixture = TestBed.createComponent(CustomerDetail);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const component = fixture.componentInstance;
+    component.startAddNote();
+    component.noteForm.setValue({ body: 'Customer called about billing.' });
+    await component.submitNote();
+
+    expect(customersService.addNote).toHaveBeenCalledWith('customer-a', {
+      body: 'Customer called about billing.',
+    });
+    expect(component.showNoteForm()).toBeFalse();
   });
 });

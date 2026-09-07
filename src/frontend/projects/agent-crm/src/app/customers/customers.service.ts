@@ -84,10 +84,23 @@ export interface UpdateCustomerContactRequest {
   readonly isPrimary: boolean;
 }
 
+export interface CustomerNote {
+  readonly id: string;
+  readonly customerId: string;
+  readonly body: string;
+  readonly authorUserId: string;
+  readonly createdAtUtc: string;
+}
+
+export interface AddCustomerNoteRequest {
+  readonly body: string;
+}
+
 /**
- * Notes/attachments/interaction history are added by later stories
- * (CRM-127/128/129); this covers create/list/detail/update
- * (CRM-122/123/124/125) plus contact management (CRM-126).
+ * Attachments/interaction history are added by later stories
+ * (CRM-128/129); this covers create/list/detail/update
+ * (CRM-122/123/124/125), contact management (CRM-126) and notes
+ * (CRM-127).
  */
 @Injectable({ providedIn: 'root' })
 export class CustomersService {
@@ -166,6 +179,16 @@ export class CustomersService {
         `/api/v1/customers/${customerId}/contacts/${contactId}/deactivate`,
         { newPrimaryContactId },
       ),
+    );
+  }
+
+  listNotes(customerId: string): Promise<CustomerNote[]> {
+    return firstValueFrom(this.http.get<CustomerNote[]>(`/api/v1/customers/${customerId}/notes`));
+  }
+
+  addNote(customerId: string, request: AddCustomerNoteRequest): Promise<CustomerNote> {
+    return firstValueFrom(
+      this.http.post<CustomerNote>(`/api/v1/customers/${customerId}/notes`, request),
     );
   }
 }

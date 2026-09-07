@@ -43,6 +43,13 @@ export const CUSTOMER_TRANSLATIONS: TranslationResources = {
       'Select another active contact of this type to become primary first.',
     'customers.contacts.errors.invalidNewPrimary':
       'The selected replacement primary contact is not valid.',
+    'customers.notes.title': 'Notes',
+    'customers.notes.add': 'Add note',
+    'customers.notes.cancel': 'Cancel',
+    'customers.notes.empty': 'No notes yet.',
+    'customers.notes.fields.body': 'Note',
+    'customers.notes.fields.author': 'Author',
+    'customers.notes.fields.createdAtUtc': 'Added',
   },
   ar: {
     'customers.title': 'العملاء',
@@ -85,5 +92,12 @@ export const CUSTOMER_TRANSLATIONS: TranslationResources = {
       'يرجى اختيار وسيلة تواصل نشطة أخرى من نفس النوع لتكون الأساسية أولاً.',
     'customers.contacts.errors.invalidNewPrimary':
       'وسيلة التواصل الأساسية البديلة المحددة غير صالحة.',
+    'customers.notes.title': 'الملاحظات',
+    'customers.notes.add': 'إضافة ملاحظة',
+    'customers.notes.cancel': 'إلغاء',
+    'customers.notes.empty': 'لا توجد ملاحظات بعد.',
+    'customers.notes.fields.body': 'الملاحظة',
+    'customers.notes.fields.author': 'الكاتب',
+    'customers.notes.fields.createdAtUtc': 'تاريخ الإضافة',
   },
 };
