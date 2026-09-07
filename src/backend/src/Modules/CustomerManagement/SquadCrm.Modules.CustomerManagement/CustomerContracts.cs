@@ -83,3 +83,12 @@ public sealed record CustomerContactResponse(
     bool IsActive,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
+
+public sealed record AddCustomerNoteRequest([property: Required, MaxLength(4000)] string Body);
+
+public sealed record CustomerNoteResponse(
+    Guid Id,
+    Guid CustomerId,
+    string Body,
+    Guid AuthorUserId,
+    DateTimeOffset CreatedAtUtc);

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -9,10 +10,12 @@ import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { TextareaModule } from 'primeng/textarea';
 import {
   Customer,
   CustomerContact,
   CustomerContactType,
+  CustomerNote,
   CustomerPreferredLanguage,
   CustomerStatus,
   CustomersService,
@@ -33,6 +36,7 @@ interface SelectOption {
   imports: [
     RouterLink,
     ReactiveFormsModule,
+    DatePipe,
     ButtonModule,
     CheckboxModule,
     InputTextModule,
@@ -40,6 +44,7 @@ interface SelectOption {
     SelectModule,
     TableModule,
     TagModule,
+    TextareaModule,
     AgentLanguageSwitcher,
   ],
   templateUrl: './customer-detail.html',
@@ -110,6 +115,18 @@ export class CustomerDetail implements OnInit {
 
   readonly newPrimaryControl = new FormControl<string | null>(null);
 
+  readonly notes = signal<CustomerNote[]>([]);
+  readonly notesLoading = signal(false);
+  readonly showNoteForm = signal(false);
+  readonly noteErrorKey = signal<TranslationKey | null>(null);
+
+  readonly noteForm = new FormGroup({
+    body: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.maxLength(4000)],
+    }),
+  });
+
   ngOnInit(): void {
     void this.load();
   }
@@ -124,7 +141,7 @@ export class CustomerDetail implements OnInit {
     this.loading.set(true);
     try {
       this.customer.set(await this.customersService.get(id));
-      await this.loadContacts(id);
+      await Promise.all([this.loadContacts(id), this.loadNotes(id)]);
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 404) {
         this.notFound.set(true);
@@ -364,5 +381,42 @@ export class CustomerDetail implements OnInit {
       return 'customers.contacts.errors.invalidNewPrimary';
     }
     return 'common.errors.generic';
+  }
+
+  private async loadNotes(customerId: string): Promise<void> {
+    this.notesLoading.set(true);
+    try {
+      this.notes.set(await this.customersService.listNotes(customerId));
+    } finally {
+      this.notesLoading.set(false);
+    }
+  }
+
+  startAddNote(): void {
+    this.noteErrorKey.set(null);
+    this.noteForm.reset({ body: '' });
+    this.showNoteForm.set(true);
+  }
+
+  cancelNoteForm(): void {
+    this.showNoteForm.set(false);
+    this.noteErrorKey.set(null);
+  }
+
+  async submitNote(): Promise<void> {
+    const customer = this.customer();
+    if (!customer || this.noteForm.invalid) {
+      this.noteForm.markAllAsTouched();
+      return;
+    }
+
+    this.noteErrorKey.set(null);
+    try {
+      await this.customersService.addNote(customer.id, { body: this.noteForm.getRawValue().body });
+      this.showNoteForm.set(false);
+      await this.loadNotes(customer.id);
+    } catch {
+      this.noteErrorKey.set('common.errors.generic');
+    }
   }
 }

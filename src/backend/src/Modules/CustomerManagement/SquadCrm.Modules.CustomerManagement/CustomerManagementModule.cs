@@ -29,6 +29,7 @@ public sealed class CustomerManagementModule : IModule
                     CustomerManagementSchema.Name)));
         services.AddScoped<CustomerService>();
         services.AddScoped<CustomerContactService>();
+        services.AddScoped<CustomerNoteService>();
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule;
         // IDepartmentActiveLookup/IBranchActiveLookup are already registered
@@ -56,7 +57,42 @@ public sealed class CustomerManagementModule : IModule
             .RequireAuthorization(PermissionPolicies.CustomersManage);
         contacts.MapPost("/{contactId:guid}/deactivate", DeactivateContactAsync)
             .RequireAuthorization(PermissionPolicies.CustomersManage);
+
+        RouteGroupBuilder notes = customers.MapGroup("/{customerId:guid}/notes").WithTags("CustomerNotes");
+        notes.MapPost("", AddNoteAsync).ValidatesDataAnnotations<AddCustomerNoteRequest>()
+            .RequireAuthorization(PermissionPolicies.CustomersManage);
+        notes.MapGet("", ListNotesAsync).RequireAuthorization(PermissionPolicies.CustomersView);
     }
+
+    private static async Task<IResult> AddNoteAsync(
+        Guid customerId,
+        AddCustomerNoteRequest request,
+        CustomerNoteService noteService,
+        CancellationToken cancellationToken)
+    {
+        CustomerNoteMutationResult result = await noteService.AddAsync(customerId, request, cancellationToken);
+        return result.Failure switch
+        {
+            CustomerNoteMutationFailure.None => Results.Created(
+                $"/api/v1/customers/{customerId}/notes/{result.Note!.Id}", ToNoteResponse(result.Note)),
+            CustomerNoteMutationFailure.CustomerNotFound => NotFoundProblem(),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> ListNotesAsync(
+        Guid customerId, CustomerNoteService noteService, CancellationToken cancellationToken)
+    {
+        List<Persistence.CustomerNote> notes = await noteService.ListAsync(customerId, cancellationToken);
+        return Results.Ok(notes.Select(ToNoteResponse).ToList());
+    }
+
+    private static CustomerNoteResponse ToNoteResponse(Persistence.CustomerNote note) => new(
+        note.Id,
+        note.CustomerId,
+        note.Body,
+        note.AuthorUserId,
+        note.CreatedAtUtc);
 
     private static async Task<IResult> AddContactAsync(
         Guid customerId,

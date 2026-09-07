@@ -7,6 +7,7 @@ public sealed class CustomerManagementDbContext(DbContextOptions<CustomerManagem
 {
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<CustomerContact> CustomerContacts => Set<CustomerContact>();
+    public DbSet<CustomerNote> CustomerNotes => Set<CustomerNote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +38,20 @@ public sealed class CustomerManagementDbContext(DbContextOptions<CustomerManagem
                 .HasDatabaseName("ix_customer_contact_active_primary")
                 .IsUnique()
                 .HasFilter("is_primary = true AND is_active = true");
+        });
+
+        modelBuilder.Entity<CustomerNote>(entity =>
+        {
+            entity.ToTable("customer_note");
+            entity.HasKey(note => note.Id);
+            entity.Property(note => note.Id).HasColumnName("id");
+            entity.Property(note => note.CustomerId).HasColumnName("customer_id");
+            entity.HasOne<Customer>().WithMany().HasForeignKey(note => note.CustomerId).OnDelete(DeleteBehavior.Cascade);
+            entity.Property(note => note.Body).HasColumnName("body").HasMaxLength(4000);
+            entity.Property(note => note.AuthorUserId).HasColumnName("author_user_id");
+            entity.Property(note => note.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.HasIndex(note => new { note.CustomerId, note.CreatedAtUtc })
+                .HasDatabaseName("ix_customer_note_customer_created");
         });
 
         modelBuilder.Entity<Customer>(entity =>

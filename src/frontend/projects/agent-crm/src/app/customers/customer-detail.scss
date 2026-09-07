@@ -86,3 +86,31 @@
   align-items: center;
   gap: 0.5rem;
 }
+
+.customer-notes {
+  margin-block-start: 2rem;
+}
+
+.customer-notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-end: 1rem;
+}
+
+.note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-block-end: 1rem;
+}
+
+.note-form textarea {
+  width: 100%;
+}
+
+.note-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
