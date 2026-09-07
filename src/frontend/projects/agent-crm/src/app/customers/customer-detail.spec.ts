@@ -396,7 +396,7 @@ describe('CustomerDetail', () => {
     const component = fixture.componentInstance;
     await component.uploadAttachment(
       { files: [new File(['bytes'], 'payload.exe', { type: 'application/x-msdownload' })] },
-      { clear: () => {} },
+      { clear: jasmine.createSpy('clear') },
     );
 
     expect(component.attachmentErrorKey()).toBe('customers.attachments.errors.invalidFile');
