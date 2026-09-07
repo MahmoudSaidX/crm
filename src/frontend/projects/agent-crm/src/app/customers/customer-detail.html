@@ -358,5 +358,81 @@
         </ng-template>
       </p-table>
     </section>
+
+    <section class="customer-attachments">
+      <header class="customer-attachments-header">
+        <h2>{{ localization.translate('customers.attachments.title') }}</h2>
+      </header>
+
+      @if (attachmentErrorKey()) {
+        <p-message severity="error">{{ localization.translate(attachmentErrorKey()!) }}</p-message>
+      }
+
+      @if (authorization.has('customers.manage')) {
+        <div class="attachment-upload">
+          <input
+            pInputText
+            type="text"
+            [formControl]="attachmentDescription"
+            [placeholder]="localization.translate('customers.attachments.fields.description')"
+          />
+          <p-fileupload
+            #attachmentUploader
+            mode="basic"
+            [customUpload]="true"
+            [auto]="true"
+            [disabled]="attachmentUploading()"
+            [chooseLabel]="localization.translate('customers.attachments.add')"
+            chooseIcon="pi pi-upload"
+            (uploadHandler)="uploadAttachment($event, attachmentUploader)"
+          />
+        </div>
+      }
+
+      <p-table [value]="attachments()" [loading]="attachmentsLoading()" dataKey="id">
+        <ng-template #header>
+          <tr>
+            <th>{{ localization.translate('customers.attachments.fields.fileName') }}</th>
+            <th>{{ localization.translate('customers.attachments.fields.description') }}</th>
+            <th>{{ localization.translate('customers.attachments.fields.sizeBytes') }}</th>
+            <th>{{ localization.translate('customers.attachments.fields.uploadedBy') }}</th>
+            <th>{{ localization.translate('customers.attachments.fields.uploadedAtUtc') }}</th>
+            <th></th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-attachment>
+          <tr>
+            <td>{{ attachment.originalFileName }}</td>
+            <td>{{ attachment.description }}</td>
+            <td>{{ attachment.sizeBytes }}</td>
+            <td>{{ attachment.uploadedBy }}</td>
+            <td>{{ attachment.uploadedAtUtc | date: 'short' }}</td>
+            <td class="attachment-actions">
+              <p-button
+                [label]="localization.translate('customers.attachments.download')"
+                icon="pi pi-download"
+                severity="secondary"
+                size="small"
+                (onClick)="downloadAttachment(attachment)"
+              />
+              @if (authorization.has('customers.manage')) {
+                <p-button
+                  [label]="localization.translate('customers.attachments.remove')"
+                  icon="pi pi-trash"
+                  severity="danger"
+                  size="small"
+                  (onClick)="removeAttachment(attachment)"
+                />
+              }
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="6">{{ localization.translate('customers.attachments.empty') }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </section>
   }
 </main>

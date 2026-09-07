@@ -92,3 +92,13 @@ public sealed record CustomerNoteResponse(
     string Body,
     Guid AuthorUserId,
     DateTimeOffset CreatedAtUtc);
+
+public sealed record CustomerAttachmentResponse(
+    Guid Id,
+    Guid CustomerId,
+    string OriginalFileName,
+    string ContentType,
+    long SizeBytes,
+    string? Description,
+    string UploadedBy,
+    DateTimeOffset UploadedAtUtc);

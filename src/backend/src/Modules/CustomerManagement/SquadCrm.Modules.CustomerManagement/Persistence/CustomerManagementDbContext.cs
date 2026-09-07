@@ -8,6 +8,7 @@ public sealed class CustomerManagementDbContext(DbContextOptions<CustomerManagem
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<CustomerContact> CustomerContacts => Set<CustomerContact>();
     public DbSet<CustomerNote> CustomerNotes => Set<CustomerNote>();
+    public DbSet<CustomerAttachment> CustomerAttachments => Set<CustomerAttachment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,6 +53,28 @@ public sealed class CustomerManagementDbContext(DbContextOptions<CustomerManagem
             entity.Property(note => note.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.HasIndex(note => new { note.CustomerId, note.CreatedAtUtc })
                 .HasDatabaseName("ix_customer_note_customer_created");
+        });
+
+        modelBuilder.Entity<CustomerAttachment>(entity =>
+        {
+            entity.ToTable("customer_attachment");
+            entity.HasKey(attachment => attachment.Id);
+            entity.Property(attachment => attachment.Id).HasColumnName("id");
+            entity.Property(attachment => attachment.CustomerId).HasColumnName("customer_id");
+            entity.HasOne<Customer>().WithMany().HasForeignKey(attachment => attachment.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(attachment => attachment.StorageKey).HasColumnName("storage_key").HasMaxLength(128);
+            entity.Property(attachment => attachment.OriginalFileName)
+                .HasColumnName("original_file_name").HasMaxLength(260);
+            entity.Property(attachment => attachment.ContentType).HasColumnName("content_type").HasMaxLength(128);
+            entity.Property(attachment => attachment.SizeBytes).HasColumnName("size_bytes");
+            entity.Property(attachment => attachment.Description).HasColumnName("description").HasMaxLength(500);
+            entity.Property(attachment => attachment.UploadedBy).HasColumnName("uploaded_by").HasMaxLength(200);
+            entity.Property(attachment => attachment.UploadedAtUtc).HasColumnName("uploaded_at_utc");
+            entity.Property(attachment => attachment.RemovedAtUtc).HasColumnName("removed_at_utc");
+            entity.Property(attachment => attachment.RemovedBy).HasColumnName("removed_by").HasMaxLength(200);
+            entity.HasIndex(attachment => new { attachment.CustomerId, attachment.UploadedAtUtc })
+                .HasDatabaseName("ix_customer_attachment_customer_uploaded");
         });
 
         modelBuilder.Entity<Customer>(entity =>

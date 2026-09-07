@@ -96,11 +96,21 @@ export interface AddCustomerNoteRequest {
   readonly body: string;
 }
 
+export interface CustomerAttachment {
+  readonly id: string;
+  readonly customerId: string;
+  readonly originalFileName: string;
+  readonly contentType: string;
+  readonly sizeBytes: number;
+  readonly description: string | null;
+  readonly uploadedBy: string;
+  readonly uploadedAtUtc: string;
+}
+
 /**
- * Attachments/interaction history are added by later stories
- * (CRM-128/129); this covers create/list/detail/update
- * (CRM-122/123/124/125), contact management (CRM-126) and notes
- * (CRM-127).
+ * Interaction history is added by a later story (CRM-129); this covers
+ * create/list/detail/update (CRM-122/123/124/125), contact management
+ * (CRM-126), notes (CRM-127) and attachments (CRM-128).
  */
 @Injectable({ providedIn: 'root' })
 export class CustomersService {
@@ -189,6 +199,41 @@ export class CustomersService {
   addNote(customerId: string, request: AddCustomerNoteRequest): Promise<CustomerNote> {
     return firstValueFrom(
       this.http.post<CustomerNote>(`/api/v1/customers/${customerId}/notes`, request),
+    );
+  }
+
+  listAttachments(customerId: string): Promise<CustomerAttachment[]> {
+    return firstValueFrom(
+      this.http.get<CustomerAttachment[]>(`/api/v1/customers/${customerId}/attachments`),
+    );
+  }
+
+  uploadAttachment(
+    customerId: string,
+    file: File,
+    description: string | null,
+  ): Promise<CustomerAttachment> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    const params: Record<string, string> = description ? { description } : {};
+    return firstValueFrom(
+      this.http.post<CustomerAttachment>(`/api/v1/customers/${customerId}/attachments`, form, {
+        params,
+      }),
+    );
+  }
+
+  removeAttachment(customerId: string, attachmentId: string): Promise<void> {
+    return firstValueFrom(
+      this.http.delete<void>(`/api/v1/customers/${customerId}/attachments/${attachmentId}`),
+    );
+  }
+
+  downloadAttachment(customerId: string, attachmentId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`/api/v1/customers/${customerId}/attachments/${attachmentId}`, {
+        responseType: 'blob',
+      }),
     );
   }
 }

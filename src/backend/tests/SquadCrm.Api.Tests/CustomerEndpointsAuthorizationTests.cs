@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace SquadCrm.Api.Tests;
@@ -145,6 +146,58 @@ public sealed class CustomerEndpointsAuthorizationTests
 
         using HttpResponseMessage response = await client.GetAsync(
             $"/api/v1/customers/{Guid.NewGuid()}/notes", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UploadAttachment_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+        using MultipartFormDataContent content = new();
+        using ByteArrayContent file = new([1, 2, 3]);
+        file.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        content.Add(file, "file", "note.txt");
+
+        using HttpResponseMessage response = await client.PostAsync(
+            $"/api/v1/customers/{Guid.NewGuid()}/attachments", content, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ListAttachments_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync(
+            $"/api/v1/customers/{Guid.NewGuid()}/attachments", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DownloadAttachment_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync(
+            $"/api/v1/customers/{Guid.NewGuid()}/attachments/{Guid.NewGuid()}", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RemoveAttachment_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.DeleteAsync(
+            $"/api/v1/customers/{Guid.NewGuid()}/attachments/{Guid.NewGuid()}", CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
