@@ -53,6 +53,15 @@ export class AgentShell {
           },
         ]
       : []),
+    ...(this.authorization.state.has('ticketcategories.view')
+      ? [
+          {
+            label: this.localization.translate('agent.navigation.ticketCategories'),
+            icon: 'pi pi-tags',
+            routerLink: '/ticket-categories',
+          },
+        ]
+      : []),
     ...(this.authorization.state.has('branches.view')
       ? [
           {

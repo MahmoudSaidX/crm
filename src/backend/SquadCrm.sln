@@ -87,6 +87,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SquadCrm.Modules.Department
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SquadCrm.Modules.BranchManagement.Contracts", "src\Modules\BranchManagement\SquadCrm.Modules.BranchManagement.Contracts\SquadCrm.Modules.BranchManagement.Contracts.csproj", "{CEB59909-AE15-42DC-9401-6E3DE37CF2E3}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TicketManagement", "TicketManagement", "{BC647152-8B77-8615-9788-38DAA1F14706}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SquadCrm.Modules.TicketManagement", "src\Modules\TicketManagement\SquadCrm.Modules.TicketManagement\SquadCrm.Modules.TicketManagement.csproj", "{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -397,6 +401,18 @@ Global
 		{CEB59909-AE15-42DC-9401-6E3DE37CF2E3}.Release|x64.Build.0 = Release|Any CPU
 		{CEB59909-AE15-42DC-9401-6E3DE37CF2E3}.Release|x86.ActiveCfg = Release|Any CPU
 		{CEB59909-AE15-42DC-9401-6E3DE37CF2E3}.Release|x86.Build.0 = Release|Any CPU
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}.Debug|x64.Build.0 = Debug|Any CPU
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}.Debug|x86.Build.0 = Debug|Any CPU
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}.Release|x64.ActiveCfg = Release|Any CPU
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}.Release|x64.Build.0 = Release|Any CPU
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}.Release|x86.ActiveCfg = Release|Any CPU
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -441,5 +457,6 @@ Global
 		{DF850850-A436-44E0-9A05-C52730971422} = {E5C7F404-3BF6-4AC0-653B-F69549835FA2}
 		{EB977969-D299-4BB3-8D4A-2B518E500A89} = {863CA552-3257-8F6A-A40E-5C0E07FC99AA}
 		{CEB59909-AE15-42DC-9401-6E3DE37CF2E3} = {8E02EEBD-D7C6-4324-B122-56F2E49165C5}
+		{33EA807E-234F-4E2A-B3A5-0D240C6B7F6E} = {BC647152-8B77-8615-9788-38DAA1F14706}
 	EndGlobalSection
 EndGlobal

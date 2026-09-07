@@ -27,3 +27,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | first-admin-bootstrap | [`first-admin-bootstrap/00-overview.md`](first-admin-bootstrap/00-overview.md) | 22 |
 | cover-migrate-all-modules | [`cover-migrate-all-modules/00-overview.md`](cover-migrate-all-modules/00-overview.md) | 23 |
 | customer-interaction-history-timeline | [`customer-interaction-history-timeline/129-story-crm-129-customer-interaction-history-timeline.md`](customer-interaction-history-timeline/129-story-crm-129-customer-interaction-history-timeline.md) | 129 |
+| configure-ticket-categories | [`configure-ticket-categories/131-story-crm-131-configure-ticket-categories.md`](configure-ticket-categories/131-story-crm-131-configure-ticket-categories.md) | 131 |
