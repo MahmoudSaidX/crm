@@ -32,7 +32,12 @@ describe('TicketList', () => {
     assignedAgentId: null,
     createdAtUtc: '2026-09-02T00:00:00Z',
   };
-  const ticketB = { ...ticketA, id: 'ticket-b', ticketNumber: 'TKT-BBB222', subject: 'Billing issue' };
+  const ticketB = {
+    ...ticketA,
+    id: 'ticket-b',
+    ticketNumber: 'TKT-BBB222',
+    subject: 'Billing issue',
+  };
 
   let ticketsService: jasmine.SpyObj<TicketsService>;
 
@@ -48,12 +53,22 @@ describe('TicketList', () => {
       'TicketCategoriesService',
       ['list'],
     );
-    ticketCategoriesService.list.and.resolveTo({ items: [], page: 1, pageSize: 200, totalCount: 0 });
+    ticketCategoriesService.list.and.resolveTo({
+      items: [],
+      page: 1,
+      pageSize: 200,
+      totalCount: 0,
+    });
     const ticketPrioritiesService = jasmine.createSpyObj<TicketPrioritiesService>(
       'TicketPrioritiesService',
       ['list'],
     );
-    ticketPrioritiesService.list.and.resolveTo({ items: [], page: 1, pageSize: 200, totalCount: 0 });
+    ticketPrioritiesService.list.and.resolveTo({
+      items: [],
+      page: 1,
+      pageSize: 200,
+      totalCount: 0,
+    });
     const departmentsService = jasmine.createSpyObj<DepartmentsService>('DepartmentsService', [
       'list',
     ]);

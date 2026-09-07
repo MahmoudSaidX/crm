@@ -29,13 +29,7 @@ const CHANNEL_OPTIONS: readonly TicketChannel[] = [
 
 @Component({
   selector: 'crm-ticket-list',
-  imports: [
-    FormsModule,
-    InputTextModule,
-    SelectModule,
-    TableModule,
-    AgentLanguageSwitcher,
-  ],
+  imports: [FormsModule, InputTextModule, SelectModule, TableModule, AgentLanguageSwitcher],
   templateUrl: './ticket-list.html',
   styleUrl: './ticket-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
