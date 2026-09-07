@@ -7,6 +7,10 @@ public sealed class TicketManagementDbContext(DbContextOptions<TicketManagementD
 {
     public DbSet<TicketCategory> TicketCategories => Set<TicketCategory>();
     public DbSet<TicketPriority> TicketPriorities => Set<TicketPriority>();
+    public DbSet<Ticket> Tickets => Set<Ticket>();
+
+    /// <summary>This module's own transactional outbox table (CRM-133/ADR-005).</summary>
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,5 +49,31 @@ public sealed class TicketManagementDbContext(DbContextOptions<TicketManagementD
             entity.Property(priority => priority.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(priority => priority.UpdatedAtUtc).HasColumnName("updated_at_utc");
         });
+
+        modelBuilder.Entity<Ticket>(entity =>
+        {
+            entity.ToTable("ticket");
+            entity.HasKey(ticket => ticket.Id);
+            entity.Property(ticket => ticket.Id).HasColumnName("id");
+            entity.Property(ticket => ticket.TicketNumber).HasColumnName("ticket_number").HasMaxLength(64);
+            entity.HasIndex(ticket => ticket.TicketNumber).IsUnique();
+            entity.Property(ticket => ticket.CustomerId).HasColumnName("customer_id");
+            entity.Property(ticket => ticket.Subject).HasColumnName("subject").HasMaxLength(200);
+            entity.Property(ticket => ticket.Description).HasColumnName("description").HasMaxLength(4000);
+            entity.Property(ticket => ticket.CategoryId).HasColumnName("category_id");
+            entity.Property(ticket => ticket.SubcategoryId).HasColumnName("subcategory_id");
+            entity.Property(ticket => ticket.PriorityId).HasColumnName("priority_id");
+            entity.Property(ticket => ticket.DepartmentId).HasColumnName("department_id");
+            entity.Property(ticket => ticket.BranchId).HasColumnName("branch_id");
+            entity.Property(ticket => ticket.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(32);
+            entity.Property(ticket => ticket.Channel).HasColumnName("channel").HasConversion<string>().HasMaxLength(32);
+            entity.Property(ticket => ticket.AssignedAgentId).HasColumnName("assigned_agent_id");
+            entity.Property(ticket => ticket.CreatedAtUtc).HasColumnName("created_at_utc");
+
+            // Domain events are a runtime-only concern, never persisted.
+            entity.Ignore(ticket => ticket.DomainEvents);
+        });
+
+        modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
     }
 }

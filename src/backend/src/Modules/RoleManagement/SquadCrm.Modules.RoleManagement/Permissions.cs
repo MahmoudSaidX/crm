@@ -21,6 +21,8 @@ public static class Permissions
     public const string TicketCategoriesManage = "ticketcategories.manage";
     public const string TicketPrioritiesView = "ticketpriorities.view";
     public const string TicketPrioritiesManage = "ticketpriorities.manage";
+    public const string TicketsCreate = "tickets.create";
+    public const string TicketsView = "tickets.view";
 }
 
 internal static class PermissionPolicies
@@ -44,4 +46,6 @@ internal static class PermissionPolicies
     public const string TicketCategoriesManage = "permission:ticketcategories.manage";
     public const string TicketPrioritiesView = "permission:ticketpriorities.view";
     public const string TicketPrioritiesManage = "permission:ticketpriorities.manage";
+    public const string TicketsCreate = "permission:tickets.create";
+    public const string TicketsView = "permission:tickets.view";
 }

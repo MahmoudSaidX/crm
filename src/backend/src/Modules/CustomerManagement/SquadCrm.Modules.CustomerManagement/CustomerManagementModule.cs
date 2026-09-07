@@ -10,6 +10,7 @@ using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.BuildingBlocks.Validation;
 using SquadCrm.Infrastructure.Postgres;
+using SquadCrm.Modules.CustomerManagement.Contracts;
 using SquadCrm.Modules.CustomerManagement.Persistence;
 
 namespace SquadCrm.Modules.CustomerManagement;
@@ -34,12 +35,17 @@ public sealed class CustomerManagementModule : IModule
         services.AddScoped<CustomerNoteService>();
         services.AddScoped<CustomerAttachmentService>();
         services.AddScoped<CustomerTimelineService>();
+        services.AddScoped<ICustomerExistsLookup, CustomerExistsLookup>();
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule;
         // IDepartmentActiveLookup/IBranchActiveLookup are already registered
         // by DepartmentManagementModule/BranchManagementModule; DI resolves
         // those same registrations. No duplicate registration and no project
         // reference to those modules' main projects is added here.
+        // ICustomerExistsLookup is this module's own contract (mirrors
+        // IDepartmentActiveLookup/IBranchActiveLookup) — TicketManagement
+        // consumes it via a project reference to this module's own
+        // .Contracts project only, never this module's implementation.
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
