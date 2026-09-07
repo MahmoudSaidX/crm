@@ -5,7 +5,7 @@ description: Continue a Squad CRM story from the current working tree — Featur
 Continue one in-flight Squad CRM story directly, from the current working
 tree, on the **Feature Velocity** workflow. Read
 [next-story.md](.claude/commands/next-story.md) for the shared rules (main-
-agent execution, YAGNI, Decision Gate, verification, publication safety) — this
+agent execution, YAGNI, Decision Gate, verification, publication) — this
 command only changes the entry point.
 
 `$ARGUMENTS` = the issue id (e.g. `CRM-106`), optionally `--dry-run` (report
@@ -58,7 +58,7 @@ already evidenced as passing.
 
 ## Step 5 — Report and publish
 
-Same concise completion report as `/next-story` Step 7, then the same
-Publication Gate (Step 8) — explicit approval required before any commit,
-push, PR or Linear completion write. **STOP after this story** — never start
-another automatically.
+Same automatic publication as `/next-story` Step 7 (commit, push, PR, Linear
+In Review, CI check/fix — no user approval needed for any of that), then the
+same Step 8 stop: report `MERGE APPROVAL REQUIRED` and stop. **STOP after
+this story** — never start another automatically, never merge automatically.

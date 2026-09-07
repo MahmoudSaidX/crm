@@ -142,46 +142,43 @@ feature works; desktop/mobile does not visibly break; Arabic/English and
 RTL/LTR when relevant; important interactions work. Do not exhaustively
 retest the whole application per story.
 
-## Step 7 — Completion report
+## Step 7 — Publication (automatic, no approval gate)
 
-Keep it concise:
+Once implementation and Step 6 verification pass locally, continue straight
+into publication — no user approval is needed to commit, push, or open a PR.
+Only a **merge** requires the user.
+
+1. Inspect the final scope (`git status`, `git diff --cached` once staged).
+2. Stage only current-story files.
+3. Commit on the `feat/crm-<n>-<slug>` branch — never directly to `main`.
+4. Push the branch (never force-push unless explicitly approved).
+5. Open the PR with `gh pr create` (or update it if one already exists).
+6. Link the PR on the Linear issue and move it to **In Review**.
+7. Check required CI. If a check fails for a reason this story's changes
+   caused, fix it and push the fix, then recheck CI — repeat until CI passes
+   or the failure is clearly unrelated to this story (report it instead of
+   guessing at unrelated infrastructure).
+
+## Step 8 — Stop for merge approval
+
+Stop here — **never merge automatically, never start another story
+automatically.** Report concisely:
 
 ```
-STORY COMPLETE — CRM-XXX
-
-Implemented
-Verification
-AC/BR
-Risks/deviations
-Git status
-
-PUBLICATION APPROVAL REQUIRED
+MERGE APPROVAL REQUIRED
+Story: CRM-XXX
+PR: #NN
+Local verification: PASS
+CI: PASS
+Outstanding: none | concise list
 ```
 
 Do not produce long file inventories unless requested or materially useful.
-
-## Step 8 — Publication safety (never automatic)
-
-Never commit, push, open a PR, merge, or make completion-related Linear
-changes without explicit user approval.
-
-After approval:
-
-1. inspect the final scope (`git status`, `git diff --cached` once staged);
-2. stage only current-story files;
-3. commit on the `feat/crm-<n>-<slug>` branch — never directly to `main`;
-4. push the branch (never force-push unless explicitly approved);
-5. open the PR with `gh pr create`;
-6. link the PR on the Linear issue and move it to **In Review**;
-7. wait for required CI;
-8. **STOP before merge.**
-
-Never automatically start another story.
 
 ## Safety rules (never weakened for speed)
 
 Do not weaken: architecture boundaries; authorization/security; data
 integrity; module ownership; Acceptance Criteria; Business Rules; CI gates;
-publication approval. Speed comes from removing redundant process
+merge approval. Speed comes from removing redundant process
 (mandatory subagents, ceremony plans, blanket reviews), never from skipping
 correctness.
