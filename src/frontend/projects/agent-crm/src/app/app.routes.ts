@@ -53,6 +53,24 @@ export const routes: Routes = [
         loadComponent: () => import('./departments/department-form').then((m) => m.DepartmentForm),
       },
       {
+        path: 'ticket-categories',
+        canActivate: [requirePermission('ticketcategories.view')],
+        loadComponent: () =>
+          import('./ticket-categories/ticket-category-list').then((m) => m.TicketCategoryList),
+      },
+      {
+        path: 'ticket-categories/new',
+        canActivate: [requirePermission('ticketcategories.manage')],
+        loadComponent: () =>
+          import('./ticket-categories/ticket-category-form').then((m) => m.TicketCategoryForm),
+      },
+      {
+        path: 'ticket-categories/:id/edit',
+        canActivate: [requirePermission('ticketcategories.manage')],
+        loadComponent: () =>
+          import('./ticket-categories/ticket-category-form').then((m) => m.TicketCategoryForm),
+      },
+      {
         path: 'branches',
         canActivate: [requirePermission('branches.view')],
         loadComponent: () => import('./branches/branch-list').then((m) => m.BranchList),

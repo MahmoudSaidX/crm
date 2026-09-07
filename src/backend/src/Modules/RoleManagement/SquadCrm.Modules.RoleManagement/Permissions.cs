@@ -17,6 +17,8 @@ public static class Permissions
     public const string BrandingManage = "branding.manage";
     public const string CustomersView = "customers.view";
     public const string CustomersManage = "customers.manage";
+    public const string TicketCategoriesView = "ticketcategories.view";
+    public const string TicketCategoriesManage = "ticketcategories.manage";
 }
 
 internal static class PermissionPolicies
@@ -36,4 +38,6 @@ internal static class PermissionPolicies
     public const string BrandingManage = "permission:branding.manage";
     public const string CustomersView = "permission:customers.view";
     public const string CustomersManage = "permission:customers.manage";
+    public const string TicketCategoriesView = "permission:ticketcategories.view";
+    public const string TicketCategoriesManage = "permission:ticketcategories.manage";
 }

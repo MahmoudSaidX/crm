@@ -1,0 +1,102 @@
+<main class="ticket-categories-page">
+  <header class="ticket-categories-header">
+    <h1>{{ localization.translate('ticketCategories.title') }}</h1>
+    <crm-agent-language-switcher />
+    @if (authorization.has('ticketcategories.manage')) {
+      <p-button
+        [label]="localization.translate('ticketCategories.new')"
+        icon="pi pi-plus"
+        routerLink="/ticket-categories/new"
+      />
+    }
+  </header>
+
+  <p-table
+    [value]="categories()"
+    [lazy]="true"
+    [paginator]="true"
+    [rows]="pageSize"
+    [totalRecords]="totalRecords()"
+    [paginatorLocale]="localization.locale()"
+    [loading]="loading()"
+    [scrollable]="true"
+    (onLazyLoad)="onLazyLoad($event)"
+    dataKey="id"
+  >
+    <ng-template #header>
+      <tr>
+        <th style="min-width: 10rem">
+          {{ localization.translate('ticketCategories.fields.code') }}
+        </th>
+        <th style="min-width: 12rem">
+          {{ localization.translate('ticketCategories.fields.arabicName') }}
+        </th>
+        <th style="min-width: 12rem">
+          {{ localization.translate('ticketCategories.fields.englishName') }}
+        </th>
+        <th style="min-width: 12rem">
+          {{ localization.translate('ticketCategories.fields.defaultDepartment') }}
+        </th>
+        <th style="min-width: 6rem">
+          {{ localization.translate('ticketCategories.fields.sortOrder') }}
+        </th>
+        <th style="min-width: 8rem">
+          {{ localization.translate('ticketCategories.fields.status') }}
+        </th>
+        <th style="min-width: 12rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-category>
+      <tr>
+        <td>{{ category.code }}</td>
+        <td>{{ category.arabicName }}</td>
+        <td>{{ category.englishName }}</td>
+        <td>
+          {{
+            category.defaultDepartmentId
+              ? (departmentNamesById().get(category.defaultDepartmentId) ?? '—')
+              : localization.translate('ticketCategories.none')
+          }}
+        </td>
+        <td>{{ category.sortOrder }}</td>
+        <td>
+          <p-tag
+            [value]="
+              localization.translate(
+                category.isActive ? 'common.status.active' : 'common.status.inactive'
+              )
+            "
+            [severity]="category.isActive ? 'success' : 'danger'"
+          />
+        </td>
+        <td class="row-actions">
+          @if (authorization.has('ticketcategories.manage')) {
+            <p-button
+              [label]="localization.translate('common.actions.edit')"
+              icon="pi pi-pencil"
+              severity="secondary"
+              size="small"
+              [routerLink]="['/ticket-categories', category.id, 'edit']"
+            />
+            <p-button
+              [label]="
+                localization.translate(
+                  category.isActive ? 'common.actions.deactivate' : 'common.actions.activate'
+                )
+              "
+              [icon]="category.isActive ? 'pi pi-ban' : 'pi pi-check'"
+              [severity]="category.isActive ? 'danger' : 'success'"
+              size="small"
+              (onClick)="toggleActive(category)"
+            />
+          }
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="7">{{ localization.translate('ticketCategories.empty') }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</main>
