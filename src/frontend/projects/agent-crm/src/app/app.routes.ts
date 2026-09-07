@@ -71,6 +71,24 @@ export const routes: Routes = [
           import('./ticket-categories/ticket-category-form').then((m) => m.TicketCategoryForm),
       },
       {
+        path: 'ticket-priorities',
+        canActivate: [requirePermission('ticketpriorities.view')],
+        loadComponent: () =>
+          import('./ticket-priorities/ticket-priority-list').then((m) => m.TicketPriorityList),
+      },
+      {
+        path: 'ticket-priorities/new',
+        canActivate: [requirePermission('ticketpriorities.manage')],
+        loadComponent: () =>
+          import('./ticket-priorities/ticket-priority-form').then((m) => m.TicketPriorityForm),
+      },
+      {
+        path: 'ticket-priorities/:id/edit',
+        canActivate: [requirePermission('ticketpriorities.manage')],
+        loadComponent: () =>
+          import('./ticket-priorities/ticket-priority-form').then((m) => m.TicketPriorityForm),
+      },
+      {
         path: 'branches',
         canActivate: [requirePermission('branches.view')],
         loadComponent: () => import('./branches/branch-list').then((m) => m.BranchList),

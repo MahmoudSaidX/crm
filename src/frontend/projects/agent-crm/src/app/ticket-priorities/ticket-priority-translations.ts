@@ -1,0 +1,38 @@
+import { TranslationResources } from '@squad-crm/platform';
+
+export const TICKET_PRIORITY_TRANSLATIONS: TranslationResources = {
+  en: {
+    'ticketPriorities.title': 'Ticket priorities',
+    'ticketPriorities.new': 'New priority',
+    'ticketPriorities.edit': 'Edit priority',
+    'ticketPriorities.fields.code': 'Code',
+    'ticketPriorities.fields.arabicName': 'Arabic name',
+    'ticketPriorities.fields.englishName': 'English name',
+    'ticketPriorities.fields.rank': 'Rank',
+    'ticketPriorities.fields.description': 'Description',
+    'ticketPriorities.fields.status': 'Status',
+    'ticketPriorities.empty': 'No ticket priorities yet.',
+    'ticketPriorities.validation.code': 'Code is required (max 64 characters).',
+    'ticketPriorities.validation.arabicName': 'Arabic name is required (max 200 characters).',
+    'ticketPriorities.validation.englishName': 'English name is required (max 200 characters).',
+    'ticketPriorities.validation.rank': 'Rank is required and must be a positive number.',
+    'ticketPriorities.errors.duplicateCode': 'A ticket priority with this code already exists.',
+  },
+  ar: {
+    'ticketPriorities.title': 'أولويات التذاكر',
+    'ticketPriorities.new': 'أولوية جديدة',
+    'ticketPriorities.edit': 'تعديل الأولوية',
+    'ticketPriorities.fields.code': 'الرمز',
+    'ticketPriorities.fields.arabicName': 'الاسم بالعربية',
+    'ticketPriorities.fields.englishName': 'الاسم بالإنجليزية',
+    'ticketPriorities.fields.rank': 'الترتيب',
+    'ticketPriorities.fields.description': 'الوصف',
+    'ticketPriorities.fields.status': 'الحالة',
+    'ticketPriorities.empty': 'لا توجد أولويات تذاكر بعد.',
+    'ticketPriorities.validation.code': 'الرمز مطلوب (بحد أقصى 64 حرفاً).',
+    'ticketPriorities.validation.arabicName': 'الاسم بالعربية مطلوب (بحد أقصى 200 حرف).',
+    'ticketPriorities.validation.englishName': 'الاسم بالإنجليزية مطلوب (بحد أقصى 200 حرف).',
+    'ticketPriorities.validation.rank': 'الترتيب مطلوب ويجب أن يكون رقماً موجباً.',
+    'ticketPriorities.errors.duplicateCode': 'توجد أولوية تذاكر بهذا الرمز بالفعل.',
+  },
+};

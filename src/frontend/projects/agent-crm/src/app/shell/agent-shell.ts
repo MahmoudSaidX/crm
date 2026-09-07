@@ -62,6 +62,15 @@ export class AgentShell {
           },
         ]
       : []),
+    ...(this.authorization.state.has('ticketpriorities.view')
+      ? [
+          {
+            label: this.localization.translate('agent.navigation.ticketPriorities'),
+            icon: 'pi pi-flag',
+            routerLink: '/ticket-priorities',
+          },
+        ]
+      : []),
     ...(this.authorization.state.has('branches.view')
       ? [
           {
