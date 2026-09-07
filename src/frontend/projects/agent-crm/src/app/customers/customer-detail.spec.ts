@@ -2,7 +2,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { CustomerDetail } from './customer-detail';
-import { CustomerContact, CustomerNote, CustomersService } from './customers.service';
+import {
+  CustomerAttachment,
+  CustomerContact,
+  CustomerNote,
+  CustomersService,
+} from './customers.service';
 import { DepartmentsService } from '../departments/departments.service';
 import { BranchesService } from '../branches/branches.service';
 import {
@@ -31,9 +36,14 @@ describe('CustomerDetail', () => {
       'deactivateContact',
       'listNotes',
       'addNote',
+      'listAttachments',
+      'uploadAttachment',
+      'removeAttachment',
+      'downloadAttachment',
     ]);
     customersService.listContacts.and.resolveTo([]);
     customersService.listNotes.and.resolveTo([]);
+    customersService.listAttachments.and.resolveTo([]);
     departmentsService = jasmine.createSpyObj<DepartmentsService>('DepartmentsService', ['list']);
     departmentsService.list.and.resolveTo({ items: [], page: 1, pageSize: 200, totalCount: 0 });
     branchesService = jasmine.createSpyObj<BranchesService>('BranchesService', ['list']);
@@ -96,6 +106,17 @@ describe('CustomerDetail', () => {
     body: 'Customer called about billing.',
     authorUserId: 'author-1',
     createdAtUtc: '2026-09-05T00:00:00Z',
+  };
+
+  const attachment: CustomerAttachment = {
+    id: 'attachment-1',
+    customerId: 'customer-a',
+    originalFileName: 'contract.pdf',
+    contentType: 'application/pdf',
+    sizeBytes: 2048,
+    description: 'Signed contract',
+    uploadedBy: 'agent@example.test',
+    uploadedAtUtc: '2026-09-06T00:00:00Z',
   };
 
   it('renders customer fields on successful load', async () => {
@@ -305,5 +326,97 @@ describe('CustomerDetail', () => {
       body: 'Customer called about billing.',
     });
     expect(component.showNoteForm()).toBeFalse();
+  });
+
+  it('shows an empty state when the customer has no attachments', async () => {
+    configure('customer-a');
+    customersService.get.and.resolveTo(customer);
+    const fixture = TestBed.createComponent(CustomerDetail);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No attachments yet.');
+  });
+
+  it('renders attachments and hides upload/remove actions without permission', async () => {
+    configure('customer-a');
+    customersService.get.and.resolveTo(customer);
+    customersService.listAttachments.and.resolveTo([attachment]);
+    const fixture = TestBed.createComponent(CustomerDetail);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('contract.pdf');
+    expect(fixture.nativeElement.querySelector('p-fileupload')).toBeNull();
+    expect(fixture.nativeElement.querySelector('p-button[label="Remove"]')).toBeNull();
+  });
+
+  it('uploads an attachment with its description when permitted', async () => {
+    configure('customer-a');
+    authorization.set(['customers.manage']);
+    customersService.get.and.resolveTo(customer);
+    customersService.uploadAttachment.and.resolveTo(attachment);
+    const fixture = TestBed.createComponent(CustomerDetail);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const component = fixture.componentInstance;
+    const file = new File(['bytes'], 'contract.pdf', { type: 'application/pdf' });
+    const uploader = { clear: jasmine.createSpy('clear') };
+    component.attachmentDescription.setValue('  Signed contract  ');
+    await component.uploadAttachment({ files: [file] }, uploader);
+
+    expect(customersService.uploadAttachment).toHaveBeenCalledWith(
+      'customer-a',
+      file,
+      'Signed contract',
+    );
+    expect(uploader.clear).toHaveBeenCalled();
+    expect(component.attachmentDescription.value).toBe('');
+  });
+
+  it('shows a translated error when an upload is rejected', async () => {
+    configure('customer-a');
+    authorization.set(['customers.manage']);
+    customersService.get.and.resolveTo(customer);
+    customersService.uploadAttachment.and.rejectWith(
+      new HttpErrorResponse({
+        status: 422,
+        error: { code: 'customers.attachments.invalid_file' },
+      }),
+    );
+    const fixture = TestBed.createComponent(CustomerDetail);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const component = fixture.componentInstance;
+    await component.uploadAttachment(
+      { files: [new File(['bytes'], 'payload.exe', { type: 'application/x-msdownload' })] },
+      { clear: () => {} },
+    );
+
+    expect(component.attachmentErrorKey()).toBe('customers.attachments.errors.invalidFile');
+  });
+
+  it('removes an attachment and reloads the list', async () => {
+    configure('customer-a');
+    authorization.set(['customers.manage']);
+    customersService.get.and.resolveTo(customer);
+    customersService.listAttachments.and.resolveTo([attachment]);
+    customersService.removeAttachment.and.resolveTo();
+    const fixture = TestBed.createComponent(CustomerDetail);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const component = fixture.componentInstance;
+    customersService.listAttachments.and.resolveTo([]);
+    await component.removeAttachment(attachment);
+
+    expect(customersService.removeAttachment).toHaveBeenCalledWith('customer-a', 'attachment-1');
+    expect(component.attachments()).toEqual([]);
   });
 });

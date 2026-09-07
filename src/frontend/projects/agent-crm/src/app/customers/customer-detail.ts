@@ -11,8 +11,10 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
+import { FileUploadModule } from 'primeng/fileupload';
 import {
   Customer,
+  CustomerAttachment,
   CustomerContact,
   CustomerContactType,
   CustomerNote,
@@ -45,6 +47,7 @@ interface SelectOption {
     TableModule,
     TagModule,
     TextareaModule,
+    FileUploadModule,
     AgentLanguageSwitcher,
   ],
   templateUrl: './customer-detail.html',
@@ -127,6 +130,12 @@ export class CustomerDetail implements OnInit {
     }),
   });
 
+  readonly attachments = signal<CustomerAttachment[]>([]);
+  readonly attachmentsLoading = signal(false);
+  readonly attachmentUploading = signal(false);
+  readonly attachmentErrorKey = signal<TranslationKey | null>(null);
+  readonly attachmentDescription = new FormControl('', { nonNullable: true });
+
   ngOnInit(): void {
     void this.load();
   }
@@ -141,7 +150,7 @@ export class CustomerDetail implements OnInit {
     this.loading.set(true);
     try {
       this.customer.set(await this.customersService.get(id));
-      await Promise.all([this.loadContacts(id), this.loadNotes(id)]);
+      await Promise.all([this.loadContacts(id), this.loadNotes(id), this.loadAttachments(id)]);
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 404) {
         this.notFound.set(true);
@@ -418,5 +427,89 @@ export class CustomerDetail implements OnInit {
     } catch {
       this.noteErrorKey.set('common.errors.generic');
     }
+  }
+
+  private async loadAttachments(customerId: string): Promise<void> {
+    this.attachmentsLoading.set(true);
+    try {
+      this.attachments.set(await this.customersService.listAttachments(customerId));
+    } finally {
+      this.attachmentsLoading.set(false);
+    }
+  }
+
+  async uploadAttachment(event: { files: File[] }, uploader: { clear: () => void }): Promise<void> {
+    const customer = this.customer();
+    const file = event.files[0];
+    if (!customer || !file) {
+      return;
+    }
+
+    this.attachmentErrorKey.set(null);
+    this.attachmentUploading.set(true);
+    try {
+      await this.customersService.uploadAttachment(
+        customer.id,
+        file,
+        this.attachmentDescription.value.trim() || null,
+      );
+      this.attachmentDescription.reset('');
+      uploader.clear();
+      await this.loadAttachments(customer.id);
+    } catch (error) {
+      this.attachmentErrorKey.set(this.resolveAttachmentErrorKey(error));
+    } finally {
+      this.attachmentUploading.set(false);
+    }
+  }
+
+  async removeAttachment(attachment: CustomerAttachment): Promise<void> {
+    const customer = this.customer();
+    if (!customer) {
+      return;
+    }
+
+    this.attachmentErrorKey.set(null);
+    try {
+      await this.customersService.removeAttachment(customer.id, attachment.id);
+      await this.loadAttachments(customer.id);
+    } catch (error) {
+      this.attachmentErrorKey.set(this.resolveAttachmentErrorKey(error));
+    }
+  }
+
+  async downloadAttachment(attachment: CustomerAttachment): Promise<void> {
+    const customer = this.customer();
+    if (!customer) {
+      return;
+    }
+
+    this.attachmentErrorKey.set(null);
+    try {
+      const blob = await this.customersService.downloadAttachment(customer.id, attachment.id);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = attachment.originalFileName;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      this.attachmentErrorKey.set(this.resolveAttachmentErrorKey(error));
+    }
+  }
+
+  private resolveAttachmentErrorKey(error: unknown): TranslationKey {
+    if (!(error instanceof HttpErrorResponse)) {
+      return 'common.errors.generic';
+    }
+
+    const code = (error.error as { code?: string } | null)?.code;
+    if (code === 'customers.attachments.invalid_file') {
+      return 'customers.attachments.errors.invalidFile';
+    }
+    if (code === 'customers.attachments.file_required') {
+      return 'customers.attachments.errors.fileRequired';
+    }
+    return 'common.errors.generic';
   }
 }
