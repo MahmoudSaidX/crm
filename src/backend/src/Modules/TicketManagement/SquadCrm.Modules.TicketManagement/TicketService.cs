@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
 using SquadCrm.Modules.BranchManagement.Contracts;
@@ -110,6 +111,76 @@ internal sealed class TicketService(
 
         await RecordAuditAsync(ticket.Id, "created", cancellationToken);
         return TicketMutationResult.Success(ticket);
+    }
+
+    public async Task<PagedResult<Ticket>> ListAsync(
+        TicketListQuery query,
+        PaginationRequest pagination,
+        CancellationToken cancellationToken)
+    {
+        IQueryable<Ticket> filtered = dbContext.Tickets.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            string search = query.Search.Trim();
+            filtered = filtered.Where(ticket =>
+                ticket.TicketNumber.Contains(search) || ticket.Subject.Contains(search));
+        }
+
+        if (query.Statuses is { Length: > 0 })
+        {
+            filtered = filtered.Where(ticket => query.Statuses.Contains(ticket.Status));
+        }
+
+        if (query.CategoryIds is { Length: > 0 })
+        {
+            filtered = filtered.Where(ticket => query.CategoryIds.Contains(ticket.CategoryId));
+        }
+
+        if (query.PriorityIds is { Length: > 0 })
+        {
+            filtered = filtered.Where(ticket => query.PriorityIds.Contains(ticket.PriorityId));
+        }
+
+        if (query.AssigneeIds is { Length: > 0 })
+        {
+            filtered = filtered.Where(ticket =>
+                ticket.AssignedAgentId != null && query.AssigneeIds.Contains(ticket.AssignedAgentId.Value));
+        }
+
+        if (query.DepartmentIds is { Length: > 0 })
+        {
+            filtered = filtered.Where(ticket => query.DepartmentIds.Contains(ticket.DepartmentId));
+        }
+
+        if (query.BranchIds is { Length: > 0 })
+        {
+            filtered = filtered.Where(ticket => query.BranchIds.Contains(ticket.BranchId));
+        }
+
+        if (query.Channels is { Length: > 0 })
+        {
+            filtered = filtered.Where(ticket => query.Channels.Contains(ticket.Channel));
+        }
+
+        // Every branch orders by TicketNumber (unique) as a stable tiebreaker
+        // after the requested sort key, so paginated results never reorder
+        // across pages regardless of SortBy/SortDirection.
+        IOrderedQueryable<Ticket> sorted = (query.SortBy, query.SortDirection) switch
+        {
+            (TicketSortBy.CreatedAtUtc, SortDirection.Desc) => filtered.OrderByDescending(t => t.CreatedAtUtc),
+            (TicketSortBy.CreatedAtUtc, _) => filtered.OrderBy(t => t.CreatedAtUtc),
+            (_, SortDirection.Desc) => filtered.OrderByDescending(t => t.TicketNumber),
+            _ => filtered.OrderBy(t => t.TicketNumber),
+        };
+        IOrderedQueryable<Ticket> ordered = sorted.ThenBy(t => t.TicketNumber);
+
+        int totalCount = await ordered.CountAsync(cancellationToken);
+        List<Ticket> items = await ordered
+            .Skip((pagination.Page - 1) * pagination.PageSize)
+            .Take(pagination.PageSize)
+            .ToListAsync(cancellationToken);
+        return new PagedResult<Ticket>(items, pagination.Page, pagination.PageSize, totalCount);
     }
 
     private Task RecordAuditAsync(Guid ticketId, string action, CancellationToken cancellationToken) =>

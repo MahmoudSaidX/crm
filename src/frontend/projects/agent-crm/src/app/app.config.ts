@@ -29,6 +29,7 @@ import { SYSTEM_CONFIGURATION_TRANSLATIONS } from './system-configuration/system
 import { TICKET_CATEGORY_TRANSLATIONS } from './ticket-categories/ticket-category-translations';
 import { TICKET_CREATE_TRANSLATIONS } from './ticket-create/ticket-create-translations';
 import { TICKET_PRIORITY_TRANSLATIONS } from './ticket-priorities/ticket-priority-translations';
+import { TICKET_TRANSLATIONS } from './tickets/ticket-translations';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -53,6 +54,7 @@ export const appConfig: ApplicationConfig = {
     provideTranslations(TICKET_CATEGORY_TRANSLATIONS),
     provideTranslations(TICKET_PRIORITY_TRANSLATIONS),
     provideTranslations(TICKET_CREATE_TRANSLATIONS),
+    provideTranslations(TICKET_TRANSLATIONS),
     providePrimeNgPlatform(),
     {
       provide: ENVIRONMENT_INITIALIZER,
