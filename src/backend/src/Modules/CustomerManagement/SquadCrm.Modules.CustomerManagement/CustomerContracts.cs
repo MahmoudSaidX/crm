@@ -102,3 +102,18 @@ public sealed record CustomerAttachmentResponse(
     string? Description,
     string UploadedBy,
     DateTimeOffset UploadedAtUtc);
+
+public enum CustomerTimelineVisibility
+{
+    Internal,
+    Customer,
+}
+
+public sealed record CustomerTimelineEntryResponse(
+    string EventType,
+    DateTimeOffset OccurredAtUtc,
+    string? ActorDisplay,
+    string RelatedEntityType,
+    Guid RelatedEntityId,
+    string Summary,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] CustomerTimelineVisibility Visibility);

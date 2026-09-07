@@ -107,10 +107,22 @@ export interface CustomerAttachment {
   readonly uploadedAtUtc: string;
 }
 
+export type CustomerTimelineVisibility = 'Internal' | 'Customer';
+
+export interface CustomerTimelineEvent {
+  readonly eventType: string;
+  readonly occurredAtUtc: string;
+  readonly actorDisplay: string | null;
+  readonly relatedEntityType: string;
+  readonly relatedEntityId: string;
+  readonly summary: string;
+  readonly visibility: CustomerTimelineVisibility;
+}
+
 /**
- * Interaction history is added by a later story (CRM-129); this covers
- * create/list/detail/update (CRM-122/123/124/125), contact management
- * (CRM-126), notes (CRM-127) and attachments (CRM-128).
+ * Covers create/list/detail/update (CRM-122/123/124/125), contact
+ * management (CRM-126), notes (CRM-127), attachments (CRM-128) and the
+ * interaction history timeline (CRM-129).
  */
 @Injectable({ providedIn: 'root' })
 export class CustomersService {
@@ -226,6 +238,12 @@ export class CustomersService {
   removeAttachment(customerId: string, attachmentId: string): Promise<void> {
     return firstValueFrom(
       this.http.delete<void>(`/api/v1/customers/${customerId}/attachments/${attachmentId}`),
+    );
+  }
+
+  getTimeline(customerId: string): Promise<CustomerTimelineEvent[]> {
+    return firstValueFrom(
+      this.http.get<CustomerTimelineEvent[]>(`/api/v1/customers/${customerId}/timeline`),
     );
   }
 

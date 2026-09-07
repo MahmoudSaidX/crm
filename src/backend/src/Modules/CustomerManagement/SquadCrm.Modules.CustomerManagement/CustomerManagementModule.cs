@@ -33,6 +33,7 @@ public sealed class CustomerManagementModule : IModule
         services.AddScoped<CustomerContactService>();
         services.AddScoped<CustomerNoteService>();
         services.AddScoped<CustomerAttachmentService>();
+        services.AddScoped<CustomerTimelineService>();
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule;
         // IDepartmentActiveLookup/IBranchActiveLookup are already registered
@@ -51,6 +52,8 @@ public sealed class CustomerManagementModule : IModule
         customers.MapGet("/{id:guid}", GetAsync).RequireAuthorization(PermissionPolicies.CustomersView);
         customers.MapPut("/{id:guid}", UpdateAsync).ValidatesDataAnnotations<UpdateCustomerRequest>()
             .RequireAuthorization(PermissionPolicies.CustomersManage);
+        customers.MapGet("/{customerId:guid}/timeline", GetTimelineAsync)
+            .RequireAuthorization(PermissionPolicies.CustomersView);
 
         RouteGroupBuilder contacts = customers.MapGroup("/{customerId:guid}/contacts").WithTags("CustomerContacts");
         contacts.MapPost("", AddContactAsync).ValidatesDataAnnotations<AddCustomerContactRequest>()
@@ -301,6 +304,18 @@ public sealed class CustomerManagementModule : IModule
     {
         Customer? customer = await customerService.GetAsync(id, cancellationToken);
         return customer is null ? NotFoundProblem() : Results.Ok(ToResponse(customer));
+    }
+
+    private static async Task<IResult> GetTimelineAsync(
+        Guid customerId, CustomerTimelineService timelineService, CancellationToken cancellationToken)
+    {
+        CustomerTimelineResult result = await timelineService.GetAsync(customerId, cancellationToken);
+        return result.Failure switch
+        {
+            CustomerTimelineFailure.None => Results.Ok(result.Entries!),
+            CustomerTimelineFailure.CustomerNotFound => NotFoundProblem(),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
     }
 
     private static IResult NotFoundProblem() => Results.Problem(

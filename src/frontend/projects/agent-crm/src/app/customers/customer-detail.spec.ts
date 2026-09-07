@@ -6,6 +6,7 @@ import {
   CustomerAttachment,
   CustomerContact,
   CustomerNote,
+  CustomerTimelineEvent,
   CustomersService,
 } from './customers.service';
 import { DepartmentsService } from '../departments/departments.service';
@@ -40,10 +41,12 @@ describe('CustomerDetail', () => {
       'uploadAttachment',
       'removeAttachment',
       'downloadAttachment',
+      'getTimeline',
     ]);
     customersService.listContacts.and.resolveTo([]);
     customersService.listNotes.and.resolveTo([]);
     customersService.listAttachments.and.resolveTo([]);
+    customersService.getTimeline.and.resolveTo([]);
     departmentsService = jasmine.createSpyObj<DepartmentsService>('DepartmentsService', ['list']);
     departmentsService.list.and.resolveTo({ items: [], page: 1, pageSize: 200, totalCount: 0 });
     branchesService = jasmine.createSpyObj<BranchesService>('BranchesService', ['list']);
@@ -117,6 +120,16 @@ describe('CustomerDetail', () => {
     description: 'Signed contract',
     uploadedBy: 'agent@example.test',
     uploadedAtUtc: '2026-09-06T00:00:00Z',
+  };
+
+  const timelineEvent: CustomerTimelineEvent = {
+    eventType: 'NoteAdded',
+    occurredAtUtc: '2026-09-05T00:00:00Z',
+    actorDisplay: 'author-1',
+    relatedEntityType: 'CustomerNote',
+    relatedEntityId: 'note-1',
+    summary: 'Customer called about billing.',
+    visibility: 'Internal',
   };
 
   it('renders customer fields on successful load', async () => {
@@ -305,6 +318,32 @@ describe('CustomerDetail', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Customer called about billing.');
     expect(fixture.nativeElement.querySelector('p-button[label="Add note"]')).toBeNull();
+  });
+
+  it('shows an empty state when the customer has no timeline events', async () => {
+    configure('customer-a');
+    customersService.get.and.resolveTo(customer);
+    const fixture = TestBed.createComponent(CustomerDetail);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No timeline events yet.');
+  });
+
+  it('renders timeline entries in the order returned by the service', async () => {
+    configure('customer-a');
+    customersService.get.and.resolveTo(customer);
+    customersService.getTimeline.and.resolveTo([timelineEvent]);
+    const fixture = TestBed.createComponent(CustomerDetail);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('NoteAdded');
+    expect(fixture.nativeElement.textContent).toContain('Customer called about billing.');
   });
 
   it('adds a note through the form when permitted', async () => {

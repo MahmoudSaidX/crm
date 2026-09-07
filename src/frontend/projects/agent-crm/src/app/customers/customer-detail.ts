@@ -20,6 +20,7 @@ import {
   CustomerNote,
   CustomerPreferredLanguage,
   CustomerStatus,
+  CustomerTimelineEvent,
   CustomersService,
 } from './customers.service';
 import { DepartmentsService } from '../departments/departments.service';
@@ -136,6 +137,9 @@ export class CustomerDetail implements OnInit {
   readonly attachmentErrorKey = signal<TranslationKey | null>(null);
   readonly attachmentDescription = new FormControl('', { nonNullable: true });
 
+  readonly timeline = signal<CustomerTimelineEvent[]>([]);
+  readonly timelineLoading = signal(false);
+
   ngOnInit(): void {
     void this.load();
   }
@@ -150,7 +154,12 @@ export class CustomerDetail implements OnInit {
     this.loading.set(true);
     try {
       this.customer.set(await this.customersService.get(id));
-      await Promise.all([this.loadContacts(id), this.loadNotes(id), this.loadAttachments(id)]);
+      await Promise.all([
+        this.loadContacts(id),
+        this.loadNotes(id),
+        this.loadAttachments(id),
+        this.loadTimeline(id),
+      ]);
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 404) {
         this.notFound.set(true);
@@ -495,6 +504,15 @@ export class CustomerDetail implements OnInit {
       URL.revokeObjectURL(url);
     } catch (error) {
       this.attachmentErrorKey.set(this.resolveAttachmentErrorKey(error));
+    }
+  }
+
+  private async loadTimeline(customerId: string): Promise<void> {
+    this.timelineLoading.set(true);
+    try {
+      this.timeline.set(await this.customersService.getTimeline(customerId));
+    } finally {
+      this.timelineLoading.set(false);
     }
   }
 
