@@ -151,6 +151,18 @@ public sealed class CustomerEndpointsAuthorizationTests
     }
 
     [Fact]
+    public async Task GetTimeline_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync(
+            $"/api/v1/customers/{Guid.NewGuid()}/timeline", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task UploadAttachment_RejectsAnonymousRequest()
     {
         await using SquadCrmApiFactory factory = new();

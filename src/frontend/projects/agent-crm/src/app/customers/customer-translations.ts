@@ -64,6 +64,13 @@ export const CUSTOMER_TRANSLATIONS: TranslationResources = {
     'customers.attachments.fields.uploadedAtUtc': 'Uploaded',
     'customers.attachments.errors.fileRequired': 'Select a non-empty file to upload.',
     'customers.attachments.errors.invalidFile': 'This file type or size is not allowed.',
+
+    'customers.timeline.title': 'Timeline',
+    'customers.timeline.empty': 'No timeline events yet.',
+    'customers.timeline.fields.eventType': 'Event',
+    'customers.timeline.fields.summary': 'Summary',
+    'customers.timeline.fields.actorDisplay': 'By',
+    'customers.timeline.fields.occurredAtUtc': 'When',
   },
   ar: {
     'customers.title': 'العملاء',
@@ -127,5 +134,12 @@ export const CUSTOMER_TRANSLATIONS: TranslationResources = {
     'customers.attachments.fields.uploadedAtUtc': 'تاريخ الرفع',
     'customers.attachments.errors.fileRequired': 'اختر ملفًا غير فارغ للرفع.',
     'customers.attachments.errors.invalidFile': 'نوع الملف أو حجمه غير مسموح به.',
+
+    'customers.timeline.title': 'السجل الزمني',
+    'customers.timeline.empty': 'لا توجد أحداث في السجل الزمني بعد.',
+    'customers.timeline.fields.eventType': 'الحدث',
+    'customers.timeline.fields.summary': 'الملخص',
+    'customers.timeline.fields.actorDisplay': 'بواسطة',
+    'customers.timeline.fields.occurredAtUtc': 'التاريخ',
   },
 };

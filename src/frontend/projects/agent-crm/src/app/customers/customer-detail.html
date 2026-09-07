@@ -434,5 +434,35 @@
         </ng-template>
       </p-table>
     </section>
+
+    <section class="customer-timeline">
+      <header class="customer-timeline-header">
+        <h2>{{ localization.translate('customers.timeline.title') }}</h2>
+      </header>
+
+      <p-table [value]="timeline()" [loading]="timelineLoading()" dataKey="relatedEntityId">
+        <ng-template #header>
+          <tr>
+            <th>{{ localization.translate('customers.timeline.fields.eventType') }}</th>
+            <th>{{ localization.translate('customers.timeline.fields.summary') }}</th>
+            <th>{{ localization.translate('customers.timeline.fields.actorDisplay') }}</th>
+            <th>{{ localization.translate('customers.timeline.fields.occurredAtUtc') }}</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-entry>
+          <tr>
+            <td>{{ entry.eventType }}</td>
+            <td>{{ entry.summary }}</td>
+            <td>{{ entry.actorDisplay }}</td>
+            <td>{{ entry.occurredAtUtc | date: 'short' }}</td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="4">{{ localization.translate('customers.timeline.empty') }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </section>
   }
 </main>
