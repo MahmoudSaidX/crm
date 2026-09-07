@@ -4,6 +4,42 @@ using SquadCrm.Modules.TicketManagement.Persistence;
 
 namespace SquadCrm.Modules.TicketManagement;
 
+public enum TicketSortBy
+{
+    TicketNumber,
+    CreatedAtUtc,
+}
+
+/// <summary>
+/// Module-local copy of the two-value sort-direction shape (mirrors
+/// <c>CustomerManagement</c>'s own copy) — modules do not share plain enums
+/// across a project boundary without a contract.
+/// </summary>
+public enum SortDirection
+{
+    Asc,
+    Desc,
+}
+
+/// <summary>
+/// Bound via <c>[AsParameters]</c> alongside
+/// <see cref="SquadCrm.BuildingBlocks.Http.PaginationRequest"/> (mirrors
+/// <c>CustomerListQuery</c>). No <c>SubcategoryIds</c>/SLA/Escalation filters —
+/// no Subcategory catalog or SLA/Escalation model exists in this repo yet
+/// (documented scope gap, see plan).
+/// </summary>
+public sealed record TicketListQuery(
+    string? Search = null,
+    TicketStatus[]? Statuses = null,
+    Guid[]? CategoryIds = null,
+    Guid[]? PriorityIds = null,
+    Guid[]? AssigneeIds = null,
+    Guid[]? DepartmentIds = null,
+    Guid[]? BranchIds = null,
+    TicketChannel[]? Channels = null,
+    TicketSortBy SortBy = TicketSortBy.TicketNumber,
+    SortDirection SortDirection = SortDirection.Asc);
+
 public sealed record CreateTicketRequest(
     [property: Required] Guid CustomerId,
     [property: Required, MaxLength(200)] string Subject,

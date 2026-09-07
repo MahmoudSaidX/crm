@@ -1,0 +1,95 @@
+<main class="tickets-page">
+  <header class="tickets-header">
+    <h1>{{ localization.translate('tickets.title') }}</h1>
+    <crm-agent-language-switcher />
+  </header>
+
+  <div class="tickets-filters">
+    <input
+      pInputText
+      type="search"
+      [placeholder]="localization.translate('tickets.search')"
+      [(ngModel)]="search"
+      (keyup.enter)="onFilter()"
+    />
+    <p-select
+      [options]="categoryOptions()"
+      [(ngModel)]="categoryId"
+      [showClear]="true"
+      [placeholder]="localization.translate('tickets.fields.category')"
+      (onChange)="onFilter()"
+      (onClear)="onFilter()"
+    />
+    <p-select
+      [options]="priorityOptions()"
+      [(ngModel)]="priorityId"
+      [showClear]="true"
+      [placeholder]="localization.translate('tickets.fields.priority')"
+      (onChange)="onFilter()"
+      (onClear)="onFilter()"
+    />
+    <p-select
+      [options]="departmentOptions()"
+      [(ngModel)]="departmentId"
+      [showClear]="true"
+      [placeholder]="localization.translate('tickets.fields.department')"
+      (onChange)="onFilter()"
+      (onClear)="onFilter()"
+    />
+    <p-select
+      [options]="branchOptions()"
+      [(ngModel)]="branchId"
+      [showClear]="true"
+      [placeholder]="localization.translate('tickets.fields.branch')"
+      (onChange)="onFilter()"
+      (onClear)="onFilter()"
+    />
+    <p-select
+      [options]="channelOptions"
+      [(ngModel)]="channel"
+      [showClear]="true"
+      [placeholder]="localization.translate('tickets.fields.channel')"
+      (onChange)="onFilter()"
+      (onClear)="onFilter()"
+    />
+  </div>
+
+  <p-table
+    [value]="tickets()"
+    [lazy]="true"
+    [paginator]="true"
+    [rows]="pageSize"
+    [totalRecords]="totalRecords()"
+    [paginatorLocale]="localization.locale()"
+    [loading]="loading()"
+    [scrollable]="true"
+    (onLazyLoad)="onLazyLoad($event)"
+    dataKey="id"
+  >
+    <ng-template #header>
+      <tr>
+        <th style="min-width: 10rem">{{ localization.translate('tickets.fields.ticketNumber') }}</th>
+        <th style="min-width: 16rem">{{ localization.translate('tickets.fields.subject') }}</th>
+        <th style="min-width: 8rem">{{ localization.translate('tickets.fields.status') }}</th>
+        <th style="min-width: 8rem">{{ localization.translate('tickets.fields.channel') }}</th>
+        <th style="min-width: 10rem">{{ localization.translate('tickets.fields.department') }}</th>
+        <th style="min-width: 10rem">{{ localization.translate('tickets.fields.branch') }}</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-ticket>
+      <tr>
+        <td>{{ ticket.ticketNumber }}</td>
+        <td>{{ ticket.subject }}</td>
+        <td>{{ ticket.status }}</td>
+        <td>{{ ticket.channel }}</td>
+        <td>{{ ticket.departmentId }}</td>
+        <td>{{ ticket.branchId }}</td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="6">{{ localization.translate('tickets.empty') }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</main>

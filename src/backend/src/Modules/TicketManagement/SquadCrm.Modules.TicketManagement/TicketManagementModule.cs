@@ -78,6 +78,7 @@ public sealed class TicketManagementModule : IModule
 
         tickets.MapPost("", CreateTicketAsync).ValidatesDataAnnotations<CreateTicketRequest>()
             .RequireAuthorization(PermissionPolicies.TicketsCreate);
+        tickets.MapGet("", ListTicketsAsync).RequireAuthorization(PermissionPolicies.TicketsView);
     }
 
     private static async Task<IResult> CreateAsync(
@@ -242,6 +243,17 @@ public sealed class TicketManagementModule : IModule
                 extensions: new Dictionary<string, object?> { ["code"] = "tickets.duplicate_ticket_number" }),
             _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
         };
+    }
+
+    private static async Task<IResult> ListTicketsAsync(
+        [AsParameters] TicketListQuery query,
+        [AsParameters] PaginationRequest pagination,
+        TicketService ticketService,
+        CancellationToken cancellationToken)
+    {
+        PagedResult<Persistence.Ticket> page = await ticketService.ListAsync(query, pagination, cancellationToken);
+        return Results.Ok(new PagedResult<TicketResponse>(
+            page.Items.Select(ToResponse).ToList(), page.Page, page.PageSize, page.TotalCount));
     }
 
     private static TicketResponse ToResponse(Persistence.Ticket ticket) => new(
