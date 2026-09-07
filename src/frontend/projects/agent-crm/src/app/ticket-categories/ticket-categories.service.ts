@@ -55,14 +55,20 @@ export class TicketCategoriesService {
   }
 
   update(id: string, request: TicketCategoryRequest): Promise<TicketCategory> {
-    return firstValueFrom(this.http.put<TicketCategory>(`/api/v1/ticket-categories/${id}`, request));
+    return firstValueFrom(
+      this.http.put<TicketCategory>(`/api/v1/ticket-categories/${id}`, request),
+    );
   }
 
   activate(id: string): Promise<TicketCategory> {
-    return firstValueFrom(this.http.post<TicketCategory>(`/api/v1/ticket-categories/${id}/activate`, {}));
+    return firstValueFrom(
+      this.http.post<TicketCategory>(`/api/v1/ticket-categories/${id}/activate`, {}),
+    );
   }
 
   deactivate(id: string): Promise<TicketCategory> {
-    return firstValueFrom(this.http.post<TicketCategory>(`/api/v1/ticket-categories/${id}/deactivate`, {}));
+    return firstValueFrom(
+      this.http.post<TicketCategory>(`/api/v1/ticket-categories/${id}/deactivate`, {}),
+    );
   }
 }

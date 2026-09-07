@@ -14,11 +14,10 @@ describe('TicketCategoryForm', () => {
   let router: jasmine.SpyObj<Router>;
 
   function configure(paramMap: Record<string, string> = {}): void {
-    ticketCategoriesService = jasmine.createSpyObj<TicketCategoriesService>('TicketCategoriesService', [
-      'get',
-      'create',
-      'update',
-    ]);
+    ticketCategoriesService = jasmine.createSpyObj<TicketCategoriesService>(
+      'TicketCategoriesService',
+      ['get', 'create', 'update'],
+    );
     departmentsService = jasmine.createSpyObj<DepartmentsService>('DepartmentsService', ['list']);
     departmentsService.list.and.resolveTo({ items: [], page: 1, pageSize: 200, totalCount: 0 });
     router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
@@ -73,7 +72,10 @@ describe('TicketCategoryForm', () => {
   it('surfaces an inactive-department error from a mocked 409 response', async () => {
     configure();
     ticketCategoriesService.create.and.rejectWith(
-      new HttpErrorResponse({ status: 409, error: { code: 'ticketcategories.inactive_department' } }),
+      new HttpErrorResponse({
+        status: 409,
+        error: { code: 'ticketcategories.inactive_department' },
+      }),
     );
     const fixture = TestBed.createComponent(TicketCategoryForm);
     fixture.detectChanges();

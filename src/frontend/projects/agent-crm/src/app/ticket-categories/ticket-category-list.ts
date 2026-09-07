@@ -36,7 +36,9 @@ export class TicketCategoryList {
     try {
       const [result, departments] = await Promise.all([
         this.ticketCategoriesService.list(page, this.pageSize),
-        this.departments().length ? Promise.resolve({ items: this.departments() }) : this.departmentsService.list(1, 200),
+        this.departments().length
+          ? Promise.resolve({ items: this.departments() })
+          : this.departmentsService.list(1, 200),
       ]);
       this.categories.set([...result.items]);
       this.totalRecords.set(result.totalCount);
