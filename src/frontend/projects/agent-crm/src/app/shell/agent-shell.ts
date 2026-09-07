@@ -71,6 +71,15 @@ export class AgentShell {
           },
         ]
       : []),
+    ...(this.authorization.state.has('tickets.create')
+      ? [
+          {
+            label: this.localization.translate('agent.navigation.ticketCreate'),
+            icon: 'pi pi-ticket',
+            routerLink: '/tickets/new',
+          },
+        ]
+      : []),
     ...(this.authorization.state.has('branches.view')
       ? [
           {

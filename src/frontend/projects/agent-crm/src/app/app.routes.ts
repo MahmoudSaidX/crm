@@ -89,6 +89,12 @@ export const routes: Routes = [
           import('./ticket-priorities/ticket-priority-form').then((m) => m.TicketPriorityForm),
       },
       {
+        path: 'tickets/new',
+        canActivate: [requirePermission('tickets.create')],
+        loadComponent: () =>
+          import('./ticket-create/ticket-create-form').then((m) => m.TicketCreateForm),
+      },
+      {
         path: 'branches',
         canActivate: [requirePermission('branches.view')],
         loadComponent: () => import('./branches/branch-list').then((m) => m.BranchList),
