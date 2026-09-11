@@ -283,14 +283,10 @@ export class TicketsService {
   }
 
   addWatcher(id: string, request: AddTicketWatcherRequest): Promise<TicketWatcher> {
-    return firstValueFrom(
-      this.http.post<TicketWatcher>(`/api/v1/tickets/${id}/watchers`, request),
-    );
+    return firstValueFrom(this.http.post<TicketWatcher>(`/api/v1/tickets/${id}/watchers`, request));
   }
 
   removeWatcher(id: string, userId: string): Promise<void> {
-    return firstValueFrom(
-      this.http.delete<void>(`/api/v1/tickets/${id}/watchers/${userId}`),
-    );
+    return firstValueFrom(this.http.delete<void>(`/api/v1/tickets/${id}/watchers/${userId}`));
   }
 }

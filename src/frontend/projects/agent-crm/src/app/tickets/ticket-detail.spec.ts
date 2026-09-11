@@ -116,7 +116,8 @@ describe('TicketDetail', () => {
             history: options.history ?? jasmine.createSpy().and.resolveTo(emptyHistoryPage),
             listNotes: options.listNotes ?? jasmine.createSpy().and.resolveTo(emptyNotesPage),
             addNote: options.addNote ?? jasmine.createSpy().and.resolveTo(note),
-            listWatchers: options.listWatchers ?? jasmine.createSpy().and.resolveTo(emptyWatchersPage),
+            listWatchers:
+              options.listWatchers ?? jasmine.createSpy().and.resolveTo(emptyWatchersPage),
             addWatcher: options.addWatcher ?? jasmine.createSpy().and.resolveTo({}),
             removeWatcher: options.removeWatcher ?? jasmine.createSpy().and.resolveTo(undefined),
           },
@@ -693,7 +694,9 @@ describe('TicketDetail', () => {
       totalCount: 1,
     });
     const listWatchers = jasmine.createSpy().and.resolveTo({
-      items: [{ userId: 'user-1', addedBy: 'agent@example.test', addedAtUtc: '2026-09-11T02:00:00Z' }],
+      items: [
+        { userId: 'user-1', addedBy: 'agent@example.test', addedAtUtc: '2026-09-11T02:00:00Z' },
+      ],
       page: 1,
       pageSize: 100,
       totalCount: 1,
@@ -709,7 +712,9 @@ describe('TicketDetail', () => {
   });
 
   it('keeps the ticket rendered when the notes read fails', async () => {
-    configure({ listNotes: jasmine.createSpy().and.rejectWith(new HttpErrorResponse({ status: 500 })) });
+    configure({
+      listNotes: jasmine.createSpy().and.rejectWith(new HttpErrorResponse({ status: 500 })),
+    });
     const fixture = await createComponent();
 
     expect(fixture.componentInstance.notesUnavailable()).toBeTrue();
@@ -748,9 +753,7 @@ describe('TicketDetail', () => {
   });
 
   it('reports an ineligible mention instead of clearing the form', async () => {
-    const addNote = jasmine
-      .createSpy()
-      .and.rejectWith(new HttpErrorResponse({ status: 422 }));
+    const addNote = jasmine.createSpy().and.rejectWith(new HttpErrorResponse({ status: 422 }));
     configure({ permissions: ['tickets.collaborate'], addNote });
     const fixture = await createComponent();
 

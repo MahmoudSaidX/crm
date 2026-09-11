@@ -143,7 +143,10 @@
           }
 
           @if (notesUnavailable()) {
-            <p-message severity="warn" [text]="localization.translate('tickets.notes.unavailable')" />
+            <p-message
+              severity="warn"
+              [text]="localization.translate('tickets.notes.unavailable')"
+            />
           } @else if (notes().length === 0) {
             <sc-state-panel
               state="empty"
@@ -594,10 +597,15 @@
 
         <label for="noteMentions">
           {{ localization.translate('tickets.notes.fields.mentions') }}
-          <span class="field-optional">{{ localization.translate('tickets.assign.optional') }}</span>
+          <span class="field-optional">{{
+            localization.translate('tickets.assign.optional')
+          }}</span>
         </label>
         @if (agentsUnavailable()) {
-          <p-message severity="warn" [text]="localization.translate('tickets.assign.agentsUnavailable')" />
+          <p-message
+            severity="warn"
+            [text]="localization.translate('tickets.assign.agentsUnavailable')"
+          />
         } @else {
           <p-multiselect
             id="noteMentions"
@@ -646,7 +654,10 @@
           localization.translate('tickets.watchers.fields.user')
         }}</label>
         @if (agentsUnavailable()) {
-          <p-message severity="warn" [text]="localization.translate('tickets.assign.agentsUnavailable')" />
+          <p-message
+            severity="warn"
+            [text]="localization.translate('tickets.assign.agentsUnavailable')"
+          />
         } @else {
           <p-select
             id="watcherUserId"
