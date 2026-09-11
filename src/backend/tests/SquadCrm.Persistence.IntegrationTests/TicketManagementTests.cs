@@ -946,6 +946,230 @@ public sealed class TicketManagementTests
         Assert.NotNull(detail.EscalatedAtUtc);
     }
 
+
+    [Fact]
+    public async Task Timeline_NewTicket_ContainsOnlyTheCreationEntry()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        TicketTimelineService timelineService = new(context);
+
+        TicketTimelineResult result = await timelineService.GetAsync(
+            ticketId, new PaginationRequest(), TicketTimelineAudience.Internal, CancellationToken.None);
+
+        Assert.Equal(TicketTimelineFailure.None, result.Failure);
+        TicketTimelineEntryResponse entry = Assert.Single(result.Page!.Items);
+        Assert.Equal("TicketCreated", entry.EventType);
+        Assert.Equal(1, entry.Sequence);
+        Assert.Equal(TicketTimelineActorType.User, entry.ActorType);
+
+        // CRM-133 persists no creator column, so the entry reports "not
+        // attributable from this module" rather than inventing an actor.
+        Assert.Null(entry.ActorId);
+        Assert.Equal(TicketTimelineVisibility.Customer, entry.Visibility);
+    }
+
+    [Fact]
+    public async Task Timeline_IncludesAssignmentStatusAndEscalationEntries_InChronologicalOrder()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid targetAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(targetAgentId, true));
+        await service.AssignAsync(
+            ticketId,
+            new AssignTicketRequest(targetAgentId, null, 1),
+            TicketAssignmentSource.Manual,
+            CancellationToken.None);
+        await service.ChangeStatusAsync(
+            ticketId,
+            new ChangeTicketStatusRequest(TicketStatus.InProgress, null, 2),
+            CancellationToken.None);
+        await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, targetAgentId, "Needs a senior agent.", 3),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+        TicketTimelineService timelineService = new(context);
+
+        TicketTimelineResult result = await timelineService.GetAsync(
+            ticketId, new PaginationRequest(), TicketTimelineAudience.Internal, CancellationToken.None);
+
+        List<TicketTimelineEntryResponse> entries = [.. result.Page!.Items];
+        Assert.Equal(4, entries.Count);
+        Assert.Equal(
+            ["TicketCreated", "TicketAssigned", "TicketStatusChanged", "TicketEscalated"],
+            entries.Select(entry => entry.EventType));
+        Assert.Equal([1, 2, 3, 4], entries.Select(entry => entry.Sequence));
+
+        // Chronological, and every entry carries a server timestamp.
+        Assert.Equal(
+            entries.Select(entry => entry.OccurredAtUtc).Order(),
+            entries.Select(entry => entry.OccurredAtUtc));
+
+        Assert.Equal("lead@example.test", entries[1].ActorId);
+        Assert.Equal(TicketTimelineVisibility.Internal, entries[1].Visibility);
+        Assert.Contains("Open", entries[2].Summary, StringComparison.Ordinal);
+        Assert.Contains("InProgress", entries[2].Summary, StringComparison.Ordinal);
+        Assert.Equal(TicketTimelineVisibility.Customer, entries[2].Visibility);
+        Assert.Equal("Needs a senior agent.", entries[3].Reason);
+        Assert.Contains("level 1", entries[3].Summary, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Timeline_AutomationWrittenHistory_IdentifiesItsSourceDistinctlyFromAHumanActor()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid targetAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(targetAgentId, true));
+        await service.AssignAsync(
+            ticketId,
+            new AssignTicketRequest(targetAgentId, null, 1),
+            TicketAssignmentSource.Automation,
+            CancellationToken.None);
+        TicketTimelineService timelineService = new(context);
+
+        TicketTimelineResult result = await timelineService.GetAsync(
+            ticketId, new PaginationRequest(), TicketTimelineAudience.Internal, CancellationToken.None);
+
+        TicketTimelineEntryResponse assignment =
+            result.Page!.Items.Single(entry => entry.EventType == "TicketAssigned");
+        Assert.Equal(TicketTimelineActorType.Automation, assignment.ActorType);
+    }
+
+    [Fact]
+    public async Task Timeline_ReassignmentIsReportedDistinctlyFromFirstAssignment()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid firstAgentId = Guid.NewGuid();
+        Guid secondAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(firstAgentId, true));
+        await service.AssignAsync(
+            ticketId,
+            new AssignTicketRequest(firstAgentId, null, 1),
+            TicketAssignmentSource.Manual,
+            CancellationToken.None);
+        await service.AssignAsync(
+            ticketId,
+            new AssignTicketRequest(secondAgentId, "Workload rebalanced.", 2),
+            TicketAssignmentSource.Manual,
+            CancellationToken.None);
+        TicketTimelineService timelineService = new(context);
+
+        TicketTimelineResult result = await timelineService.GetAsync(
+            ticketId, new PaginationRequest(), TicketTimelineAudience.Internal, CancellationToken.None);
+
+        Assert.Equal(
+            ["TicketCreated", "TicketAssigned", "TicketReassigned"],
+            result.Page!.Items.Select(entry => entry.EventType));
+        Assert.Equal("Workload rebalanced.", result.Page.Items[2].Reason);
+    }
+
+    [Fact]
+    public async Task Timeline_PagesAreDisjoint_AndTheirUnionIsTheWholeTimeline()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid targetAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(targetAgentId, true));
+        await service.AssignAsync(
+            ticketId,
+            new AssignTicketRequest(targetAgentId, null, 1),
+            TicketAssignmentSource.Manual,
+            CancellationToken.None);
+        await service.ChangeStatusAsync(
+            ticketId,
+            new ChangeTicketStatusRequest(TicketStatus.InProgress, null, 2),
+            CancellationToken.None);
+        await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, targetAgentId, "Needs a senior agent.", 3),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+        TicketTimelineService timelineService = new(context);
+
+        TicketTimelineResult first = await timelineService.GetAsync(
+            ticketId, new PaginationRequest(1, 2), TicketTimelineAudience.Internal, CancellationToken.None);
+        TicketTimelineResult second = await timelineService.GetAsync(
+            ticketId, new PaginationRequest(2, 2), TicketTimelineAudience.Internal, CancellationToken.None);
+
+        Assert.Equal(4, first.Page!.TotalCount);
+        Assert.Equal(4, second.Page!.TotalCount);
+        Assert.Equal([1, 2], first.Page.Items.Select(entry => entry.Sequence));
+        Assert.Equal([3, 4], second.Page.Items.Select(entry => entry.Sequence));
+
+        // Every event id appears exactly once across the two pages: no overlap,
+        // nothing skipped.
+        Assert.Equal(
+            4,
+            first.Page.Items.Concat(second.Page.Items).Select(entry => entry.EventId).Distinct().Count());
+    }
+
+    [Fact]
+    public async Task Timeline_CustomerAudience_ExcludesInternalEntries_AndStripsReasons()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid targetAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(targetAgentId, true));
+        await service.AssignAsync(
+            ticketId,
+            new AssignTicketRequest(targetAgentId, null, 1),
+            TicketAssignmentSource.Manual,
+            CancellationToken.None);
+        await service.ChangeStatusAsync(
+            ticketId,
+            new ChangeTicketStatusRequest(TicketStatus.InProgress, "Internal-only note.", 2),
+            CancellationToken.None);
+        await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, targetAgentId, "Needs a senior agent.", 3),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+        TicketTimelineService timelineService = new(context);
+
+        TicketTimelineResult result = await timelineService.GetAsync(
+            ticketId, new PaginationRequest(), TicketTimelineAudience.Customer, CancellationToken.None);
+
+        // Assignment and escalation are internal routing: neither appears, and
+        // neither occupies a sequence slot in the customer's timeline.
+        Assert.Equal(
+            ["TicketCreated", "TicketStatusChanged"],
+            result.Page!.Items.Select(entry => entry.EventType));
+        Assert.Equal(2, result.Page.TotalCount);
+        Assert.Equal([1, 2], result.Page.Items.Select(entry => entry.Sequence));
+        Assert.All(result.Page.Items, entry => Assert.Null(entry.Reason));
+        Assert.All(
+            result.Page.Items,
+            entry => Assert.Equal(TicketTimelineVisibility.Customer, entry.Visibility));
+    }
+
+    [Fact]
+    public async Task Timeline_UnknownTicket_Fails()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        TicketTimelineService timelineService = new(context);
+
+        TicketTimelineResult result = await timelineService.GetAsync(
+            Guid.NewGuid(), new PaginationRequest(), TicketTimelineAudience.Internal, CancellationToken.None);
+
+        Assert.Equal(TicketTimelineFailure.TicketNotFound, result.Failure);
+        Assert.Null(result.Page);
+    }
+
     /// <summary>Creates one persisted open, unassigned ticket and returns its id.</summary>
     private static async Task<Guid> SeedTicketAsync(
         TicketManagementDbContext context, RecordingAuditRecorder auditRecorder)

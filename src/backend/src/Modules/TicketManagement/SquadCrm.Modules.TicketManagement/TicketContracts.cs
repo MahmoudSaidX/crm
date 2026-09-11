@@ -174,3 +174,70 @@ public sealed record TicketDetailResponse(
     DateTimeOffset? UpdatedAtUtc,
     int Version,
     IReadOnlyList<string> AllowedStatusTransitions);
+
+/// <summary>
+/// Who or what produced a timeline entry (CRM-139 Fields Dictionary). The full
+/// set is declared because the classification must stay stable as capabilities
+/// are added; only <see cref="User"/> and <see cref="Automation"/> are produced
+/// today. <see cref="System"/> and <see cref="Integration"/> exist for the
+/// SLA/automation (CRM-150/154) and integration (CRM-192+) stories, which
+/// append their own rows without reclassifying historical entries.
+/// </summary>
+public enum TicketTimelineActorType
+{
+    User,
+    System,
+    Automation,
+    Integration,
+}
+
+/// <summary>
+/// Explicit visibility classification of one timeline entry (CRM-139 Fields
+/// Dictionary). Internal is the default for anything describing internal
+/// routing; an entry is only <see cref="Customer"/> when it is safe for a
+/// customer to read.
+/// </summary>
+public enum TicketTimelineVisibility
+{
+    Internal,
+    Customer,
+}
+
+/// <summary>
+/// Who is asking for the timeline. The internal agent endpoint asks as
+/// <see cref="Internal"/>; the customer portal (CRM-171/175) asks as
+/// <see cref="Customer"/> and receives only explicitly customer-visible
+/// entries, with reasons stripped (AC "internal history is not leaked").
+/// </summary>
+public enum TicketTimelineAudience
+{
+    Internal,
+    Customer,
+}
+
+/// <summary>
+/// One entry of a ticket's history timeline (CRM-139).
+/// <para>
+/// <c>Summary</c> is built only from allow-listed stored values (statuses,
+/// levels, target kind, identifiers) — never free text and never a reference
+/// -table lookup, so an entry still reads correctly after reference data
+/// changes (BR "history records stable identifiers/snapshots"). The stored
+/// <c>Reason</c> is carried in its own field rather than folded into the
+/// summary, so the customer projection can drop it wholesale.
+/// </para>
+/// <para>
+/// <c>Sequence</c> is the 1-based position in the full ordering for the
+/// requested audience, assigned BEFORE paging, so it identifies an entry
+/// independently of the page size a caller happened to use.
+/// </para>
+/// </summary>
+public sealed record TicketTimelineEntryResponse(
+    Guid EventId,
+    string EventType,
+    DateTimeOffset OccurredAtUtc,
+    int Sequence,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] TicketTimelineActorType ActorType,
+    string? ActorId,
+    string Summary,
+    string? Reason,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] TicketTimelineVisibility Visibility);

@@ -8,7 +8,12 @@ import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
-import { TicketDetail as TicketDetailModel, TicketsService } from './tickets.service';
+import { PaginatorModule } from 'primeng/paginator';
+import {
+  TicketDetail as TicketDetailModel,
+  TicketTimelineEntry,
+  TicketsService,
+} from './tickets.service';
 import { TicketEscalationTargetType, TicketStatus } from '../ticket-create/ticket-create.service';
 import { AuthorizationState } from '../auth/authorization.state';
 import { StaffUser, StaffUsersService } from '../staff-users/staff-users.service';
@@ -44,10 +49,15 @@ import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
  * merged into the status section: escalation is not a lifecycle status (BR).
  * The escalation LEVEL is never sent — the backend derives it.
  *
+ * CRM-139 adds the read-only history timeline section. It is reloaded after
+ * every successful action on this screen, because each of those appends an
+ * entry. A failed history load is isolated: the section explains itself and the
+ * rest of the ticket still renders.
+ *
  * Not built here, because the capabilities they belong to do not exist yet:
- * ticket history timeline (CRM-139), customer-facing conversation (CRM-164+),
- * internal notes (CRM-147) and SLA state (CRM-149/150). Each is a separate
- * story that will add its own section and its own backend authorization.
+ * customer-facing conversation (CRM-164+), internal notes (CRM-147) and SLA
+ * state (CRM-149/150). Each is a separate story that will add its own section
+ * and its own backend authorization.
  */
 @Component({
   selector: 'crm-ticket-detail',
@@ -60,6 +70,7 @@ import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
     SelectModule,
     TagModule,
     TextareaModule,
+    PaginatorModule,
     AgentLanguageSwitcher,
   ],
   templateUrl: './ticket-detail.html',
@@ -86,6 +97,14 @@ export class TicketDetail {
   readonly customerName = signal<string | null>(null);
   readonly departmentName = signal<string | null>(null);
   readonly branchName = signal<string | null>(null);
+
+  /** Page size of the history section; the backend caps page size at 200. */
+  protected readonly historyPageSize = 10;
+
+  readonly history = signal<readonly TicketTimelineEntry[]>([]);
+  readonly historyPage = signal(1);
+  readonly historyTotal = signal(0);
+  readonly historyUnavailable = signal(false);
 
   readonly assigning = signal(false);
   readonly submittingAssignment = signal(false);
@@ -437,6 +456,35 @@ export class TicketDetail {
     }
   }
 
+  /** `p-paginator` reports a 0-based first-row offset; the API pages from 1. */
+  async onHistoryPageChange(first: number): Promise<void> {
+    await this.loadHistory(Math.floor(first / this.historyPageSize) + 1);
+  }
+
+  protected historyEventLabel(eventType: string): string {
+    return this.localization.translate(`tickets.history.events.${eventType}` as TranslationKey);
+  }
+
+  private async loadHistory(page: number): Promise<void> {
+    const ticket = this.ticket();
+    if (!ticket) {
+      return;
+    }
+    try {
+      const result = await this.ticketsService.history(ticket.id, page, this.historyPageSize);
+      this.history.set(result.items);
+      this.historyPage.set(result.page);
+      this.historyTotal.set(result.totalCount);
+      this.historyUnavailable.set(false);
+    } catch {
+      // Isolated from the ticket itself: a history failure must not blank the
+      // screen, so the section says so and the rest keeps rendering.
+      this.history.set([]);
+      this.historyTotal.set(0);
+      this.historyUnavailable.set(true);
+    }
+  }
+
   private async load(id: string): Promise<void> {
     let ticket: TicketDetailModel;
     try {
@@ -446,7 +494,7 @@ export class TicketDetail {
       return;
     }
     this.ticket.set(ticket);
-    await this.loadReferenceLabels(ticket);
+    await Promise.all([this.loadReferenceLabels(ticket), this.loadHistory(1)]);
   }
 
   /**

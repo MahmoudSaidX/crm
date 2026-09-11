@@ -301,6 +301,45 @@
     </section>
 
     <section class="ticket-detail-section">
+      <h2>{{ localization.translate('tickets.history.section') }}</h2>
+
+      @if (historyUnavailable()) {
+        <p-message severity="warn" [text]="localization.translate('tickets.history.unavailable')" />
+      } @else if (history().length === 0) {
+        <p>{{ localization.translate('tickets.history.empty') }}</p>
+      } @else {
+        <ol class="ticket-history">
+          @for (entry of history(); track entry.eventId) {
+            <li class="ticket-history-entry">
+              <div class="ticket-history-header">
+                <span class="ticket-history-event">{{ historyEventLabel(entry.eventType) }}</span>
+                <time>{{ entry.occurredAtUtc | date: 'medium' }}</time>
+              </div>
+              <div class="ticket-history-actor">
+                {{ entry.actorId ?? localization.translate('tickets.history.actorUnknown') }}
+              </div>
+              <div class="ticket-history-summary">{{ entry.summary }}</div>
+              @if (entry.reason) {
+                <div class="ticket-history-reason">
+                  {{ localization.translate('tickets.history.reason') }}: {{ entry.reason }}
+                </div>
+              }
+            </li>
+          }
+        </ol>
+
+        @if (historyTotal() > historyPageSize) {
+          <p-paginator
+            [first]="(historyPage() - 1) * historyPageSize"
+            [rows]="historyPageSize"
+            [totalRecords]="historyTotal()"
+            (onPageChange)="onHistoryPageChange($event.first ?? 0)"
+          />
+        }
+      }
+    </section>
+
+    <section class="ticket-detail-section">
       <h2>{{ localization.translate('tickets.detail.timestamps') }}</h2>
       <dl class="ticket-detail-fields">
         <dt>{{ localization.translate('tickets.fields.createdAt') }}</dt>

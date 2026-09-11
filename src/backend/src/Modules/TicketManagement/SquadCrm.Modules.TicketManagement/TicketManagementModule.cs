@@ -40,6 +40,7 @@ public sealed class TicketManagementModule : IModule
         services.AddScoped<TicketCategoryService>();
         services.AddScoped<TicketPriorityService>();
         services.AddScoped<TicketService>();
+        services.AddScoped<TicketTimelineService>();
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule;
         // IDepartmentActiveLookup/IBranchActiveLookup are already registered
@@ -80,6 +81,13 @@ public sealed class TicketManagementModule : IModule
             .RequireAuthorization(PermissionPolicies.TicketsCreate);
         tickets.MapGet("", ListTicketsAsync).RequireAuthorization(PermissionPolicies.TicketsView);
         tickets.MapGet("/{id:guid}", GetTicketAsync).RequireAuthorization(PermissionPolicies.TicketsView);
+
+        // Read-only sub-resource of a ticket, so it reuses "tickets.view"
+        // rather than adding a permission (the CRM-129 customer-timeline
+        // precedent). A caller who may read the ticket may read its history.
+        tickets.MapGet("/{id:guid}/history", GetTicketHistoryAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .RequireAuthorization(PermissionPolicies.TicketsView);
         tickets.MapPost("/{id:guid}/assign", AssignTicketAsync).ValidatesDataAnnotations<AssignTicketRequest>()
             .RequireAuthorization(PermissionPolicies.TicketsAssign);
         tickets.MapPost("/{id:guid}/status", ChangeTicketStatusAsync)
@@ -270,6 +278,29 @@ public sealed class TicketManagementModule : IModule
     {
         TicketDetailResponse? detail = await ticketService.GetDetailAsync(id, cancellationToken);
         return detail is null ? NotFoundTicketProblem() : Results.Ok(detail);
+    }
+
+    /// <summary>
+    /// The internal agent view of a ticket's history (CRM-139), therefore
+    /// <see cref="TicketTimelineAudience.Internal"/>. The customer-portal
+    /// projection (CRM-171/175) calls the same service with
+    /// <see cref="TicketTimelineAudience.Customer"/> from its own endpoint —
+    /// it must never filter this one's output client-side.
+    /// </summary>
+    private static async Task<IResult> GetTicketHistoryAsync(
+        Guid id,
+        [AsParameters] PaginationRequest pagination,
+        TicketTimelineService ticketTimelineService,
+        CancellationToken cancellationToken)
+    {
+        TicketTimelineResult result = await ticketTimelineService.GetAsync(
+            id, pagination, TicketTimelineAudience.Internal, cancellationToken);
+        return result.Failure switch
+        {
+            TicketTimelineFailure.None => Results.Ok(result.Page),
+            TicketTimelineFailure.TicketNotFound => NotFoundTicketProblem(),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
     }
 
     private static async Task<IResult> AssignTicketAsync(

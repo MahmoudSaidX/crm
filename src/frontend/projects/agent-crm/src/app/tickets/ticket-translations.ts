@@ -80,6 +80,16 @@ export const TICKET_TRANSLATIONS: TranslationResources = {
     'tickets.escalation.errors.invalidTarget': 'The selected escalation target is not active.',
     'tickets.escalation.errors.staleVersion':
       'This ticket was changed by someone else. Reload it and try again.',
+    'tickets.history.section': 'History',
+    'tickets.history.empty': 'No history yet.',
+    'tickets.history.unavailable': 'The ticket history could not be loaded.',
+    'tickets.history.actorUnknown': 'System',
+    'tickets.history.reason': 'Reason',
+    'tickets.history.events.TicketCreated': 'Ticket created',
+    'tickets.history.events.TicketAssigned': 'Assigned',
+    'tickets.history.events.TicketReassigned': 'Reassigned',
+    'tickets.history.events.TicketStatusChanged': 'Status changed',
+    'tickets.history.events.TicketEscalated': 'Escalated',
     'tickets.escalation.errors.failed': 'The escalation could not be saved.',
   },
   ar: {
@@ -160,6 +170,16 @@ export const TICKET_TRANSLATIONS: TranslationResources = {
     'tickets.escalation.errors.invalidTarget': 'جهة التصعيد المختارة غير نشطة.',
     'tickets.escalation.errors.staleVersion':
       'تم تعديل التذكرة من مستخدم آخر. أعد تحميلها ثم حاول مجددًا.',
+    'tickets.history.section': 'السجل',
+    'tickets.history.empty': 'لا يوجد سجل بعد.',
+    'tickets.history.unavailable': 'تعذر تحميل سجل التذكرة.',
+    'tickets.history.actorUnknown': 'النظام',
+    'tickets.history.reason': 'السبب',
+    'tickets.history.events.TicketCreated': 'تم إنشاء التذكرة',
+    'tickets.history.events.TicketAssigned': 'تم الإسناد',
+    'tickets.history.events.TicketReassigned': 'تمت إعادة الإسناد',
+    'tickets.history.events.TicketStatusChanged': 'تم تغيير الحالة',
+    'tickets.history.events.TicketEscalated': 'تم التصعيد',
     'tickets.escalation.errors.failed': 'تعذر حفظ التصعيد.',
   },
 };
