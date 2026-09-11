@@ -528,6 +528,121 @@ outbox `Payload`/`Error`, SQL parameters or customer content. Exhausted outbox
 messages make readiness `Degraded` (HTTP 200); unavailable dependencies make it
 `Unhealthy` (HTTP 503).
 
+## Development demo data
+
+`src/Tools/SquadCrm.DemoDataSeeder` is an explicitly invoked operator tool
+(`scripts/seed-demo` from the repository root) that fills a migrated local
+database with a realistic, interconnected dataset for development, demos and
+manual testing. Nothing in the API host references it, so it cannot run at
+startup or after a migration.
+
+### Safety
+
+- **Production refusal is code, not documentation.** `DemoDataEnvironmentGuard`
+  allows only `ASPNETCORE_ENVIRONMENT=Development` or `Test`; every other value
+  — `Production`, `Staging`, unset, empty, wrong case — throws before any
+  connection string is read. No switch or configuration value overrides it.
+- **Idempotent.** Every contributor reconciles on a deterministic business key
+  (`NormalizedEmail`, `NormalizedCode`, `CustomerNumber`, `TicketNumber`), never
+  on a caught unique-constraint violation. A second run creates nothing.
+- **Non-destructive.** No `DELETE`, `TRUNCATE` or `DROP`. Developer-created data
+  is left untouched, and an existing account's password is never rewritten.
+  Destructive reset stays with `scripts/reset --yes`.
+- **No secrets.** The demo password is read from `SQUADCRM_DEMO_PASSWORD` (with
+  a documented demo-only default), hashed by the existing StaffIdentity
+  `IPasswordHasher<StaffUser>`, never logged and never printed in the summary.
+
+### Module ownership
+
+The tool owns no entity, no `DbContext` and no business rule. Each module
+implements `IDemoDataContributor`
+(`SquadCrm.BuildingBlocks.Abstractions.DemoData`) **inside its own assembly**,
+opens **its own** context through that module's `*DbContextFactory`, and writes
+through its own entities and domain methods. Cross-module values — staff subject
+ids, department/branch ids, catalog ids, customer ids — flow through the
+`DemoDataReferences` bag each module publishes, exactly as a module would
+consume a contract at runtime. No contributor reads another module's tables.
+
+The tool only orchestrates, in this dependency order:
+
+| # | Contributor (owning module) | Seeds |
+| --- | --- | --- |
+| 1 | `StaffIdentityDemoDataContributor` | the five demo staff accounts |
+| 2 | `RoleManagementDemoDataContributor` | demo roles, grants, assignments |
+| 3 | `DepartmentDemoDataContributor` | 5 active + 1 inactive department |
+| 4 | `BranchDemoDataContributor` | 8 active + 1 inactive branch |
+| 5 | `TicketCatalogDemoDataContributor` | 7 active + 1 inactive category, 4 priorities |
+| 6 | `CustomerDemoDataContributor` | customers, contacts, notes |
+| 7 | `TicketDemoDataContributor` | tickets + assignment/status/escalation history |
+
+To extend it for a future module (SLA, automation, communications, knowledge
+base, portal, AI, reporting): implement `IDemoDataContributor` in that module and
+add one line to the ordered list in `DemoSeedProgram`. Nothing else changes.
+
+### Demo role matrix
+
+Grants are derived from the **live** `permission_definition` catalog — the
+seeder holds no duplicate catalog. Administrator receives every registered code;
+the other roles name the codes they need, and a code absent from the catalog is
+skipped rather than inserted. Grants are reconciled additively; nothing is ever
+revoked.
+
+| Role | Grants (from the current catalog) |
+| --- | --- |
+| `administrator` | every registered permission (24 today) |
+| `support-manager` | `customers.view`, `customers.manage`, `departments.view`, `branches.view`, `ticketcategories.view`, `ticketpriorities.view`, `tickets.view`, `tickets.create`, `tickets.assign`, `tickets.changestatus`, `tickets.escalate` |
+| `support-agent` | `customers.view`, `customers.manage`, `ticketcategories.view`, `ticketpriorities.view`, `tickets.view`, `tickets.create`, `tickets.assign`, `tickets.changestatus`, `tickets.escalate` |
+| `read-only` | `customers.view`, `tickets.view`, `ticketcategories.view`, `ticketpriorities.view`, `departments.view`, `branches.view` |
+
+Support Manager deliberately holds no `roles.*`, `users.*`, `audit.view`,
+`configuration.*` or `branding.*`. Read Only holds view permissions only — no
+`*.manage`, `*.create`, `tickets.assign`, `tickets.changestatus` or
+`tickets.escalate`. `customers.manage` appears for agents because customer
+create/update, contacts and notes all sit behind that single permission in the
+current catalog; there is no finer-grained customer write permission to grant
+instead.
+
+### Dataset sizes
+
+| Size | Customers | Tickets |
+| --- | --- | --- |
+| `small` | ~20 | ~50 |
+| `medium` (default) | ~150 | ~400 |
+| `large` | ~1000 | ~5000 |
+
+### Determinism
+
+The generator seed is fixed (`DemoSeedProgram.RandomSeed = 20260911`), and the
+random sequence is consumed for every index whether or not the row already
+exists, so skipping an existing row cannot shift later rows. Against the same
+clean database the dataset is equivalent on every run. Absolute timestamps are
+anchored to the run's `NowUtc`, so the 90-day historical *shape* is reproducible
+even though the calendar dates move with the run date.
+
+### Ticket history
+
+`DemoTicketScript` is a pure generator (unit-tested in `SquadCrm.UnitTests`)
+that produces each ticket's life: creation → assignment → status changes →
+reassignment → escalation. Every status step is validated against the
+authoritative `TicketStatusTransitions` matrix and carries a reason wherever
+`RequiresReason` demands one; escalation steps are never emitted for a
+`Resolved`/`Closed` ticket, matching `TicketService.EscalateAsync`. The
+contributor then applies each step through the canonical domain methods
+(`Ticket.Create/Assign/ChangeStatus/Escalate`), appending the matching history
+rows in the same `SaveChanges` — so `Version`, `UpdatedAtUtc` and the outbox
+rows behave exactly as they do in the application.
+
+`TicketService` itself is not reused here: it is internal to the module's
+service graph and stamps `DateTimeOffset.UtcNow`, so it cannot produce a
+backdated 90-day history.
+
+### Known gap — attachments
+
+Customer attachments are **not** seeded. `CustomerAttachment` rows point at bytes
+in `IFileStorage`, whose local root belongs to the API container, so metadata
+written by a host-run CLI would render as a broken download. Seeding them
+correctly needs a storage-root decision that belongs to its own story.
+
 ## Non-goals in this foundation
 
 Owned by later stories and intentionally absent here — the absence is enforced by

@@ -246,6 +246,7 @@ developer-safe local defaults only.
 | `scripts/migrate` | Apply every current module migration | available today |
 | `scripts/seed` | Idempotently add synthetic development/test fixture data | available today |
 | StaffIdentity bootstrap command below | Explicitly create or reset one local Development staff account | CRM-110 |
+| `scripts/seed-demo` | Idempotently add the Development demo dataset (users, roles, org data, customers, tickets) | available today |
 | `scripts/reset --yes` | **DESTRUCTIVE:** recreate local PostgreSQL, migrate and seed | available today |
 
 ## Migrations and tests
@@ -302,6 +303,56 @@ scripts/reset --yes
 
 `scripts/reset` refuses to run without `--yes`. The seed contains no customer,
 credential or production-derived data and is never run at application startup.
+
+### Development demo data
+
+`scripts/seed` is the minimal architecture fixture. For a local environment that
+is immediately usable — realistic customers, tickets, history and sign-in
+accounts — run the demo seeder instead:
+
+```bash
+docker compose up --build
+./scripts/migrate
+./scripts/seed-demo               # medium: ~150 customers, ~400 tickets
+./scripts/seed-demo --size small  # ~20 customers, ~50 tickets
+./scripts/seed-demo --size large  # ~1000 customers, ~5000 tickets
+```
+
+It is explicitly invoked — never at application startup and never after
+migrations — and it **refuses to run unless `ASPNETCORE_ENVIRONMENT` is
+`Development` or `Test`**; that refusal is enforced in code
+(`DemoDataEnvironmentGuard`), not by documentation. It is idempotent (a second
+run adds nothing), deterministic, and it never deletes or truncates anything, so
+it coexists with data you created yourself. Every row it writes is marked as
+demo data (`DEMO-` identifiers, `@squadcrm.local` accounts). See
+`src/backend/README.md` for what each module contributes and the demo role
+matrix.
+
+### DEVELOPMENT DEMO ACCOUNTS
+
+**NEVER USE THESE CREDENTIALS IN PRODUCTION.** They exist only for local
+development, demos and manual testing.
+
+| Email | Display name | Role | Access |
+| --- | --- | --- | --- |
+| `admin@squadcrm.local` | Ahmed Admin | Administrator | Every registered permission |
+| `manager@squadcrm.local` | Sara Manager | Support Manager | Customer + ticket operations, no system administration |
+| `agent1@squadcrm.local` | Omar Hassan | Support Agent | Day-to-day customer and ticket work |
+| `agent2@squadcrm.local` | Nour Khaled | Support Agent | Day-to-day customer and ticket work |
+| `viewer@squadcrm.local` | Youssef Viewer | Read Only | View only — no mutation permission |
+
+All five share one demo password. Supply it through the environment variable:
+
+```bash
+SQUADCRM_DEMO_PASSWORD='<your local demo password>' ./scripts/seed-demo
+```
+
+When `SQUADCRM_DEMO_PASSWORD` is unset, the seeder falls back to the documented
+demo default `SquadDemo!2026` so a fresh checkout works with no setup. That
+default is demo-only: it is never used by the production bootstrap path, it is
+never logged, and it is hashed with the same StaffIdentity password hasher every
+other account uses. The seeder never overwrites the password of an account that
+already exists.
 The reset targets `POSTGRES_VOLUME_NAME` (default `squadcrm-pgdata`); an isolated
 verification stack can supply a separate env file through
 `SQUADCRM_BACKEND_ENV_FILE` without touching normal local data.

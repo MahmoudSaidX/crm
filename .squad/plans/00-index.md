@@ -29,3 +29,4 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | customer-interaction-history-timeline | [`customer-interaction-history-timeline/129-story-crm-129-customer-interaction-history-timeline.md`](customer-interaction-history-timeline/129-story-crm-129-customer-interaction-history-timeline.md) | 129 |
 | configure-ticket-categories | [`configure-ticket-categories/131-story-crm-131-configure-ticket-categories.md`](configure-ticket-categories/131-story-crm-131-configure-ticket-categories.md) | 131 |
 | sakai-ui-redesign | [`sakai-ui-redesign/00-overview.md`](sakai-ui-redesign/00-overview.md) | 142 |
+| development-demo-data-seeder | [`development-demo-data-seeder/00-overview.md`](development-demo-data-seeder/00-overview.md) | 143 |
