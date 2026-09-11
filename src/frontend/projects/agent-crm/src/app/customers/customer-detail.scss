@@ -2,26 +2,6 @@
   display: block;
 }
 
-.customer-detail-page {
-  box-sizing: border-box;
-  padding: clamp(1rem, 4vw, 2rem);
-}
-
-.customer-detail-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-block-end: 1.5rem;
-}
-
-.customer-detail-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
 .customer-edit-form {
   display: flex;
   flex-direction: column;
@@ -35,28 +15,10 @@
   gap: 0.5rem;
 }
 
-.customer-fields {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 0.5rem 1rem;
-}
-
-.customer-fields dt {
-  font-weight: 600;
-}
-
-.customer-fields dd {
-  margin: 0;
-}
-
-.customer-contacts {
-  margin-block-start: 2rem;
-}
-
 .customer-contacts-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   margin-block-end: 1rem;
 }
@@ -87,14 +49,10 @@
   gap: 0.5rem;
 }
 
-.customer-notes {
-  margin-block-start: 2rem;
-}
-
 .customer-notes-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   margin-block-end: 1rem;
 }
@@ -115,14 +73,10 @@
   gap: 0.5rem;
 }
 
-.customer-attachments {
-  margin-block-start: 2rem;
-}
-
 .customer-attachments-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   margin-block-end: 1rem;
 }

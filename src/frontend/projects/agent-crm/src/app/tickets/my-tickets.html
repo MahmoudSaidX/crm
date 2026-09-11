@@ -1,7 +1,6 @@
-<main class="my-tickets-page">
-  <header class="my-tickets-header">
-    <h1>{{ localization.translate('tickets.mine.title') }}</h1>
-    <div class="my-tickets-header-actions">
+<sc-page-container>
+  <sc-page-header [title]="localization.translate('tickets.mine.title')">
+    <div actions>
       <p-button
         [label]="localization.translate('tickets.mine.refresh')"
         icon="pi pi-refresh"
@@ -9,11 +8,10 @@
         [disabled]="loading()"
         (onClick)="onRefresh()"
       />
-      <crm-agent-language-switcher />
     </div>
-  </header>
+  </sc-page-header>
 
-  <div class="my-tickets-filters">
+  <div class="sc-filter-toolbar">
     <input
       pInputText
       type="search"
@@ -65,66 +63,68 @@
     </p>
   }
 
-  <p-table
-    [value]="tickets()"
-    [lazy]="true"
-    [paginator]="true"
-    [rows]="pageSize"
-    [totalRecords]="totalRecords()"
-    [paginatorLocale]="localization.locale()"
-    [loading]="loading()"
-    [scrollable]="true"
-    (onLazyLoad)="onLazyLoad($event)"
-    dataKey="id"
-  >
-    <ng-template #header>
-      <tr>
-        <th style="min-width: 10rem">
-          {{ localization.translate('tickets.fields.ticketNumber') }}
-        </th>
-        <th style="min-width: 16rem">{{ localization.translate('tickets.fields.subject') }}</th>
-        <th style="min-width: 8rem">{{ localization.translate('tickets.fields.status') }}</th>
-        <th style="min-width: 8rem">{{ localization.translate('tickets.fields.escalation') }}</th>
-        <th style="min-width: 10rem">{{ localization.translate('tickets.fields.updatedAt') }}</th>
-      </tr>
-    </ng-template>
-    <ng-template #body let-ticket>
-      <tr>
-        <td>
-          <a [routerLink]="['/tickets', ticket.id]">{{ ticket.ticketNumber }}</a>
-        </td>
-        <td>{{ ticket.subject }}</td>
-        <td>{{ statusLabel(ticket.status) }}</td>
-        <td>
-          @if (ticket.escalationLevel > 0) {
-            <p-tag
-              severity="warn"
-              [value]="
-                localization.translate('tickets.escalation.level') + ' ' + ticket.escalationLevel
-              "
-            />
-          } @else {
-            {{ localization.translate('tickets.escalation.notEscalated') }}
-          }
-        </td>
-        <td>
-          {{
-            (ticket.updatedAtUtc ?? ticket.createdAtUtc
-              | date: 'medium' : undefined : localization.locale()) ?? ''
-          }}
-        </td>
-      </tr>
-    </ng-template>
-    <ng-template #emptymessage>
-      <tr>
-        <td colspan="5">
-          @if (loadFailed()) {
-            {{ localization.translate('tickets.mine.loadFailed') }}
-          } @else {
-            {{ localization.translate('tickets.mine.empty') }}
-          }
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
-</main>
+  <p-card>
+    <p-table
+      [value]="tickets()"
+      [lazy]="true"
+      [paginator]="true"
+      [rows]="pageSize"
+      [totalRecords]="totalRecords()"
+      [paginatorLocale]="localization.locale()"
+      [loading]="loading()"
+      [scrollable]="true"
+      (onLazyLoad)="onLazyLoad($event)"
+      dataKey="id"
+    >
+      <ng-template #header>
+        <tr>
+          <th style="min-width: 10rem">
+            {{ localization.translate('tickets.fields.ticketNumber') }}
+          </th>
+          <th style="min-width: 16rem">{{ localization.translate('tickets.fields.subject') }}</th>
+          <th style="min-width: 8rem">{{ localization.translate('tickets.fields.status') }}</th>
+          <th style="min-width: 8rem">{{ localization.translate('tickets.fields.escalation') }}</th>
+          <th style="min-width: 10rem">{{ localization.translate('tickets.fields.updatedAt') }}</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-ticket>
+        <tr>
+          <td>
+            <a [routerLink]="['/tickets', ticket.id]">{{ ticket.ticketNumber }}</a>
+          </td>
+          <td>{{ ticket.subject }}</td>
+          <td>{{ statusLabel(ticket.status) }}</td>
+          <td>
+            @if (ticket.escalationLevel > 0) {
+              <p-tag
+                severity="warn"
+                [value]="
+                  localization.translate('tickets.escalation.level') + ' ' + ticket.escalationLevel
+                "
+              />
+            } @else {
+              {{ localization.translate('tickets.escalation.notEscalated') }}
+            }
+          </td>
+          <td>
+            {{
+              (ticket.updatedAtUtc ?? ticket.createdAtUtc
+                | date: 'medium' : undefined : localization.locale()) ?? ''
+            }}
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="5">
+            @if (loadFailed()) {
+              {{ localization.translate('tickets.mine.loadFailed') }}
+            } @else {
+              {{ localization.translate('tickets.mine.empty') }}
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</sc-page-container>

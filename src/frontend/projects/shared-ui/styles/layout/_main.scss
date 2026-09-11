@@ -1,0 +1,15 @@
+.layout-main-container {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+  justify-content: space-between;
+  padding-block-start: 6rem;
+  padding-inline: 2rem;
+  transition: margin-inline-start var(--layout-section-transition-duration);
+}
+
+.layout-main {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  padding-block-end: 2rem;
+}

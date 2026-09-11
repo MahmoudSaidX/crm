@@ -1,33 +1,48 @@
-<main class="customer-detail-page">
-  <header class="customer-detail-header">
-    <a routerLink="/customers">{{ localization.translate('customers.detail.back') }}</a>
-    <crm-agent-language-switcher />
-  </header>
-
+<sc-page-container>
   @if (loading()) {
-    <p>{{ localization.translate('customers.detail.loading') }}</p>
+    <sc-state-panel
+      state="loading"
+      [message]="localization.translate('customers.detail.loading')"
+    />
   } @else if (notFound()) {
-    <p>{{ localization.translate('customers.detail.notFound') }}</p>
+    <sc-state-panel state="error" [message]="localization.translate('customers.detail.notFound')">
+      <p-button
+        actions
+        routerLink="/customers"
+        [label]="localization.translate('customers.detail.back')"
+        severity="secondary"
+      />
+    </sc-state-panel>
   } @else if (customer()) {
-    <div class="customer-detail-title">
-      <h1>{{ customer()!.firstName }} {{ customer()!.lastName }}</h1>
-      @if (authorization.has('customers.manage') && !editing()) {
+    <sc-page-header [title]="customer()!.firstName + ' ' + customer()!.lastName">
+      <div actions class="sc-row-actions">
+        @if (authorization.has('customers.manage') && !editing()) {
+          <p-button
+            [label]="localization.translate('common.actions.edit')"
+            icon="pi pi-pencil"
+            severity="secondary"
+            (onClick)="startEdit()"
+          />
+        }
         <p-button
-          [label]="localization.translate('common.actions.edit')"
-          icon="pi pi-pencil"
-          severity="secondary"
-          size="small"
-          (onClick)="startEdit()"
+          routerLink="/customers"
+          [label]="localization.translate('customers.detail.back')"
+          [text]="true"
         />
-      }
-    </div>
+      </div>
+    </sc-page-header>
 
     @if (editErrorKey()) {
       <p-message severity="error">{{ localization.translate(editErrorKey()!) }}</p-message>
     }
 
     @if (editing()) {
-      <form class="customer-edit-form" [formGroup]="editForm" (ngSubmit)="submitEdit()" novalidate>
+      <form
+        class="sc-form customer-edit-form"
+        [formGroup]="editForm"
+        (ngSubmit)="submitEdit()"
+        novalidate
+      >
         <label for="edit-firstName">{{
           localization.translate('customers.fields.firstName')
         }}</label>
@@ -109,360 +124,385 @@
       </form>
     }
 
-    <dl class="customer-fields">
-      <dt>{{ localization.translate('customers.fields.customerNumber') }}</dt>
-      <dd>{{ customer()!.customerNumber }}</dd>
+    <p-card>
+      <sc-detail-grid>
+        <dt>{{ localization.translate('customers.fields.customerNumber') }}</dt>
+        <dd>{{ customer()!.customerNumber }}</dd>
 
-      <dt>{{ localization.translate('customers.fields.preferredLanguage') }}</dt>
-      <dd>
-        {{
-          customer()!.preferredLanguage === 'Arabic'
-            ? localization.translate('customers.language.arabic')
-            : customer()!.preferredLanguage === 'English'
-              ? localization.translate('customers.language.english')
-              : '—'
-        }}
-      </dd>
+        <dt>{{ localization.translate('customers.fields.preferredLanguage') }}</dt>
+        <dd>
+          {{
+            customer()!.preferredLanguage === 'Arabic'
+              ? localization.translate('customers.language.arabic')
+              : customer()!.preferredLanguage === 'English'
+                ? localization.translate('customers.language.english')
+                : '—'
+          }}
+        </dd>
 
-      <dt>{{ localization.translate('customers.fields.department') }}</dt>
-      <dd>{{ customer()!.departmentId || '—' }}</dd>
+        <dt>{{ localization.translate('customers.fields.department') }}</dt>
+        <dd>{{ customer()!.departmentId || '—' }}</dd>
 
-      <dt>{{ localization.translate('customers.fields.branch') }}</dt>
-      <dd>{{ customer()!.branchId || '—' }}</dd>
+        <dt>{{ localization.translate('customers.fields.branch') }}</dt>
+        <dd>{{ customer()!.branchId || '—' }}</dd>
 
-      <dt>{{ localization.translate('customers.fields.status') }}</dt>
-      <dd>
-        <p-tag
-          [value]="
-            localization.translate(
-              customer()!.status === 'Active' ? 'common.status.active' : 'common.status.inactive'
-            )
-          "
-          [severity]="customer()!.status === 'Active' ? 'success' : 'danger'"
-        />
-      </dd>
-    </dl>
-
-    <section class="customer-contacts">
-      <header class="customer-contacts-header">
-        <h2>{{ localization.translate('customers.contacts.title') }}</h2>
-        @if (authorization.has('customers.manage') && !showContactForm()) {
-          <p-button
-            [label]="localization.translate('customers.contacts.add')"
-            icon="pi pi-plus"
-            size="small"
-            (onClick)="startAddContact()"
+        <dt>{{ localization.translate('customers.fields.status') }}</dt>
+        <dd>
+          <p-tag
+            [value]="
+              localization.translate(
+                customer()!.status === 'Active' ? 'common.status.active' : 'common.status.inactive'
+              )
+            "
+            [severity]="customer()!.status === 'Active' ? 'success' : 'danger'"
           />
-        }
-      </header>
+        </dd>
+      </sc-detail-grid>
+    </p-card>
 
-      @if (contactErrorKey()) {
-        <p-message severity="error">{{ localization.translate(contactErrorKey()!) }}</p-message>
-      }
-
-      @if (showContactForm()) {
-        <form class="contact-form" [formGroup]="contactForm" (ngSubmit)="submitContact()">
-          @if (!editingContactId()) {
-            <p-select
-              formControlName="type"
-              [options]="typeOptions"
-              optionLabel="label"
-              optionValue="value"
-              [attr.aria-label]="localization.translate('customers.contacts.fields.type')"
-            />
-          }
-          <input
-            pInputText
-            formControlName="value"
-            [placeholder]="localization.translate('customers.contacts.fields.value')"
-          />
-          <input
-            pInputText
-            formControlName="label"
-            [placeholder]="localization.translate('customers.contacts.fields.label')"
-          />
-          <div class="contact-form-primary">
-            <p-checkbox inputId="contact-is-primary" formControlName="isPrimary" [binary]="true" />
-            <label for="contact-is-primary">{{
-              localization.translate('customers.contacts.fields.isPrimary')
-            }}</label>
-          </div>
-          <div class="contact-form-actions">
-            <p-button
-              type="submit"
-              [label]="localization.translate('common.actions.save')"
-              size="small"
-            />
-            <p-button
-              type="button"
-              [label]="localization.translate('customers.contacts.cancel')"
-              severity="secondary"
-              size="small"
-              (onClick)="cancelContactForm()"
-            />
-          </div>
-        </form>
-      }
-
-      <p-table [value]="contacts()" [loading]="contactsLoading()" dataKey="id">
-        <ng-template #header>
-          <tr>
-            <th>{{ localization.translate('customers.contacts.fields.type') }}</th>
-            <th>{{ localization.translate('customers.contacts.fields.value') }}</th>
-            <th>{{ localization.translate('customers.contacts.fields.label') }}</th>
-            <th>{{ localization.translate('customers.contacts.fields.isPrimary') }}</th>
-            <th>{{ localization.translate('customers.fields.status') }}</th>
-            <th></th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-contact>
-          <tr>
-            <td>
-              {{
-                contact.type === 'Email'
-                  ? localization.translate('customers.contacts.type.email')
-                  : localization.translate('customers.contacts.type.phone')
-              }}
-            </td>
-            <td>{{ contact.value }}</td>
-            <td>{{ contact.label || '—' }}</td>
-            <td>
-              @if (contact.isPrimary) {
-                <p-tag
-                  [value]="localization.translate('customers.contacts.primaryBadge')"
-                  severity="info"
+    <p-tabs value="contacts" styleClass="customer-detail-tabs">
+      <p-tablist>
+        <p-tab value="contacts">{{ localization.translate('customers.contacts.title') }}</p-tab>
+        <p-tab value="notes">{{ localization.translate('customers.notes.title') }}</p-tab>
+        <p-tab value="attachments">{{
+          localization.translate('customers.attachments.title')
+        }}</p-tab>
+        <p-tab value="timeline">{{ localization.translate('customers.timeline.title') }}</p-tab>
+      </p-tablist>
+      <p-tabpanels>
+        <p-tabpanel value="contacts">
+          <section class="customer-contacts">
+            <header class="customer-contacts-header">
+              @if (authorization.has('customers.manage') && !showContactForm()) {
+                <p-button
+                  [label]="localization.translate('customers.contacts.add')"
+                  icon="pi pi-plus"
+                  size="small"
+                  (onClick)="startAddContact()"
                 />
               }
-            </td>
-            <td>
-              <p-tag
-                [value]="
-                  localization.translate(
-                    contact.isActive ? 'common.status.active' : 'common.status.inactive'
-                  )
-                "
-                [severity]="contact.isActive ? 'success' : 'danger'"
-              />
-            </td>
-            <td class="row-actions">
-              @if (authorization.has('customers.manage') && contact.isActive) {
-                <p-button
-                  [label]="localization.translate('common.actions.edit')"
-                  icon="pi pi-pencil"
-                  severity="secondary"
-                  size="small"
-                  (onClick)="startEditContact(contact)"
-                />
-                @if (deactivatingContactId() === contact.id) {
+            </header>
+
+            @if (contactErrorKey()) {
+              <p-message severity="error">{{
+                localization.translate(contactErrorKey()!)
+              }}</p-message>
+            }
+
+            @if (showContactForm()) {
+              <form class="contact-form" [formGroup]="contactForm" (ngSubmit)="submitContact()">
+                @if (!editingContactId()) {
                   <p-select
-                    [formControl]="newPrimaryControl"
-                    [options]="newPrimaryOptions(contact)"
+                    formControlName="type"
+                    [options]="typeOptions"
                     optionLabel="label"
                     optionValue="value"
-                    [placeholder]="localization.translate('customers.contacts.selectNewPrimary')"
+                    [attr.aria-label]="localization.translate('customers.contacts.fields.type')"
                   />
+                }
+                <input
+                  pInputText
+                  formControlName="value"
+                  [placeholder]="localization.translate('customers.contacts.fields.value')"
+                />
+                <input
+                  pInputText
+                  formControlName="label"
+                  [placeholder]="localization.translate('customers.contacts.fields.label')"
+                />
+                <div class="contact-form-primary">
+                  <p-checkbox
+                    inputId="contact-is-primary"
+                    formControlName="isPrimary"
+                    [binary]="true"
+                  />
+                  <label for="contact-is-primary">{{
+                    localization.translate('customers.contacts.fields.isPrimary')
+                  }}</label>
+                </div>
+                <div class="contact-form-actions">
                   <p-button
+                    type="submit"
                     [label]="localization.translate('common.actions.save')"
                     size="small"
-                    [disabled]="!newPrimaryControl.value"
-                    (onClick)="confirmDeactivateWithNewPrimary(contact)"
                   />
                   <p-button
+                    type="button"
                     [label]="localization.translate('customers.contacts.cancel')"
                     severity="secondary"
                     size="small"
-                    (onClick)="cancelDeactivate()"
+                    (onClick)="cancelContactForm()"
                   />
-                } @else {
-                  <p-button
-                    [label]="localization.translate('common.actions.deactivate')"
-                    icon="pi pi-ban"
-                    severity="danger"
-                    size="small"
-                    (onClick)="requestDeactivateContact(contact)"
-                  />
-                }
-              }
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="6">{{ localization.translate('customers.contacts.empty') }}</td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </section>
+                </div>
+              </form>
+            }
 
-    <section class="customer-notes">
-      <header class="customer-notes-header">
-        <h2>{{ localization.translate('customers.notes.title') }}</h2>
-        @if (authorization.has('customers.manage') && !showNoteForm()) {
-          <p-button
-            [label]="localization.translate('customers.notes.add')"
-            icon="pi pi-plus"
-            size="small"
-            (onClick)="startAddNote()"
-          />
-        }
-      </header>
-
-      @if (noteErrorKey()) {
-        <p-message severity="error">{{ localization.translate(noteErrorKey()!) }}</p-message>
-      }
-
-      @if (showNoteForm()) {
-        <form class="note-form" [formGroup]="noteForm" (ngSubmit)="submitNote()">
-          <textarea
-            pTextarea
-            formControlName="body"
-            rows="3"
-            [placeholder]="localization.translate('customers.notes.fields.body')"
-          ></textarea>
-          <div class="note-form-actions">
-            <p-button
-              type="submit"
-              [label]="localization.translate('common.actions.save')"
-              size="small"
-            />
-            <p-button
-              type="button"
-              [label]="localization.translate('customers.notes.cancel')"
-              severity="secondary"
-              size="small"
-              (onClick)="cancelNoteForm()"
-            />
-          </div>
-        </form>
-      }
-
-      <p-table [value]="notes()" [loading]="notesLoading()" dataKey="id">
-        <ng-template #header>
-          <tr>
-            <th>{{ localization.translate('customers.notes.fields.body') }}</th>
-            <th>{{ localization.translate('customers.notes.fields.author') }}</th>
-            <th>{{ localization.translate('customers.notes.fields.createdAtUtc') }}</th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-note>
-          <tr>
-            <td>{{ note.body }}</td>
-            <td>{{ note.authorUserId }}</td>
-            <td>{{ note.createdAtUtc | date: 'short' }}</td>
-          </tr>
-        </ng-template>
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="3">{{ localization.translate('customers.notes.empty') }}</td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </section>
-
-    <section class="customer-attachments">
-      <header class="customer-attachments-header">
-        <h2>{{ localization.translate('customers.attachments.title') }}</h2>
-      </header>
-
-      @if (attachmentErrorKey()) {
-        <p-message severity="error">{{ localization.translate(attachmentErrorKey()!) }}</p-message>
-      }
-
-      @if (authorization.has('customers.manage')) {
-        <div class="attachment-upload">
-          <input
-            pInputText
-            type="text"
-            [formControl]="attachmentDescription"
-            [placeholder]="localization.translate('customers.attachments.fields.description')"
-          />
-          <p-fileupload
-            #attachmentUploader
-            mode="basic"
-            [customUpload]="true"
-            [auto]="true"
-            [disabled]="attachmentUploading()"
-            [chooseLabel]="localization.translate('customers.attachments.add')"
-            chooseIcon="pi pi-upload"
-            (uploadHandler)="uploadAttachment($event, attachmentUploader)"
-          />
-        </div>
-      }
-
-      <p-table [value]="attachments()" [loading]="attachmentsLoading()" dataKey="id">
-        <ng-template #header>
-          <tr>
-            <th>{{ localization.translate('customers.attachments.fields.fileName') }}</th>
-            <th>{{ localization.translate('customers.attachments.fields.description') }}</th>
-            <th>{{ localization.translate('customers.attachments.fields.sizeBytes') }}</th>
-            <th>{{ localization.translate('customers.attachments.fields.uploadedBy') }}</th>
-            <th>{{ localization.translate('customers.attachments.fields.uploadedAtUtc') }}</th>
-            <th></th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-attachment>
-          <tr>
-            <td>{{ attachment.originalFileName }}</td>
-            <td>{{ attachment.description }}</td>
-            <td>{{ attachment.sizeBytes }}</td>
-            <td>{{ attachment.uploadedBy }}</td>
-            <td>{{ attachment.uploadedAtUtc | date: 'short' }}</td>
-            <td class="attachment-actions">
-              <p-button
-                [label]="localization.translate('customers.attachments.download')"
-                icon="pi pi-download"
-                severity="secondary"
-                size="small"
-                (onClick)="downloadAttachment(attachment)"
-              />
-              @if (authorization.has('customers.manage')) {
+            <p-table [value]="contacts()" [loading]="contactsLoading()" dataKey="id">
+              <ng-template #header>
+                <tr>
+                  <th>{{ localization.translate('customers.contacts.fields.type') }}</th>
+                  <th>{{ localization.translate('customers.contacts.fields.value') }}</th>
+                  <th>{{ localization.translate('customers.contacts.fields.label') }}</th>
+                  <th>{{ localization.translate('customers.contacts.fields.isPrimary') }}</th>
+                  <th>{{ localization.translate('customers.fields.status') }}</th>
+                  <th></th>
+                </tr>
+              </ng-template>
+              <ng-template #body let-contact>
+                <tr>
+                  <td>
+                    {{
+                      contact.type === 'Email'
+                        ? localization.translate('customers.contacts.type.email')
+                        : localization.translate('customers.contacts.type.phone')
+                    }}
+                  </td>
+                  <td>{{ contact.value }}</td>
+                  <td>{{ contact.label || '—' }}</td>
+                  <td>
+                    @if (contact.isPrimary) {
+                      <p-tag
+                        [value]="localization.translate('customers.contacts.primaryBadge')"
+                        severity="info"
+                      />
+                    }
+                  </td>
+                  <td>
+                    <p-tag
+                      [value]="
+                        localization.translate(
+                          contact.isActive ? 'common.status.active' : 'common.status.inactive'
+                        )
+                      "
+                      [severity]="contact.isActive ? 'success' : 'danger'"
+                    />
+                  </td>
+                  <td class="row-actions">
+                    @if (authorization.has('customers.manage') && contact.isActive) {
+                      <p-button
+                        [label]="localization.translate('common.actions.edit')"
+                        icon="pi pi-pencil"
+                        severity="secondary"
+                        size="small"
+                        (onClick)="startEditContact(contact)"
+                      />
+                      @if (deactivatingContactId() === contact.id) {
+                        <p-select
+                          [formControl]="newPrimaryControl"
+                          [options]="newPrimaryOptions(contact)"
+                          optionLabel="label"
+                          optionValue="value"
+                          [placeholder]="
+                            localization.translate('customers.contacts.selectNewPrimary')
+                          "
+                        />
+                        <p-button
+                          [label]="localization.translate('common.actions.save')"
+                          size="small"
+                          [disabled]="!newPrimaryControl.value"
+                          (onClick)="confirmDeactivateWithNewPrimary(contact)"
+                        />
+                        <p-button
+                          [label]="localization.translate('customers.contacts.cancel')"
+                          severity="secondary"
+                          size="small"
+                          (onClick)="cancelDeactivate()"
+                        />
+                      } @else {
+                        <p-button
+                          [label]="localization.translate('common.actions.deactivate')"
+                          icon="pi pi-ban"
+                          severity="danger"
+                          size="small"
+                          (onClick)="requestDeactivateContact(contact)"
+                        />
+                      }
+                    }
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template #emptymessage>
+                <tr>
+                  <td colspan="6">{{ localization.translate('customers.contacts.empty') }}</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </section>
+        </p-tabpanel>
+        <p-tabpanel value="notes">
+          <section class="customer-notes">
+            <header class="customer-notes-header">
+              @if (authorization.has('customers.manage') && !showNoteForm()) {
                 <p-button
-                  [label]="localization.translate('customers.attachments.remove')"
-                  icon="pi pi-trash"
-                  severity="danger"
+                  [label]="localization.translate('customers.notes.add')"
+                  icon="pi pi-plus"
                   size="small"
-                  (onClick)="removeAttachment(attachment)"
+                  (onClick)="startAddNote()"
                 />
               }
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="6">{{ localization.translate('customers.attachments.empty') }}</td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </section>
+            </header>
 
-    <section class="customer-timeline">
-      <header class="customer-timeline-header">
-        <h2>{{ localization.translate('customers.timeline.title') }}</h2>
-      </header>
+            @if (noteErrorKey()) {
+              <p-message severity="error">{{ localization.translate(noteErrorKey()!) }}</p-message>
+            }
 
-      <p-table [value]="timeline()" [loading]="timelineLoading()" dataKey="relatedEntityId">
-        <ng-template #header>
-          <tr>
-            <th>{{ localization.translate('customers.timeline.fields.eventType') }}</th>
-            <th>{{ localization.translate('customers.timeline.fields.summary') }}</th>
-            <th>{{ localization.translate('customers.timeline.fields.actorDisplay') }}</th>
-            <th>{{ localization.translate('customers.timeline.fields.occurredAtUtc') }}</th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-entry>
-          <tr>
-            <td>{{ entry.eventType }}</td>
-            <td>{{ entry.summary }}</td>
-            <td>{{ entry.actorDisplay }}</td>
-            <td>{{ entry.occurredAtUtc | date: 'short' }}</td>
-          </tr>
-        </ng-template>
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="4">{{ localization.translate('customers.timeline.empty') }}</td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </section>
+            @if (showNoteForm()) {
+              <form class="note-form" [formGroup]="noteForm" (ngSubmit)="submitNote()">
+                <textarea
+                  pTextarea
+                  formControlName="body"
+                  rows="3"
+                  [placeholder]="localization.translate('customers.notes.fields.body')"
+                ></textarea>
+                <div class="note-form-actions">
+                  <p-button
+                    type="submit"
+                    [label]="localization.translate('common.actions.save')"
+                    size="small"
+                  />
+                  <p-button
+                    type="button"
+                    [label]="localization.translate('customers.notes.cancel')"
+                    severity="secondary"
+                    size="small"
+                    (onClick)="cancelNoteForm()"
+                  />
+                </div>
+              </form>
+            }
+
+            <p-table [value]="notes()" [loading]="notesLoading()" dataKey="id">
+              <ng-template #header>
+                <tr>
+                  <th>{{ localization.translate('customers.notes.fields.body') }}</th>
+                  <th>{{ localization.translate('customers.notes.fields.author') }}</th>
+                  <th>{{ localization.translate('customers.notes.fields.createdAtUtc') }}</th>
+                </tr>
+              </ng-template>
+              <ng-template #body let-note>
+                <tr>
+                  <td>{{ note.body }}</td>
+                  <td>{{ note.authorUserId }}</td>
+                  <td>{{ note.createdAtUtc | date: 'short' }}</td>
+                </tr>
+              </ng-template>
+              <ng-template #emptymessage>
+                <tr>
+                  <td colspan="3">{{ localization.translate('customers.notes.empty') }}</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </section>
+        </p-tabpanel>
+        <p-tabpanel value="attachments">
+          <section class="customer-attachments">
+            <header class="customer-attachments-header"></header>
+
+            @if (attachmentErrorKey()) {
+              <p-message severity="error">{{
+                localization.translate(attachmentErrorKey()!)
+              }}</p-message>
+            }
+
+            @if (authorization.has('customers.manage')) {
+              <div class="attachment-upload">
+                <input
+                  pInputText
+                  type="text"
+                  [formControl]="attachmentDescription"
+                  [placeholder]="localization.translate('customers.attachments.fields.description')"
+                />
+                <p-fileupload
+                  #attachmentUploader
+                  mode="basic"
+                  [customUpload]="true"
+                  [auto]="true"
+                  [disabled]="attachmentUploading()"
+                  [chooseLabel]="localization.translate('customers.attachments.add')"
+                  chooseIcon="pi pi-upload"
+                  (uploadHandler)="uploadAttachment($event, attachmentUploader)"
+                />
+              </div>
+            }
+
+            <p-table [value]="attachments()" [loading]="attachmentsLoading()" dataKey="id">
+              <ng-template #header>
+                <tr>
+                  <th>{{ localization.translate('customers.attachments.fields.fileName') }}</th>
+                  <th>{{ localization.translate('customers.attachments.fields.description') }}</th>
+                  <th>{{ localization.translate('customers.attachments.fields.sizeBytes') }}</th>
+                  <th>{{ localization.translate('customers.attachments.fields.uploadedBy') }}</th>
+                  <th>
+                    {{ localization.translate('customers.attachments.fields.uploadedAtUtc') }}
+                  </th>
+                  <th></th>
+                </tr>
+              </ng-template>
+              <ng-template #body let-attachment>
+                <tr>
+                  <td>{{ attachment.originalFileName }}</td>
+                  <td>{{ attachment.description }}</td>
+                  <td>{{ attachment.sizeBytes }}</td>
+                  <td>{{ attachment.uploadedBy }}</td>
+                  <td>{{ attachment.uploadedAtUtc | date: 'short' }}</td>
+                  <td class="attachment-actions">
+                    <p-button
+                      [label]="localization.translate('customers.attachments.download')"
+                      icon="pi pi-download"
+                      severity="secondary"
+                      size="small"
+                      (onClick)="downloadAttachment(attachment)"
+                    />
+                    @if (authorization.has('customers.manage')) {
+                      <p-button
+                        [label]="localization.translate('customers.attachments.remove')"
+                        icon="pi pi-trash"
+                        severity="danger"
+                        size="small"
+                        (onClick)="removeAttachment(attachment)"
+                      />
+                    }
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template #emptymessage>
+                <tr>
+                  <td colspan="6">{{ localization.translate('customers.attachments.empty') }}</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </section>
+        </p-tabpanel>
+        <p-tabpanel value="timeline">
+          <section class="customer-timeline">
+            <header class="customer-timeline-header"></header>
+
+            <p-table [value]="timeline()" [loading]="timelineLoading()" dataKey="relatedEntityId">
+              <ng-template #header>
+                <tr>
+                  <th>{{ localization.translate('customers.timeline.fields.eventType') }}</th>
+                  <th>{{ localization.translate('customers.timeline.fields.summary') }}</th>
+                  <th>{{ localization.translate('customers.timeline.fields.actorDisplay') }}</th>
+                  <th>{{ localization.translate('customers.timeline.fields.occurredAtUtc') }}</th>
+                </tr>
+              </ng-template>
+              <ng-template #body let-entry>
+                <tr>
+                  <td>{{ entry.eventType }}</td>
+                  <td>{{ entry.summary }}</td>
+                  <td>{{ entry.actorDisplay }}</td>
+                  <td>{{ entry.occurredAtUtc | date: 'short' }}</td>
+                </tr>
+              </ng-template>
+              <ng-template #emptymessage>
+                <tr>
+                  <td colspan="4">{{ localization.translate('customers.timeline.empty') }}</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </section>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
   }
-</main>
+</sc-page-container>

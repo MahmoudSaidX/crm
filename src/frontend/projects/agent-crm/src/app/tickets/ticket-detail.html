@@ -1,368 +1,402 @@
-<main class="ticket-detail-page">
-  <header class="ticket-detail-header">
-    <h1>{{ localization.translate('tickets.detail.title') }}</h1>
-    <crm-agent-language-switcher />
-  </header>
-
+<sc-page-container>
   @if (notFound()) {
-    <p>{{ localization.translate('tickets.detail.notFound') }}</p>
+    <sc-page-header [title]="localization.translate('tickets.detail.title')" />
+    <sc-state-panel state="error" [message]="localization.translate('tickets.detail.notFound')">
+      <p-button
+        actions
+        [label]="localization.translate('tickets.detail.back')"
+        icon="pi pi-arrow-left"
+        severity="secondary"
+        routerLink="/tickets"
+      />
+    </sc-state-panel>
   } @else if (ticket(); as detail) {
-    <section class="ticket-detail-section">
-      <h2>{{ localization.translate('tickets.detail.identity') }}</h2>
-      <dl class="ticket-detail-fields">
-        <dt>{{ localization.translate('tickets.fields.ticketNumber') }}</dt>
-        <dd>{{ detail.ticketNumber }}</dd>
-
-        <dt>{{ localization.translate('tickets.fields.subject') }}</dt>
-        <dd>{{ detail.subject }}</dd>
-
-        <dt>{{ localization.translate('tickets.fields.description') }}</dt>
-        <dd class="ticket-detail-description">{{ detail.description }}</dd>
-
-        <dt>{{ localization.translate('tickets.fields.status') }}</dt>
-        <dd>{{ statusLabel(detail.status) }}</dd>
-
-        <dt>{{ localization.translate('tickets.fields.channel') }}</dt>
-        <dd>{{ detail.channel }}</dd>
-      </dl>
-
-      @if (
-        authorization.has('tickets.changestatus') &&
-        !changingStatus() &&
-        detail.allowedStatusTransitions.length > 0
-      ) {
-        <p-button
-          [label]="localization.translate('tickets.status.change')"
-          icon="pi pi-sync"
-          severity="secondary"
-          (onClick)="startStatusChange()"
-        />
-      }
-
-      @if (changingStatus()) {
-        <form class="ticket-assign-form" [formGroup]="statusForm" (ngSubmit)="submitStatusChange()">
-          <label for="targetStatus">{{
-            localization.translate('tickets.status.fields.targetStatus')
-          }}</label>
-          <p-select
-            id="targetStatus"
-            formControlName="targetStatus"
-            [options]="statusOptions()"
-            optionLabel="label"
-            optionValue="value"
-            (onChange)="onStatusSelected($event.value)"
+    <sc-page-header
+      [title]="detail.ticketNumber + ' — ' + detail.subject"
+      [subtitle]="localization.translate('tickets.detail.title')"
+    >
+      <div actions class="sc-row-actions">
+        @if (
+          authorization.has('tickets.changestatus') && detail.allowedStatusTransitions.length > 0
+        ) {
+          <p-button
+            [label]="localization.translate('tickets.status.change')"
+            icon="pi pi-sync"
+            severity="secondary"
+            (onClick)="startStatusChange()"
           />
-
-          <label for="statusReason">
-            {{ localization.translate('tickets.status.fields.reason') }}
-            @if (!statusReasonRequired()) {
-              <span class="field-optional">{{
-                localization.translate('tickets.assign.optional')
-              }}</span>
-            }
-          </label>
-          <textarea pTextarea id="statusReason" formControlName="reason" rows="3"></textarea>
-
-          @if (statusErrorKey(); as errorKey) {
-            <p-message severity="error" [text]="localization.translate(errorKey)" />
-          }
-
-          <div class="ticket-assign-actions">
-            <p-button
-              type="submit"
-              [label]="localization.translate('tickets.status.submit')"
-              icon="pi pi-check"
-              [disabled]="submittingStatus()"
-            />
-            <p-button
-              type="button"
-              [label]="localization.translate('tickets.assign.cancel')"
-              severity="secondary"
-              (onClick)="cancelStatusChange()"
-            />
-          </div>
-        </form>
-      }
-    </section>
-
-    <section class="ticket-detail-section">
-      <h2>{{ localization.translate('tickets.detail.customer') }}</h2>
-      <dl class="ticket-detail-fields">
-        <dt>{{ localization.translate('tickets.fields.customer') }}</dt>
-        <dd>{{ customerName() ?? detail.customerId }}</dd>
-      </dl>
-    </section>
-
-    <section class="ticket-detail-section">
-      <h2>{{ localization.translate('tickets.detail.classification') }}</h2>
-      <dl class="ticket-detail-fields">
-        <dt>{{ localization.translate('tickets.fields.category') }}</dt>
-        <dd>
-          {{ categoryName() ?? detail.categoryId }}
-          @if (detail.categoryIsActive === false) {
-            <p-tag
-              severity="warn"
-              [value]="localization.translate('tickets.detail.inactiveReference')"
-            />
-          }
-        </dd>
-
-        <dt>{{ localization.translate('tickets.fields.subcategory') }}</dt>
-        <dd>{{ detail.subcategoryId ?? localization.translate('tickets.detail.none') }}</dd>
-
-        <dt>{{ localization.translate('tickets.fields.priority') }}</dt>
-        <dd>
-          {{ priorityName() ?? detail.priorityId }}
-          @if (detail.priorityIsActive === false) {
-            <p-tag
-              severity="warn"
-              [value]="localization.translate('tickets.detail.inactiveReference')"
-            />
-          }
-        </dd>
-      </dl>
-    </section>
-
-    <section class="ticket-detail-section">
-      <h2>{{ localization.translate('tickets.detail.routing') }}</h2>
-      <dl class="ticket-detail-fields">
-        <dt>{{ localization.translate('tickets.fields.department') }}</dt>
-        <dd>{{ departmentName() ?? detail.departmentId }}</dd>
-
-        <dt>{{ localization.translate('tickets.fields.branch') }}</dt>
-        <dd>{{ branchName() ?? detail.branchId }}</dd>
-
-        <dt>{{ localization.translate('tickets.fields.assignedAgent') }}</dt>
-        <dd>{{ detail.assignedAgentId ?? localization.translate('tickets.detail.unassigned') }}</dd>
-      </dl>
-
-      @if (authorization.has('tickets.assign') && !assigning()) {
-        <p-button
-          [label]="
-            detail.assignedAgentId
-              ? localization.translate('tickets.assign.reassign')
-              : localization.translate('tickets.assign.assign')
-          "
-          icon="pi pi-user-edit"
-          severity="secondary"
-          (onClick)="startAssignment()"
-        />
-      }
-
-      @if (assigning()) {
-        <form class="ticket-assign-form" [formGroup]="assignForm" (ngSubmit)="submitAssignment()">
-          <label for="targetAgentId">{{
-            localization.translate('tickets.assign.fields.agent')
-          }}</label>
-          <p-select
-            id="targetAgentId"
-            formControlName="targetAgentId"
-            [options]="agentOptions()"
-            optionLabel="label"
-            optionValue="value"
+        }
+        @if (authorization.has('tickets.assign')) {
+          <p-button
+            [label]="
+              detail.assignedAgentId
+                ? localization.translate('tickets.assign.reassign')
+                : localization.translate('tickets.assign.assign')
+            "
+            icon="pi pi-user-edit"
+            severity="secondary"
+            (onClick)="startAssignment()"
           />
-          @if (agentsUnavailable()) {
-            <small class="field-error">{{
-              localization.translate('tickets.assign.agentsUnavailable')
-            }}</small>
-          }
+        }
+        @if (authorization.has('tickets.escalate')) {
+          <p-button
+            [label]="localization.translate('tickets.escalation.escalate')"
+            icon="pi pi-arrow-up"
+            severity="secondary"
+            (onClick)="startEscalation()"
+          />
+        }
+        <p-button
+          [label]="localization.translate('tickets.detail.back')"
+          icon="pi pi-arrow-left"
+          [text]="true"
+          routerLink="/tickets"
+        />
+      </div>
+    </sc-page-header>
 
-          <label for="assignReason">
-            {{ localization.translate('tickets.assign.fields.reason') }}
-            @if (!reasonRequired()) {
-              <span class="field-optional">{{
-                localization.translate('tickets.assign.optional')
-              }}</span>
+    <div class="ticket-workspace">
+      <div class="ticket-workspace-main">
+        <p-card [header]="localization.translate('tickets.detail.identity')">
+          <div class="ticket-status-tags">
+            <p-tag [value]="statusLabel(detail.status)" />
+            <p-tag severity="info" [value]="priorityName() ?? detail.priorityId" />
+            @if (detail.escalationLevel > 0) {
+              <p-tag
+                severity="warn"
+                [value]="
+                  localization.translate('tickets.escalation.level') + ' ' + detail.escalationLevel
+                "
+              />
             }
-          </label>
-          <textarea pTextarea id="assignReason" formControlName="reason" rows="3"></textarea>
-
-          @if (assignmentErrorKey(); as errorKey) {
-            <p-message severity="error" [text]="localization.translate(errorKey)" />
-          }
-
-          <div class="ticket-assign-actions">
-            <p-button
-              type="submit"
-              [label]="localization.translate('tickets.assign.submit')"
-              icon="pi pi-check"
-              [disabled]="submittingAssignment()"
-            />
-            <p-button
-              type="button"
-              [label]="localization.translate('tickets.assign.cancel')"
-              severity="secondary"
-              (onClick)="cancelAssignment()"
-            />
           </div>
-        </form>
-      }
-    </section>
+          <p class="ticket-detail-description">{{ detail.description }}</p>
+        </p-card>
 
-    <section class="ticket-detail-section">
-      <h2>{{ localization.translate('tickets.escalation.section') }}</h2>
-      <dl class="ticket-detail-fields">
-        <dt>{{ localization.translate('tickets.fields.escalation') }}</dt>
-        <dd>
-          @if (detail.escalationLevel > 0) {
-            <p-tag
+        <p-card [header]="localization.translate('tickets.history.section')">
+          @if (historyUnavailable()) {
+            <p-message
               severity="warn"
-              [value]="
-                localization.translate('tickets.escalation.level') + ' ' + detail.escalationLevel
-              "
+              [text]="localization.translate('tickets.history.unavailable')"
+            />
+          } @else if (history().length === 0) {
+            <sc-state-panel
+              state="empty"
+              icon="pi pi-clock"
+              [message]="localization.translate('tickets.history.empty')"
             />
           } @else {
-            {{ localization.translate('tickets.escalation.notEscalated') }}
-          }
-        </dd>
-
-        @if (detail.escalationLevel > 0) {
-          <dt>{{ localization.translate('tickets.escalation.fields.target') }}</dt>
-          <dd>
-            @if (detail.escalationTargetType) {
-              {{ escalationTargetTypeLabel(detail.escalationTargetType) }} —
-            }
-            {{ detail.escalationTargetId }}
-          </dd>
-
-          <dt>{{ localization.translate('tickets.escalation.fields.escalatedAt') }}</dt>
-          <dd>{{ detail.escalatedAtUtc | date: 'medium' }}</dd>
-        }
-      </dl>
-
-      @if (authorization.has('tickets.escalate') && !escalating()) {
-        <p-button
-          [label]="localization.translate('tickets.escalation.escalate')"
-          icon="pi pi-arrow-up"
-          severity="secondary"
-          (onClick)="startEscalation()"
-        />
-      }
-
-      @if (escalating()) {
-        <form
-          class="ticket-assign-form"
-          [formGroup]="escalationForm"
-          (ngSubmit)="submitEscalation()"
-        >
-          <label for="escalationTargetType">{{
-            localization.translate('tickets.escalation.fields.targetType')
-          }}</label>
-          <p-select
-            id="escalationTargetType"
-            formControlName="targetType"
-            [options]="escalationTargetTypeOptions()"
-            optionLabel="label"
-            optionValue="value"
-            (onChange)="onEscalationTargetTypeSelected($event.value)"
-          />
-
-          <label for="escalationTargetId">{{
-            localization.translate('tickets.escalation.fields.target')
-          }}</label>
-          <p-select
-            id="escalationTargetId"
-            formControlName="targetId"
-            [options]="escalationTargetOptions()"
-            optionLabel="label"
-            optionValue="value"
-          />
-          @if (escalationTargetsUnavailable()) {
-            <small class="field-error">{{
-              localization.translate('tickets.escalation.targetsUnavailable')
-            }}</small>
-          }
-
-          <label for="escalationReason">{{
-            localization.translate('tickets.escalation.fields.reason')
-          }}</label>
-          <textarea pTextarea id="escalationReason" formControlName="reason" rows="3"></textarea>
-
-          @if (escalationErrorKey(); as errorKey) {
-            <p-message severity="error" [text]="localization.translate(errorKey)" />
-          }
-
-          <div class="ticket-assign-actions">
-            <p-button
-              type="submit"
-              [label]="localization.translate('tickets.escalation.submit')"
-              icon="pi pi-check"
-              [disabled]="submittingEscalation()"
-            />
-            <p-button
-              type="button"
-              [label]="localization.translate('tickets.assign.cancel')"
-              severity="secondary"
-              (onClick)="cancelEscalation()"
-            />
-          </div>
-        </form>
-      }
-    </section>
-
-    <section class="ticket-detail-section">
-      <h2>{{ localization.translate('tickets.history.section') }}</h2>
-
-      @if (historyUnavailable()) {
-        <p-message severity="warn" [text]="localization.translate('tickets.history.unavailable')" />
-      } @else if (history().length === 0) {
-        <p>{{ localization.translate('tickets.history.empty') }}</p>
-      } @else {
-        <ol class="ticket-history">
-          @for (entry of history(); track entry.eventId) {
-            <li class="ticket-history-entry">
-              <div class="ticket-history-header">
-                <span class="ticket-history-event">{{ historyEventLabel(entry.eventType) }}</span>
-                <time>{{ entry.occurredAtUtc | date: 'medium' }}</time>
-              </div>
-              <div class="ticket-history-actor">
-                {{ entry.actorId ?? localization.translate('tickets.history.actorUnknown') }}
-              </div>
-              <div class="ticket-history-summary">{{ entry.summary }}</div>
-              @if (entry.reason) {
-                <div class="ticket-history-reason">
-                  {{ localization.translate('tickets.history.reason') }}: {{ entry.reason }}
-                </div>
+            <ol class="ticket-history">
+              @for (entry of history(); track entry.eventId) {
+                <li class="ticket-history-entry">
+                  <div class="ticket-history-header">
+                    <span class="ticket-history-event">{{
+                      historyEventLabel(entry.eventType)
+                    }}</span>
+                    <time>{{ entry.occurredAtUtc | date: 'medium' }}</time>
+                  </div>
+                  <div class="ticket-history-actor">
+                    {{ entry.actorId ?? localization.translate('tickets.history.actorUnknown') }}
+                  </div>
+                  <div class="ticket-history-summary">{{ entry.summary }}</div>
+                  @if (entry.reason) {
+                    <div class="ticket-history-reason">
+                      {{ localization.translate('tickets.history.reason') }}: {{ entry.reason }}
+                    </div>
+                  }
+                </li>
               }
-            </li>
-          }
-        </ol>
+            </ol>
 
-        @if (historyTotal() > historyPageSize) {
-          <p-paginator
-            [first]="(historyPage() - 1) * historyPageSize"
-            [rows]="historyPageSize"
-            [totalRecords]="historyTotal()"
-            (onPageChange)="onHistoryPageChange($event.first ?? 0)"
-          />
+            @if (historyTotal() > historyPageSize) {
+              <p-paginator
+                [first]="(historyPage() - 1) * historyPageSize"
+                [rows]="historyPageSize"
+                [totalRecords]="historyTotal()"
+                (onPageChange)="onHistoryPageChange($event.first ?? 0)"
+              />
+            }
+          }
+        </p-card>
+      </div>
+
+      <div class="ticket-workspace-side">
+        <p-card [header]="localization.translate('tickets.detail.routing')">
+          <sc-detail-grid>
+            <dt>{{ localization.translate('tickets.fields.status') }}</dt>
+            <dd>{{ statusLabel(detail.status) }}</dd>
+
+            <dt>{{ localization.translate('tickets.fields.assignedAgent') }}</dt>
+            <dd>
+              {{ detail.assignedAgentId ?? localization.translate('tickets.detail.unassigned') }}
+            </dd>
+
+            <dt>{{ localization.translate('tickets.fields.department') }}</dt>
+            <dd>{{ departmentName() ?? detail.departmentId }}</dd>
+
+            <dt>{{ localization.translate('tickets.fields.branch') }}</dt>
+            <dd>{{ branchName() ?? detail.branchId }}</dd>
+
+            <dt>{{ localization.translate('tickets.fields.escalation') }}</dt>
+            <dd>
+              @if (detail.escalationLevel > 0) {
+                <p-tag
+                  severity="warn"
+                  [value]="
+                    localization.translate('tickets.escalation.level') +
+                    ' ' +
+                    detail.escalationLevel
+                  "
+                />
+              } @else {
+                {{ localization.translate('tickets.escalation.notEscalated') }}
+              }
+            </dd>
+
+            @if (detail.escalationLevel > 0) {
+              <dt>{{ localization.translate('tickets.escalation.fields.target') }}</dt>
+              <dd>
+                @if (detail.escalationTargetType) {
+                  {{ escalationTargetTypeLabel(detail.escalationTargetType) }} —
+                }
+                {{ detail.escalationTargetId }}
+              </dd>
+
+              <dt>{{ localization.translate('tickets.escalation.fields.escalatedAt') }}</dt>
+              <dd>{{ detail.escalatedAtUtc | date: 'medium' }}</dd>
+            }
+          </sc-detail-grid>
+        </p-card>
+
+        <p-card [header]="localization.translate('tickets.detail.classification')">
+          <sc-detail-grid>
+            <dt>{{ localization.translate('tickets.fields.customer') }}</dt>
+            <dd>{{ customerName() ?? detail.customerId }}</dd>
+
+            <dt>{{ localization.translate('tickets.fields.category') }}</dt>
+            <dd>
+              {{ categoryName() ?? detail.categoryId }}
+              @if (detail.categoryIsActive === false) {
+                <p-tag
+                  severity="warn"
+                  [value]="localization.translate('tickets.detail.inactiveReference')"
+                />
+              }
+            </dd>
+
+            <dt>{{ localization.translate('tickets.fields.subcategory') }}</dt>
+            <dd>{{ detail.subcategoryId ?? localization.translate('tickets.detail.none') }}</dd>
+
+            <dt>{{ localization.translate('tickets.fields.priority') }}</dt>
+            <dd>
+              {{ priorityName() ?? detail.priorityId }}
+              @if (detail.priorityIsActive === false) {
+                <p-tag
+                  severity="warn"
+                  [value]="localization.translate('tickets.detail.inactiveReference')"
+                />
+              }
+            </dd>
+
+            <dt>{{ localization.translate('tickets.fields.channel') }}</dt>
+            <dd>{{ detail.channel }}</dd>
+          </sc-detail-grid>
+        </p-card>
+
+        <p-card [header]="localization.translate('tickets.detail.timestamps')">
+          <sc-detail-grid>
+            <dt>{{ localization.translate('tickets.fields.createdAt') }}</dt>
+            <dd>{{ detail.createdAtUtc | date: 'medium' }}</dd>
+
+            <dt>{{ localization.translate('tickets.fields.updatedAt') }}</dt>
+            <dd>
+              @if (detail.updatedAtUtc) {
+                {{ detail.updatedAtUtc | date: 'medium' }}
+              } @else {
+                {{ localization.translate('tickets.detail.neverUpdated') }}
+              }
+            </dd>
+          </sc-detail-grid>
+        </p-card>
+      </div>
+    </div>
+
+    <p-dialog
+      [visible]="changingStatus()"
+      (visibleChange)="onStatusDialogVisibleChange($event)"
+      [modal]="true"
+      [draggable]="false"
+      [dismissableMask]="true"
+      [style]="{ width: 'min(32rem, 92vw)' }"
+      [header]="localization.translate('tickets.status.change')"
+    >
+      <form class="sc-form" [formGroup]="statusForm" (ngSubmit)="submitStatusChange()">
+        <label for="targetStatus">{{
+          localization.translate('tickets.status.fields.targetStatus')
+        }}</label>
+        <p-select
+          id="targetStatus"
+          formControlName="targetStatus"
+          [options]="statusOptions()"
+          optionLabel="label"
+          optionValue="value"
+          (onChange)="onStatusSelected($event.value)"
+        />
+
+        <label for="statusReason">
+          {{ localization.translate('tickets.status.fields.reason') }}
+          @if (!statusReasonRequired()) {
+            <span class="field-optional">{{
+              localization.translate('tickets.assign.optional')
+            }}</span>
+          }
+        </label>
+        <textarea pTextarea id="statusReason" formControlName="reason" rows="3"></textarea>
+
+        @if (statusErrorKey(); as errorKey) {
+          <p-message severity="error" [text]="localization.translate(errorKey)" />
         }
-      }
-    </section>
 
-    <section class="ticket-detail-section">
-      <h2>{{ localization.translate('tickets.detail.timestamps') }}</h2>
-      <dl class="ticket-detail-fields">
-        <dt>{{ localization.translate('tickets.fields.createdAt') }}</dt>
-        <dd>{{ detail.createdAtUtc | date: 'medium' }}</dd>
+        <div class="sc-form-actions">
+          <p-button
+            type="button"
+            [label]="localization.translate('tickets.assign.cancel')"
+            severity="secondary"
+            (onClick)="cancelStatusChange()"
+          />
+          <p-button
+            type="submit"
+            [label]="localization.translate('tickets.status.submit')"
+            icon="pi pi-check"
+            [disabled]="submittingStatus()"
+          />
+        </div>
+      </form>
+    </p-dialog>
 
-        <dt>{{ localization.translate('tickets.fields.updatedAt') }}</dt>
-        <dd>
-          @if (detail.updatedAtUtc) {
-            {{ detail.updatedAtUtc | date: 'medium' }}
-          } @else {
-            {{ localization.translate('tickets.detail.neverUpdated') }}
+    <p-dialog
+      [visible]="assigning()"
+      (visibleChange)="onAssignDialogVisibleChange($event)"
+      [modal]="true"
+      [draggable]="false"
+      [dismissableMask]="true"
+      [style]="{ width: 'min(32rem, 92vw)' }"
+      [header]="
+        detail.assignedAgentId
+          ? localization.translate('tickets.assign.reassign')
+          : localization.translate('tickets.assign.assign')
+      "
+    >
+      <form class="sc-form" [formGroup]="assignForm" (ngSubmit)="submitAssignment()">
+        <label for="targetAgentId">{{
+          localization.translate('tickets.assign.fields.agent')
+        }}</label>
+        <p-select
+          id="targetAgentId"
+          formControlName="targetAgentId"
+          [options]="agentOptions()"
+          optionLabel="label"
+          optionValue="value"
+        />
+        @if (agentsUnavailable()) {
+          <small class="field-error">{{
+            localization.translate('tickets.assign.agentsUnavailable')
+          }}</small>
+        }
+
+        <label for="assignReason">
+          {{ localization.translate('tickets.assign.fields.reason') }}
+          @if (!reasonRequired()) {
+            <span class="field-optional">{{
+              localization.translate('tickets.assign.optional')
+            }}</span>
           }
-        </dd>
-      </dl>
-    </section>
-  }
+        </label>
+        <textarea pTextarea id="assignReason" formControlName="reason" rows="3"></textarea>
 
-  <div class="ticket-detail-actions">
-    <p-button
-      [label]="localization.translate('tickets.detail.back')"
-      icon="pi pi-arrow-left"
-      severity="secondary"
-      routerLink="/tickets"
-    />
-  </div>
-</main>
+        @if (assignmentErrorKey(); as errorKey) {
+          <p-message severity="error" [text]="localization.translate(errorKey)" />
+        }
+
+        <div class="sc-form-actions">
+          <p-button
+            type="button"
+            [label]="localization.translate('tickets.assign.cancel')"
+            severity="secondary"
+            (onClick)="cancelAssignment()"
+          />
+          <p-button
+            type="submit"
+            [label]="localization.translate('tickets.assign.submit')"
+            icon="pi pi-check"
+            [disabled]="submittingAssignment()"
+          />
+        </div>
+      </form>
+    </p-dialog>
+
+    <p-dialog
+      [visible]="escalating()"
+      (visibleChange)="onEscalationDialogVisibleChange($event)"
+      [modal]="true"
+      [draggable]="false"
+      [dismissableMask]="true"
+      [style]="{ width: 'min(32rem, 92vw)' }"
+      [header]="localization.translate('tickets.escalation.escalate')"
+    >
+      <form class="sc-form" [formGroup]="escalationForm" (ngSubmit)="submitEscalation()">
+        <label for="escalationTargetType">{{
+          localization.translate('tickets.escalation.fields.targetType')
+        }}</label>
+        <p-select
+          id="escalationTargetType"
+          formControlName="targetType"
+          [options]="escalationTargetTypeOptions()"
+          optionLabel="label"
+          optionValue="value"
+          (onChange)="onEscalationTargetTypeSelected($event.value)"
+        />
+
+        <label for="escalationTargetId">{{
+          localization.translate('tickets.escalation.fields.target')
+        }}</label>
+        <p-select
+          id="escalationTargetId"
+          formControlName="targetId"
+          [options]="escalationTargetOptions()"
+          optionLabel="label"
+          optionValue="value"
+        />
+        @if (escalationTargetsUnavailable()) {
+          <small class="field-error">{{
+            localization.translate('tickets.escalation.targetsUnavailable')
+          }}</small>
+        }
+
+        <label for="escalationReason">{{
+          localization.translate('tickets.escalation.fields.reason')
+        }}</label>
+        <textarea pTextarea id="escalationReason" formControlName="reason" rows="3"></textarea>
+
+        @if (escalationErrorKey(); as errorKey) {
+          <p-message severity="error" [text]="localization.translate(errorKey)" />
+        }
+
+        <div class="sc-form-actions">
+          <p-button
+            type="button"
+            [label]="localization.translate('tickets.assign.cancel')"
+            severity="secondary"
+            (onClick)="cancelEscalation()"
+          />
+          <p-button
+            type="submit"
+            [label]="localization.translate('tickets.escalation.submit')"
+            icon="pi pi-check"
+            [disabled]="submittingEscalation()"
+          />
+        </div>
+      </form>
+    </p-dialog>
+  }
+</sc-page-container>

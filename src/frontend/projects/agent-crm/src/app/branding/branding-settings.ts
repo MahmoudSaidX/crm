@@ -1,3 +1,5 @@
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -5,7 +7,6 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
 import { AuthorizationState } from '../auth/authorization.state';
 import {
   BrandingLogoKind,
@@ -18,11 +19,13 @@ const LOGO_KINDS: readonly BrandingLogoKind[] = ['primary', 'compact', 'favicon'
 @Component({
   selector: 'crm-branding-settings',
   imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
     ReactiveFormsModule,
     ButtonModule,
     InputTextModule,
     MessageModule,
-    AgentLanguageSwitcher,
   ],
   templateUrl: './branding-settings.html',
   styleUrl: './branding-settings.scss',

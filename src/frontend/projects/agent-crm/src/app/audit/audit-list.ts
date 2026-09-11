@@ -1,4 +1,5 @@
 import { DatePipe } from '@angular/common';
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -7,18 +8,20 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { AuditRecord, AuditService } from './audit.service';
 import { LocalizationService } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 
 @Component({
   selector: 'crm-audit-list',
   imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
     RouterLink,
     FormsModule,
     ButtonModule,
     InputTextModule,
     TableModule,
     DatePipe,
-    AgentLanguageSwitcher,
   ],
   templateUrl: './audit-list.html',
   styleUrl: './audit-list.scss',

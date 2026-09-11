@@ -1,3 +1,4 @@
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -6,12 +7,20 @@ import { TagModule } from 'primeng/tag';
 import { TicketCategory, TicketCategoriesService } from './ticket-categories.service';
 import { Department, DepartmentsService } from '../departments/departments.service';
 import { LocalizationService } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 import { AuthorizationState } from '../auth/authorization.state';
 
 @Component({
   selector: 'crm-ticket-category-list',
-  imports: [RouterLink, ButtonModule, TableModule, TagModule, AgentLanguageSwitcher],
+  imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
+    RouterLink,
+    ButtonModule,
+    TableModule,
+    TagModule,
+  ],
   templateUrl: './ticket-category-list.html',
   styleUrl: './ticket-category-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

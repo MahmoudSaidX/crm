@@ -1,116 +1,119 @@
-<main class="ticket-create-form-page">
-  <header>
-    <h1>{{ localization.translate('ticketCreate.title') }}</h1>
-    <crm-agent-language-switcher />
-  </header>
+<sc-page-container>
+  <sc-page-header [title]="localization.translate('ticketCreate.title')"> </sc-page-header>
 
   @if (errorKey(); as key) {
     <p-message severity="error">{{ localization.translate(key) }}</p-message>
   }
 
-  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-    <label for="customer">{{ localization.translate('ticketCreate.fields.customer') }}</label>
-    <p-autoComplete
-      id="customer"
-      formControlName="customer"
-      [suggestions]="customerSuggestions()"
-      (completeMethod)="searchCustomers($event)"
-      [optionLabel]="customerLabel"
-      [dropdown]="false"
-    />
-    @if (form.controls.customer.touched && form.controls.customer.invalid) {
-      <small class="field-error">{{
-        localization.translate('ticketCreate.validation.customer')
-      }}</small>
-    }
+  <p-card styleClass="sc-form-card">
+    <form class="sc-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label for="customer">{{ localization.translate('ticketCreate.fields.customer') }}</label>
+      <p-autoComplete
+        id="customer"
+        formControlName="customer"
+        [suggestions]="customerSuggestions()"
+        (completeMethod)="searchCustomers($event)"
+        [optionLabel]="customerLabel"
+        [dropdown]="false"
+      />
+      @if (form.controls.customer.touched && form.controls.customer.invalid) {
+        <small class="field-error">{{
+          localization.translate('ticketCreate.validation.customer')
+        }}</small>
+      }
 
-    <label for="subject">{{ localization.translate('ticketCreate.fields.subject') }}</label>
-    <input pInputText id="subject" type="text" formControlName="subject" />
-    @if (form.controls.subject.touched && form.controls.subject.invalid) {
-      <small class="field-error">{{
-        localization.translate('ticketCreate.validation.subject')
-      }}</small>
-    }
+      <label for="subject">{{ localization.translate('ticketCreate.fields.subject') }}</label>
+      <input pInputText id="subject" type="text" formControlName="subject" />
+      @if (form.controls.subject.touched && form.controls.subject.invalid) {
+        <small class="field-error">{{
+          localization.translate('ticketCreate.validation.subject')
+        }}</small>
+      }
 
-    <label for="description">{{ localization.translate('ticketCreate.fields.description') }}</label>
-    <textarea pTextarea id="description" formControlName="description" rows="4"></textarea>
-    @if (form.controls.description.touched && form.controls.description.invalid) {
-      <small class="field-error">{{
-        localization.translate('ticketCreate.validation.description')
-      }}</small>
-    }
+      <label for="description">{{
+        localization.translate('ticketCreate.fields.description')
+      }}</label>
+      <textarea pTextarea id="description" formControlName="description" rows="4"></textarea>
+      @if (form.controls.description.touched && form.controls.description.invalid) {
+        <small class="field-error">{{
+          localization.translate('ticketCreate.validation.description')
+        }}</small>
+      }
 
-    <label for="categoryId">{{ localization.translate('ticketCreate.fields.category') }}</label>
-    <p-select
-      id="categoryId"
-      formControlName="categoryId"
-      [options]="categoryOptions()"
-      optionLabel="label"
-      optionValue="value"
-    />
-    @if (form.controls.categoryId.touched && form.controls.categoryId.invalid) {
-      <small class="field-error">{{
-        localization.translate('ticketCreate.validation.category')
-      }}</small>
-    }
+      <label for="categoryId">{{ localization.translate('ticketCreate.fields.category') }}</label>
+      <p-select
+        id="categoryId"
+        formControlName="categoryId"
+        [options]="categoryOptions()"
+        optionLabel="label"
+        optionValue="value"
+      />
+      @if (form.controls.categoryId.touched && form.controls.categoryId.invalid) {
+        <small class="field-error">{{
+          localization.translate('ticketCreate.validation.category')
+        }}</small>
+      }
 
-    <label for="priorityId">{{ localization.translate('ticketCreate.fields.priority') }}</label>
-    <p-select
-      id="priorityId"
-      formControlName="priorityId"
-      [options]="priorityOptions()"
-      optionLabel="label"
-      optionValue="value"
-    />
-    @if (form.controls.priorityId.touched && form.controls.priorityId.invalid) {
-      <small class="field-error">{{
-        localization.translate('ticketCreate.validation.priority')
-      }}</small>
-    }
+      <label for="priorityId">{{ localization.translate('ticketCreate.fields.priority') }}</label>
+      <p-select
+        id="priorityId"
+        formControlName="priorityId"
+        [options]="priorityOptions()"
+        optionLabel="label"
+        optionValue="value"
+      />
+      @if (form.controls.priorityId.touched && form.controls.priorityId.invalid) {
+        <small class="field-error">{{
+          localization.translate('ticketCreate.validation.priority')
+        }}</small>
+      }
 
-    <label for="departmentId">{{ localization.translate('ticketCreate.fields.department') }}</label>
-    <p-select
-      id="departmentId"
-      formControlName="departmentId"
-      [options]="departmentOptions()"
-      optionLabel="label"
-      optionValue="value"
-    />
-    @if (form.controls.departmentId.touched && form.controls.departmentId.invalid) {
-      <small class="field-error">{{
-        localization.translate('ticketCreate.validation.department')
-      }}</small>
-    }
+      <label for="departmentId">{{
+        localization.translate('ticketCreate.fields.department')
+      }}</label>
+      <p-select
+        id="departmentId"
+        formControlName="departmentId"
+        [options]="departmentOptions()"
+        optionLabel="label"
+        optionValue="value"
+      />
+      @if (form.controls.departmentId.touched && form.controls.departmentId.invalid) {
+        <small class="field-error">{{
+          localization.translate('ticketCreate.validation.department')
+        }}</small>
+      }
 
-    <label for="branchId">{{ localization.translate('ticketCreate.fields.branch') }}</label>
-    <p-select
-      id="branchId"
-      formControlName="branchId"
-      [options]="branchOptions()"
-      optionLabel="label"
-      optionValue="value"
-    />
-    @if (form.controls.branchId.touched && form.controls.branchId.invalid) {
-      <small class="field-error">{{
-        localization.translate('ticketCreate.validation.branch')
-      }}</small>
-    }
+      <label for="branchId">{{ localization.translate('ticketCreate.fields.branch') }}</label>
+      <p-select
+        id="branchId"
+        formControlName="branchId"
+        [options]="branchOptions()"
+        optionLabel="label"
+        optionValue="value"
+      />
+      @if (form.controls.branchId.touched && form.controls.branchId.invalid) {
+        <small class="field-error">{{
+          localization.translate('ticketCreate.validation.branch')
+        }}</small>
+      }
 
-    <label for="channel">{{ localization.translate('ticketCreate.fields.channel') }}</label>
-    <p-select
-      id="channel"
-      formControlName="channel"
-      [options]="channelOptions"
-      optionLabel="label"
-      optionValue="value"
-    />
+      <label for="channel">{{ localization.translate('ticketCreate.fields.channel') }}</label>
+      <p-select
+        id="channel"
+        formControlName="channel"
+        [options]="channelOptions"
+        optionLabel="label"
+        optionValue="value"
+      />
 
-    <p-button
-      type="submit"
-      [label]="localization.translate('common.actions.save')"
-      icon="pi pi-check"
-      [loading]="submitting()"
-      [disabled]="form.invalid"
-    />
-  </form>
-</main>
+      <p-button
+        type="submit"
+        [label]="localization.translate('common.actions.save')"
+        icon="pi pi-check"
+        [loading]="submitting()"
+        [disabled]="form.invalid"
+      />
+    </form>
+  </p-card>
+</sc-page-container>

@@ -4,7 +4,7 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { AuditRecord, AuditService } from './audit.service';
 import { LocalizationService } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 
 /**
  * Read-only detail view: no form, no edit — audit records are append-only
@@ -14,7 +14,7 @@ import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
  */
 @Component({
   selector: 'crm-audit-detail',
-  imports: [RouterLink, ButtonModule, DatePipe, KeyValuePipe, AgentLanguageSwitcher],
+  imports: [PageContainer, PageHeader, RouterLink, ButtonModule, DatePipe, KeyValuePipe],
   templateUrl: './audit-detail.html',
   styleUrl: './audit-detail.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

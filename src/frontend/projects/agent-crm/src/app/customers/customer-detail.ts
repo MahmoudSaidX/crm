@@ -26,7 +26,9 @@ import {
 import { DepartmentsService } from '../departments/departments.service';
 import { BranchesService } from '../branches/branches.service';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { DetailGrid, PageContainer, PageHeader, StatePanel } from '@squad-crm/shared-ui';
+import { CardModule } from 'primeng/card';
+import { TabsModule } from 'primeng/tabs';
 import { AuthorizationState } from '../auth/authorization.state';
 
 interface SelectOption {
@@ -49,7 +51,12 @@ interface SelectOption {
     TagModule,
     TextareaModule,
     FileUploadModule,
-    AgentLanguageSwitcher,
+    CardModule,
+    TabsModule,
+    PageContainer,
+    PageHeader,
+    DetailGrid,
+    StatePanel,
   ],
   templateUrl: './customer-detail.html',
   styleUrl: './customer-detail.scss',

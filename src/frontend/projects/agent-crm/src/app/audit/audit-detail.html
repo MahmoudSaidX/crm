@@ -1,8 +1,5 @@
-<main class="audit-detail-page">
-  <header class="audit-detail-header">
-    <h1>{{ localization.translate('audit.detail.title') }}</h1>
-    <crm-agent-language-switcher />
-  </header>
+<sc-page-container>
+  <sc-page-header [title]="localization.translate('audit.detail.title')"> </sc-page-header>
 
   @if (notFound()) {
     <p>{{ localization.translate('audit.detail.notFound') }}</p>
@@ -45,4 +42,4 @@
       routerLink="/audit"
     />
   </div>
-</main>
+</sc-page-container>

@@ -2,127 +2,75 @@
   display: block;
 }
 
-.ticket-detail-page {
-  box-sizing: border-box;
-  padding: clamp(1rem, 4vw, 2rem);
-  max-inline-size: 56rem;
-}
-
-.ticket-detail-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-block-end: 1rem;
-  flex-wrap: wrap;
-}
-
-.ticket-detail-header h1 {
-  margin: 0;
-}
-
-.ticket-detail-section {
-  margin-block-end: 1.5rem;
-}
-
-.ticket-detail-section h2 {
-  font-size: 1.1rem;
-  margin-block-end: 0.5rem;
-}
-
-.ticket-detail-fields {
+.ticket-workspace {
   display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 0.5rem 1rem;
-  margin: 0;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 1.5rem;
 }
 
-.ticket-detail-fields dt {
-  font-weight: 600;
-  opacity: 0.75;
+.ticket-workspace-main,
+.ticket-workspace-side {
+  display: grid;
+  gap: 1.5rem;
+  min-inline-size: 0;
 }
 
-.ticket-detail-fields dd {
-  margin: 0;
+.ticket-status-tags {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
   flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
 }
 
 .ticket-detail-description {
+  margin: 0;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
-/* Stack the label above its value once the two-column grid stops fitting. */
-@media (max-width: 30rem) {
-  .ticket-detail-fields {
-    grid-template-columns: 1fr;
-    gap: 0.25rem;
-  }
-
-  .ticket-detail-fields dd {
-    margin-block-end: 0.5rem;
-  }
-}
-
-.ticket-detail-actions {
-  margin-block-start: 1rem;
-}
-
-/* Inline assignment form (CRM-136) — same stacked-field shape the create form
-   uses, so the two screens read the same in both LTR and RTL. */
-.ticket-assign-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-block-start: 1rem;
-  max-width: 30rem;
-}
-
-.ticket-assign-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-block-start: 0.5rem;
-}
-
-.field-optional {
-  margin-inline-start: 0.25rem;
-  opacity: 0.7;
-}
-
-.field-error {
-  color: var(--p-red-600);
-}
-
-/* Ticket history timeline (CRM-139). List-shaped rather than a decorated rail:
-   it must stay readable in both LTR and RTL, so it uses logical properties
-   only and no direction-specific offsets. */
 .ticket-history {
-  list-style: none;
+  display: grid;
+  gap: 1rem;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  list-style: none;
 }
 
 .ticket-history-entry {
-  border-inline-start: 3px solid var(--p-primary-color, #6366f1);
-  padding-inline-start: 0.75rem;
+  padding-inline-start: 1rem;
+  border-inline-start: 2px solid var(--surface-border);
 }
 
 .ticket-history-header {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  align-items: baseline;
   justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ticket-history-event {
   font-weight: 600;
 }
 
-.ticket-history-actor,
-.ticket-history-reason {
+.ticket-history-header time,
+.ticket-history-actor {
+  color: var(--text-color-secondary);
   font-size: 0.875rem;
-  opacity: 0.8;
+}
+
+.ticket-history-summary {
+  margin-block-start: 0.25rem;
+}
+
+.ticket-history-reason {
+  margin-block-start: 0.25rem;
+  color: var(--text-color-secondary);
+}
+
+@media (max-width: 64rem) {
+  .ticket-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

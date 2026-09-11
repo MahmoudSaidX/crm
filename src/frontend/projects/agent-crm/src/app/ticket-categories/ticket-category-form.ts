@@ -1,3 +1,4 @@
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -10,7 +11,7 @@ import { SelectModule } from 'primeng/select';
 import { TicketCategoriesService } from './ticket-categories.service';
 import { DepartmentsService } from '../departments/departments.service';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 
 interface SelectOption {
   readonly label: string;
@@ -20,16 +21,17 @@ interface SelectOption {
 @Component({
   selector: 'crm-ticket-category-form',
   imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
     ReactiveFormsModule,
     ButtonModule,
     InputTextModule,
     InputNumberModule,
     MessageModule,
     SelectModule,
-    AgentLanguageSwitcher,
   ],
   templateUrl: './ticket-category-form.html',
-  styleUrl: './ticket-category-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TicketCategoryForm {

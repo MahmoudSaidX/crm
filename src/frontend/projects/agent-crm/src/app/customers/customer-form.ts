@@ -1,3 +1,4 @@
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,7 +11,7 @@ import { CustomerPreferredLanguage, CustomersService } from './customers.service
 import { DepartmentsService } from '../departments/departments.service';
 import { BranchesService } from '../branches/branches.service';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 
 interface SelectOption {
   readonly label: string;
@@ -20,15 +21,16 @@ interface SelectOption {
 @Component({
   selector: 'crm-customer-form',
   imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
     ReactiveFormsModule,
     ButtonModule,
     InputTextModule,
     MessageModule,
     SelectModule,
-    AgentLanguageSwitcher,
   ],
   templateUrl: './customer-form.html',
-  styleUrl: './customer-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CustomerForm {

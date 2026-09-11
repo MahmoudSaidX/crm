@@ -1,3 +1,4 @@
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,21 +10,22 @@ import { MessageModule } from 'primeng/message';
 import { TextareaModule } from 'primeng/textarea';
 import { TicketPrioritiesService } from './ticket-priorities.service';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 
 @Component({
   selector: 'crm-ticket-priority-form',
   imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
     ReactiveFormsModule,
     ButtonModule,
     InputTextModule,
     InputNumberModule,
     MessageModule,
     TextareaModule,
-    AgentLanguageSwitcher,
   ],
   templateUrl: './ticket-priority-form.html',
-  styleUrl: './ticket-priority-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TicketPriorityForm {

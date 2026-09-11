@@ -1,3 +1,4 @@
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -7,19 +8,21 @@ import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { StaffUser, StaffUsersService } from './staff-users.service';
 import { LocalizationService } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 import { AuthorizationState } from '../auth/authorization.state';
 
 @Component({
   selector: 'crm-staff-user-list',
   imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
     RouterLink,
     FormsModule,
     ButtonModule,
     InputTextModule,
     TableModule,
     TagModule,
-    AgentLanguageSwitcher,
   ],
   templateUrl: './staff-user-list.html',
   styleUrl: './staff-user-list.scss',

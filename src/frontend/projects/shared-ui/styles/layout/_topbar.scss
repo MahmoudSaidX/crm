@@ -1,0 +1,140 @@
+@use 'mixins' as *;
+
+.layout-topbar {
+  position: fixed;
+  z-index: 997;
+  inset-block-start: 0;
+  inset-inline: 0;
+  display: flex;
+  block-size: 4rem;
+  align-items: center;
+  padding-inline: 2rem;
+  background-color: var(--surface-card);
+  border-block-end: 1px solid var(--surface-border);
+
+  .layout-topbar-logo-container {
+    display: flex;
+    inline-size: 20rem;
+    align-items: center;
+    min-inline-size: 0;
+  }
+
+  .layout-topbar-logo {
+    display: inline-flex;
+    min-inline-size: 0;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: var(--content-border-radius);
+    color: var(--text-color);
+    font-size: 1.25rem;
+    font-weight: 500;
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    img {
+      block-size: 2rem;
+      inline-size: auto;
+    }
+
+    &:focus-visible {
+      @include focused();
+    }
+  }
+
+  .layout-topbar-action {
+    display: inline-flex;
+    inline-size: 2.5rem;
+    block-size: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 0 none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: background-color var(--element-transition-duration);
+
+    &:hover {
+      background-color: var(--surface-hover);
+    }
+
+    &:focus-visible {
+      @include focused();
+    }
+
+    i {
+      font-size: 1.25rem;
+    }
+
+    span {
+      display: none;
+      font-size: 1rem;
+    }
+  }
+
+  .layout-menu-button {
+    margin-inline-end: 0.5rem;
+  }
+
+  .layout-topbar-menu-button {
+    display: none;
+  }
+
+  .layout-topbar-actions {
+    display: flex;
+    min-inline-size: 0;
+    align-items: center;
+    gap: 0.5rem;
+    margin-inline-start: auto;
+  }
+
+  .layout-topbar-menu-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 991px) {
+  .layout-topbar {
+    padding-inline: 1rem;
+
+    .layout-topbar-logo-container {
+      inline-size: auto;
+    }
+
+    .layout-topbar-menu-button {
+      display: inline-flex;
+    }
+
+    .layout-topbar-menu.sc-topbar-menu-collapsed {
+      display: none;
+    }
+
+    .layout-topbar-menu {
+      position: absolute;
+      inset-block-start: 4rem;
+      inset-inline-end: 1rem;
+      min-inline-size: 15rem;
+      padding: 1rem;
+      border: 1px solid var(--surface-border);
+      border-radius: var(--content-border-radius);
+      background-color: var(--surface-overlay);
+      box-shadow:
+        0 3px 5px rgba(0, 0, 0, 0.02),
+        0 0 2px rgba(0, 0, 0, 0.05),
+        0 1px 4px rgba(0, 0, 0, 0.08);
+      transform-origin: top;
+
+      .layout-topbar-menu-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+      }
+    }
+  }
+}

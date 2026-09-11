@@ -1,87 +1,89 @@
-<main class="roles-page">
-  <header class="roles-header">
-    <h1>{{ localization.translate('roles.title') }}</h1>
-    <crm-agent-language-switcher />
-    @if (authorization.has('roles.manage')) {
-      <p-button
-        [label]="localization.translate('roles.new')"
-        icon="pi pi-plus"
-        routerLink="/roles/new"
-      />
-    }
-  </header>
+<sc-page-container>
+  <sc-page-header [title]="localization.translate('roles.title')">
+    <div actions>
+      @if (authorization.has('roles.manage')) {
+        <p-button
+          [label]="localization.translate('roles.new')"
+          icon="pi pi-plus"
+          routerLink="/roles/new"
+        />
+      }
+    </div>
+  </sc-page-header>
 
-  <p-table
-    [value]="roles()"
-    [lazy]="true"
-    [paginator]="true"
-    [rows]="pageSize"
-    [totalRecords]="totalRecords()"
-    [paginatorLocale]="localization.locale()"
-    [loading]="loading()"
-    [scrollable]="true"
-    (onLazyLoad)="onLazyLoad($event)"
-    dataKey="id"
-  >
-    <ng-template #header>
-      <tr>
-        <th style="min-width: 12rem">{{ localization.translate('roles.fields.name') }}</th>
-        <th style="min-width: 10rem">{{ localization.translate('roles.fields.code') }}</th>
-        <th style="min-width: 16rem">{{ localization.translate('roles.fields.description') }}</th>
-        <th style="min-width: 8rem">{{ localization.translate('roles.fields.status') }}</th>
-        <th style="min-width: 15rem"></th>
-      </tr>
-    </ng-template>
-    <ng-template #body let-role>
-      <tr>
-        <td>{{ role.name }}</td>
-        <td>{{ role.code }}</td>
-        <td>{{ role.description || '—' }}</td>
-        <td>
-          <p-tag
-            [value]="
-              localization.translate(
-                role.isActive ? 'common.status.active' : 'common.status.inactive'
-              )
-            "
-            [severity]="role.isActive ? 'success' : 'danger'"
-          />
-        </td>
-        <td class="row-actions">
-          @if (authorization.has('roles.manage')) {
-            <p-button
-              [label]="localization.translate('roles.permissions.action')"
-              icon="pi pi-lock"
-              severity="secondary"
-              size="small"
-              [routerLink]="['/roles', role.id, 'permissions']"
-            />
-            <p-button
-              [label]="localization.translate('common.actions.edit')"
-              icon="pi pi-pencil"
-              severity="secondary"
-              size="small"
-              [routerLink]="['/roles', role.id, 'edit']"
-            />
-            <p-button
-              [label]="
+  <p-card>
+    <p-table
+      [value]="roles()"
+      [lazy]="true"
+      [paginator]="true"
+      [rows]="pageSize"
+      [totalRecords]="totalRecords()"
+      [paginatorLocale]="localization.locale()"
+      [loading]="loading()"
+      [scrollable]="true"
+      (onLazyLoad)="onLazyLoad($event)"
+      dataKey="id"
+    >
+      <ng-template #header>
+        <tr>
+          <th style="min-width: 12rem">{{ localization.translate('roles.fields.name') }}</th>
+          <th style="min-width: 10rem">{{ localization.translate('roles.fields.code') }}</th>
+          <th style="min-width: 16rem">{{ localization.translate('roles.fields.description') }}</th>
+          <th style="min-width: 8rem">{{ localization.translate('roles.fields.status') }}</th>
+          <th style="min-width: 15rem"></th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-role>
+        <tr>
+          <td>{{ role.name }}</td>
+          <td>{{ role.code }}</td>
+          <td>{{ role.description || '—' }}</td>
+          <td>
+            <p-tag
+              [value]="
                 localization.translate(
-                  role.isActive ? 'common.actions.deactivate' : 'common.actions.activate'
+                  role.isActive ? 'common.status.active' : 'common.status.inactive'
                 )
               "
-              [icon]="role.isActive ? 'pi pi-ban' : 'pi pi-check'"
-              [severity]="role.isActive ? 'danger' : 'success'"
-              size="small"
-              (onClick)="toggleActive(role)"
+              [severity]="role.isActive ? 'success' : 'danger'"
             />
-          }
-        </td>
-      </tr>
-    </ng-template>
-    <ng-template #emptymessage>
-      <tr>
-        <td colspan="5">{{ localization.translate('roles.empty') }}</td>
-      </tr>
-    </ng-template>
-  </p-table>
-</main>
+          </td>
+          <td class="row-actions">
+            @if (authorization.has('roles.manage')) {
+              <p-button
+                [label]="localization.translate('roles.permissions.action')"
+                icon="pi pi-lock"
+                severity="secondary"
+                size="small"
+                [routerLink]="['/roles', role.id, 'permissions']"
+              />
+              <p-button
+                [label]="localization.translate('common.actions.edit')"
+                icon="pi pi-pencil"
+                severity="secondary"
+                size="small"
+                [routerLink]="['/roles', role.id, 'edit']"
+              />
+              <p-button
+                [label]="
+                  localization.translate(
+                    role.isActive ? 'common.actions.deactivate' : 'common.actions.activate'
+                  )
+                "
+                [icon]="role.isActive ? 'pi pi-ban' : 'pi pi-check'"
+                [severity]="role.isActive ? 'danger' : 'success'"
+                size="small"
+                (onClick)="toggleActive(role)"
+              />
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="5">{{ localization.translate('roles.empty') }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</sc-page-container>

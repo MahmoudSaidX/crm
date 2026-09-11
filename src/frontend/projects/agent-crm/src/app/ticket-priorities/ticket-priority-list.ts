@@ -1,3 +1,4 @@
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -5,12 +6,20 @@ import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TicketPriority, TicketPrioritiesService } from './ticket-priorities.service';
 import { LocalizationService } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 import { AuthorizationState } from '../auth/authorization.state';
 
 @Component({
   selector: 'crm-ticket-priority-list',
-  imports: [RouterLink, ButtonModule, TableModule, TagModule, AgentLanguageSwitcher],
+  imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
+    RouterLink,
+    ButtonModule,
+    TableModule,
+    TagModule,
+  ],
   templateUrl: './ticket-priority-list.html',
   styleUrl: './ticket-priority-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,0 +1,23 @@
+<ul class="layout-menu" [attr.aria-label]="navigationLabel()">
+  @for (group of items(); track group.label) {
+    @if (group.items?.length) {
+      <li class="layout-root-menuitem">
+        <div class="layout-menuitem-root-text">{{ group.label }}</div>
+        <ul>
+          @for (item of group.items ?? []; track item.routerLink) {
+            <li>
+              <a
+                [routerLink]="item.routerLink"
+                routerLinkActive="active-route"
+                [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+              >
+                <i class="layout-menuitem-icon {{ item.icon }}" aria-hidden="true"></i>
+                <span class="layout-menuitem-text">{{ item.label }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </li>
+    }
+  }
+</ul>

@@ -1,3 +1,4 @@
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +13,7 @@ import { Ticket, TicketStatus } from '../ticket-create/ticket-create.service';
 import { TicketCategoriesService } from '../ticket-categories/ticket-categories.service';
 import { TicketPrioritiesService } from '../ticket-priorities/ticket-priorities.service';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 
 interface SelectOption {
   readonly label: string;
@@ -55,6 +56,9 @@ const SORT_OPTIONS: Readonly<Record<string, SortOption>> = {
 @Component({
   selector: 'crm-my-tickets',
   imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
     DatePipe,
     FormsModule,
     RouterLink,
@@ -63,7 +67,6 @@ const SORT_OPTIONS: Readonly<Record<string, SortOption>> = {
     SelectModule,
     TableModule,
     TagModule,
-    AgentLanguageSwitcher,
   ],
   templateUrl: './my-tickets.html',
   styleUrl: './my-tickets.scss',
