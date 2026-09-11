@@ -121,6 +121,74 @@
       </div>
 
       <div class="ticket-workspace-side">
+        @if (customer(); as ctxCustomer) {
+          <p-card [header]="localization.translate('tickets.customerContext.section')">
+            <sc-detail-grid>
+              <dt>{{ localization.translate('tickets.customerContext.fields.customerNumber') }}</dt>
+              <dd>{{ ctxCustomer.customerNumber }}</dd>
+
+              <dt>{{ localization.translate('tickets.customerContext.fields.name') }}</dt>
+              <dd>{{ ctxCustomer.firstName }} {{ ctxCustomer.lastName }}</dd>
+
+              <dt>{{ localization.translate('tickets.customerContext.fields.status') }}</dt>
+              <dd>
+                <p-tag
+                  [severity]="ctxCustomer.status === 'Active' ? 'success' : 'danger'"
+                  [value]="customerStatusLabel(ctxCustomer.status)"
+                />
+              </dd>
+
+              @if (ctxCustomer.departmentId) {
+                <dt>{{ localization.translate('tickets.customerContext.fields.department') }}</dt>
+                <dd>{{ customerDepartmentName() ?? ctxCustomer.departmentId }}</dd>
+              }
+
+              @if (ctxCustomer.branchId) {
+                <dt>{{ localization.translate('tickets.customerContext.fields.branch') }}</dt>
+                <dd>{{ customerBranchName() ?? ctxCustomer.branchId }}</dd>
+              }
+
+              @if (customerPrimaryEmail(); as email) {
+                <dt>{{ localization.translate('tickets.customerContext.fields.email') }}</dt>
+                <dd>{{ email }}</dd>
+              }
+
+              @if (customerPrimaryPhone(); as phone) {
+                <dt>{{ localization.translate('tickets.customerContext.fields.phone') }}</dt>
+                <dd>{{ phone }}</dd>
+              }
+            </sc-detail-grid>
+
+            <div class="ticket-customer-context-activity">
+              <h4>{{ localization.translate('tickets.customerContext.recentActivity') }}</h4>
+              @if (customerRecentActivity().length === 0) {
+                <p class="ticket-customer-context-empty">
+                  {{ localization.translate('tickets.customerContext.noRecentActivity') }}
+                </p>
+              } @else {
+                <ul class="ticket-customer-context-timeline">
+                  @for (
+                    event of customerRecentActivity();
+                    track event.relatedEntityId + event.occurredAtUtc
+                  ) {
+                    <li>
+                      <time>{{ event.occurredAtUtc | date: 'medium' }}</time>
+                      <span>{{ event.summary }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+
+            <p-button
+              [label]="localization.translate('tickets.customerContext.viewProfile')"
+              icon="pi pi-user"
+              [text]="true"
+              [routerLink]="['/customers', ctxCustomer.id]"
+            />
+          </p-card>
+        }
+
         <p-card [header]="localization.translate('tickets.detail.routing')">
           <sc-detail-grid>
             <dt>{{ localization.translate('tickets.fields.status') }}</dt>
