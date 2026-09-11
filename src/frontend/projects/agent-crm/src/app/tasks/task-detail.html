@@ -109,5 +109,71 @@
         </dd>
       </sc-detail-grid>
     </p-card>
+
+    <!--
+      Reminder (CRM-144). Gated on tasks.edit for UX only — the backend
+      additionally enforces ownership and is authoritative.
+    -->
+    @if (authorization.has('tasks.edit')) {
+      <p-card [header]="localization.translate('tasks.detail.reminder.title')">
+        <div class="task-reminder">
+          <div class="task-reminder-state">
+            <p-tag
+              [severity]="detail.reminderStatus === 'Scheduled' ? 'info' : 'secondary'"
+              [value]="reminderStatusLabel(detail.reminderStatus)"
+            />
+            @if (detail.reminderAtUtc) {
+              <span>
+                {{ localization.translate('tasks.detail.reminder.at') }}:
+                {{ detail.reminderAtUtc | date: 'medium' }}
+              </span>
+            } @else {
+              <span>{{ localization.translate('tasks.detail.reminder.none') }}</span>
+            }
+          </div>
+
+          @if (reminderErrorKey(); as reminderError) {
+            <p-message severity="error" [text]="localization.translate(reminderError)" />
+          }
+
+          @if (detail.status === 'Open') {
+            <div class="task-reminder-form">
+              <p-datepicker
+                [(ngModel)]="reminderDraft"
+                [showTime]="true"
+                [showIcon]="true"
+                [minDate]="minReminderDate"
+                [placeholder]="localization.translate('tasks.detail.reminder.placeholder')"
+                [ariaLabel]="localization.translate('tasks.detail.reminder.title')"
+                appendTo="body"
+              />
+              <p-button
+                [label]="localization.translate('tasks.detail.reminder.save')"
+                icon="pi pi-bell"
+                [loading]="submittingReminder()"
+                (onClick)="saveReminder()"
+              />
+              @if (detail.reminderAtUtc) {
+                <p-button
+                  [label]="localization.translate('tasks.detail.reminder.clear')"
+                  icon="pi pi-times"
+                  severity="secondary"
+                  [text]="true"
+                  [loading]="submittingReminder()"
+                  (onClick)="clearReminder()"
+                />
+              }
+            </div>
+            <small class="task-reminder-hint">
+              {{ localization.translate('tasks.detail.reminder.timezoneHint') }}
+            </small>
+          } @else {
+            <small class="task-reminder-hint">
+              {{ localization.translate('tasks.detail.reminder.completedHint') }}
+            </small>
+          }
+        </div>
+      </p-card>
+    }
   }
 </sc-page-container>

@@ -9,6 +9,13 @@ import { firstValueFrom } from 'rxjs';
 export type AgentTaskStatus = 'Open' | 'Completed';
 
 /**
+ * Lifecycle of a task's single optional reminder (CRM-144). Independent of
+ * `AgentTaskStatus`: completing a task cancels a scheduled reminder, and a
+ * fired reminder never changes the task's own status.
+ */
+export type AgentTaskReminderStatus = 'None' | 'Scheduled' | 'Triggered' | 'Cancelled';
+
+/**
  * Agent task projection (CRM-143). The backend returns this same shape from
  * every endpoint (create/get/list-item/update/complete/reopen), so unlike
  * `Ticket`/`TicketDetail` there is no separate list-vs-detail projection.
@@ -30,6 +37,15 @@ export interface AgentTask {
   readonly createdAtUtc: string;
   readonly updatedAtUtc: string | null;
   readonly version: number;
+
+  /**
+   * The task's single optional reminder instant, always a UTC ISO string
+   * (CRM-144). Rendered through `DatePipe`, which converts it to the
+   * viewer's own timezone — persistence and scheduling stay UTC-only.
+   */
+  readonly reminderAtUtc: string | null;
+  readonly reminderStatus: AgentTaskReminderStatus;
+  readonly reminderTriggeredAtUtc: string | null;
 }
 
 export interface CreateAgentTaskRequest {

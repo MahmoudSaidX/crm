@@ -13,3 +13,28 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+.task-reminder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.task-reminder-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Wraps to a single column on narrow/mobile widths rather than overflowing. */
+.task-reminder-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.task-reminder-hint {
+  color: var(--text-color-secondary);
+}

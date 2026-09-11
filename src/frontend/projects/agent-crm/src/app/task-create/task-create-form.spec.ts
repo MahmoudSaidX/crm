@@ -107,6 +107,9 @@ describe('TaskCreateForm', () => {
       createdAtUtc: '2026-09-11T00:00:00Z',
       updatedAtUtc: null,
       version: 1,
+      reminderAtUtc: null,
+      reminderStatus: 'None',
+      reminderTriggeredAtUtc: null,
     });
     const fixture = TestBed.createComponent(TaskCreateForm);
     fixture.detectChanges();
@@ -148,6 +151,9 @@ describe('TaskCreateForm', () => {
       createdAtUtc: '2026-09-11T00:00:00Z',
       updatedAtUtc: null,
       version: 1,
+      reminderAtUtc: null,
+      reminderStatus: 'None',
+      reminderTriggeredAtUtc: null,
     });
     const fixture = TestBed.createComponent(TaskCreateForm);
     fixture.detectChanges();

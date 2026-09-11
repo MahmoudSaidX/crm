@@ -30,12 +30,17 @@ describe('TaskDetail', () => {
     createdAtUtc: '2026-09-10T00:00:00Z',
     updatedAtUtc: null,
     version: 1,
+    reminderAtUtc: null,
+    reminderStatus: 'None',
+    reminderTriggeredAtUtc: null,
   };
 
   function configure(options: {
     get?: jasmine.Spy;
     complete?: jasmine.Spy;
     reopen?: jasmine.Spy;
+    setReminder?: jasmine.Spy;
+    clearReminder?: jasmine.Spy;
     permissions?: readonly string[];
   }): void {
     TestBed.configureTestingModule({
@@ -51,6 +56,8 @@ describe('TaskDetail', () => {
             get: options.get ?? jasmine.createSpy().and.resolveTo(task),
             complete: options.complete ?? jasmine.createSpy().and.resolveTo({}),
             reopen: options.reopen ?? jasmine.createSpy().and.resolveTo({}),
+            setReminder: options.setReminder ?? jasmine.createSpy().and.resolveTo({}),
+            clearReminder: options.clearReminder ?? jasmine.createSpy().and.resolveTo({}),
           },
         },
         {
@@ -177,6 +184,118 @@ describe('TaskDetail', () => {
     await fixture.componentInstance.complete();
 
     expect(fixture.componentInstance.actionErrorKey()).toBe('tasks.detail.errors.forbidden');
+  });
+
+  it('hides the reminder section without the tasks.edit permission', async () => {
+    configure({});
+    const fixture = await createComponent();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Save reminder');
+  });
+
+  it('offers the reminder section for an open task with tasks.edit', async () => {
+    configure({ permissions: ['tasks.edit'] });
+    const fixture = await createComponent();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Save reminder');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('No reminder set');
+  });
+
+  it('sends the reminder as a UTC instant with the version it last read', async () => {
+    const setReminder = jasmine.createSpy().and.resolveTo(task);
+    configure({ permissions: ['tasks.edit'], setReminder });
+    const fixture = await createComponent();
+    const when = new Date('2026-10-01T09:30:00Z');
+    fixture.componentInstance.reminderDraft.set(when);
+
+    await fixture.componentInstance.saveReminder();
+
+    expect(setReminder).toHaveBeenCalledWith('task-1', {
+      reminderAtUtc: '2026-10-01T09:30:00.000Z',
+      version: 1,
+    });
+  });
+
+  it('refuses to save an empty reminder', async () => {
+    const setReminder = jasmine.createSpy();
+    configure({ permissions: ['tasks.edit'], setReminder });
+    const fixture = await createComponent();
+    fixture.componentInstance.reminderDraft.set(null);
+
+    await fixture.componentInstance.saveReminder();
+
+    expect(setReminder).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.reminderErrorKey()).toBe(
+      'tasks.detail.reminder.errors.required',
+    );
+  });
+
+  it('clears the reminder with the version it last read', async () => {
+    const clearReminder = jasmine.createSpy().and.resolveTo(task);
+    configure({
+      permissions: ['tasks.edit'],
+      get: jasmine.createSpy().and.resolveTo({
+        ...task,
+        reminderAtUtc: '2026-10-01T09:30:00Z',
+        reminderStatus: 'Scheduled',
+      }),
+      clearReminder,
+    });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.clearReminder();
+
+    expect(clearReminder).toHaveBeenCalledWith('task-1', { version: 1 });
+  });
+
+  it('surfaces the specific reminder reason on a 422', async () => {
+    const setReminder = jasmine.createSpy().and.rejectWith(
+      new HttpErrorResponse({
+        status: 422,
+        statusText: 'Unprocessable Content',
+        error: { code: 'tasks.reminder_in_past' },
+      }),
+    );
+    configure({ permissions: ['tasks.edit'], setReminder });
+    const fixture = await createComponent();
+    fixture.componentInstance.reminderDraft.set(new Date('2020-01-01T00:00:00Z'));
+
+    await fixture.componentInstance.saveReminder();
+
+    expect(fixture.componentInstance.reminderErrorKey()).toBe(
+      'tasks.detail.reminder.errors.inPast',
+    );
+  });
+
+  it('surfaces the stale-version message on a reminder 409 and does not retry', async () => {
+    const setReminder = jasmine
+      .createSpy()
+      .and.rejectWith(new HttpErrorResponse({ status: 409, statusText: 'Conflict' }));
+    configure({ permissions: ['tasks.edit'], setReminder });
+    const fixture = await createComponent();
+    fixture.componentInstance.reminderDraft.set(new Date('2026-10-01T09:30:00Z'));
+
+    await fixture.componentInstance.saveReminder();
+
+    expect(fixture.componentInstance.reminderErrorKey()).toBe('tasks.detail.errors.staleVersion');
+    expect(setReminder).toHaveBeenCalledTimes(1);
+  });
+
+  it('explains that a completed task has no reminder form', async () => {
+    configure({
+      permissions: ['tasks.edit'],
+      get: jasmine.createSpy().and.resolveTo({
+        ...task,
+        status: 'Completed',
+        completedAtUtc: '2026-09-12T00:00:00Z',
+        reminderStatus: 'Cancelled',
+      }),
+    });
+    const fixture = await createComponent();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Completing a task cancels its reminder.');
+    expect(text).not.toContain('Save reminder');
   });
 
   it('reopens a completed task with the version it last read', async () => {

@@ -25,6 +25,9 @@ describe('TaskList', () => {
     createdAtUtc: '2026-09-10T00:00:00Z',
     updatedAtUtc: null,
     version: 1,
+    reminderAtUtc: null,
+    reminderStatus: 'None' as const,
+    reminderTriggeredAtUtc: null,
   };
   const taskB = {
     ...taskA,

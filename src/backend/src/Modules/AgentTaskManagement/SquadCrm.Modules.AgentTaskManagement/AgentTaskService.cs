@@ -35,6 +35,12 @@ public enum AgentTaskMutationFailure
 
     /// <summary>Reopening a task that is not completed.</summary>
     NotCompleted,
+
+    /// <summary>Setting a reminder on a task that is not open (AC: completed/ineligible tasks generate no future reminders).</summary>
+    ReminderTaskNotOpen,
+
+    /// <summary>The requested reminder instant is not in the future — it could only fire immediately.</summary>
+    ReminderInPast,
 }
 
 public readonly record struct AgentTaskMutationResult(AgentTask? AgentTask, AgentTaskMutationFailure Failure)
@@ -329,6 +335,104 @@ internal sealed class AgentTaskService(
         }
 
         await RecordAuditAsync(task.Id, "reopened", cancellationToken);
+        return AgentTaskMutationResult.Success(task);
+    }
+
+    /// <summary>
+    /// Sets or reschedules the task's single reminder (CRM-144 AC). A
+    /// reschedule supersedes the previous occurrence inside
+    /// <see cref="AgentTask.SetReminder"/> by minting a new reminder event id
+    /// — this service never has to cancel anything in Hangfire, because
+    /// Hangfire holds no per-reminder state (BR: scheduling mechanism only).
+    /// </summary>
+    public async Task<AgentTaskMutationResult> SetReminderAsync(
+        Guid id,
+        SetAgentTaskReminderRequest request,
+        CancellationToken cancellationToken)
+    {
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        AgentTask? task = await dbContext.AgentTasks.SingleOrDefaultAsync(
+            candidate => candidate.Id == id, cancellationToken);
+        if (task is null)
+        {
+            return AgentTaskMutationResult.Failed(AgentTaskMutationFailure.TaskNotFound);
+        }
+
+        if (!IsOwner(task))
+        {
+            return AgentTaskMutationResult.Failed(AgentTaskMutationFailure.NotOwner);
+        }
+
+        if (task.Version != request.Version)
+        {
+            return AgentTaskMutationResult.Failed(AgentTaskMutationFailure.StaleVersion);
+        }
+
+        // AC: only an ELIGIBLE OPEN task takes a reminder.
+        if (task.Status != AgentTaskStatus.Open)
+        {
+            return AgentTaskMutationResult.Failed(AgentTaskMutationFailure.ReminderTaskNotOpen);
+        }
+
+        if (request.ReminderAtUtc <= now)
+        {
+            return AgentTaskMutationResult.Failed(AgentTaskMutationFailure.ReminderInPast);
+        }
+
+        task.SetReminder(request.ReminderAtUtc, now);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return AgentTaskMutationResult.Failed(AgentTaskMutationFailure.StaleVersion);
+        }
+
+        await RecordAuditAsync(task.Id, "reminder_set", cancellationToken);
+        return AgentTaskMutationResult.Success(task);
+    }
+
+    /// <summary>
+    /// Clears the task's reminder (CRM-144 AC). Allowed on a completed task
+    /// too: clearing only ever removes a future alert, so there is no reason
+    /// to force a reopen first.
+    /// </summary>
+    public async Task<AgentTaskMutationResult> ClearReminderAsync(
+        Guid id,
+        AgentTaskVersionedActionRequest request,
+        CancellationToken cancellationToken)
+    {
+        AgentTask? task = await dbContext.AgentTasks.SingleOrDefaultAsync(
+            candidate => candidate.Id == id, cancellationToken);
+        if (task is null)
+        {
+            return AgentTaskMutationResult.Failed(AgentTaskMutationFailure.TaskNotFound);
+        }
+
+        if (!IsOwner(task))
+        {
+            return AgentTaskMutationResult.Failed(AgentTaskMutationFailure.NotOwner);
+        }
+
+        if (task.Version != request.Version)
+        {
+            return AgentTaskMutationResult.Failed(AgentTaskMutationFailure.StaleVersion);
+        }
+
+        task.ClearReminder(DateTimeOffset.UtcNow);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return AgentTaskMutationResult.Failed(AgentTaskMutationFailure.StaleVersion);
+        }
+
+        await RecordAuditAsync(task.Id, "reminder_cleared", cancellationToken);
         return AgentTaskMutationResult.Success(task);
     }
 

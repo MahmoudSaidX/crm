@@ -78,6 +78,20 @@ public sealed record UpdateAgentTaskRequest(
 /// </summary>
 public sealed record AgentTaskVersionedActionRequest([property: Required] int Version);
 
+/// <summary>
+/// Sets or reschedules a task's single reminder (CRM-144). Clearing is the
+/// separate <c>DELETE</c> endpoint rather than a null here, so "clear" can
+/// never be the accidental result of an omitted field.
+/// <para>
+/// <paramref name="Version"/> is the task version the caller last read: a
+/// mismatch is rejected instead of applying a stale change (AC), same
+/// rationale as <see cref="UpdateAgentTaskRequest"/>.
+/// </para>
+/// </summary>
+public sealed record SetAgentTaskReminderRequest(
+    [property: Required] DateTimeOffset ReminderAtUtc,
+    [property: Required] int Version);
+
 public sealed record AgentTaskResponse(
     Guid Id,
     string Title,
@@ -90,4 +104,9 @@ public sealed record AgentTaskResponse(
     DateTimeOffset? CompletedAtUtc,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? UpdatedAtUtc,
-    int Version);
+    int Version,
+
+    /// <summary>UTC instant of the task's single optional reminder; null when none is set (CRM-144).</summary>
+    DateTimeOffset? ReminderAtUtc,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] AgentTaskReminderStatus ReminderStatus,
+    DateTimeOffset? ReminderTriggeredAtUtc);
