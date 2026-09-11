@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>SquadCrm.DemoDataSeeder</AssemblyName>
+    <RootNamespace>SquadCrm.Tools.DemoDataSeeder</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <!-- An operator tool under src/Tools may reference module implementations
+       (same pattern as SquadCrm.RoleManagement.Bootstrap). It only orchestrates
+       each module's own demo-data contributor; it never touches a foreign
+       DbContext. -->
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/StaffIdentity/SquadCrm.Modules.StaffIdentity/SquadCrm.Modules.StaffIdentity.csproj" />
+    <ProjectReference Include="../../Modules/RoleManagement/SquadCrm.Modules.RoleManagement/SquadCrm.Modules.RoleManagement.csproj" />
+    <ProjectReference Include="../../Modules/DepartmentManagement/SquadCrm.Modules.DepartmentManagement/SquadCrm.Modules.DepartmentManagement.csproj" />
+    <ProjectReference Include="../../Modules/BranchManagement/SquadCrm.Modules.BranchManagement/SquadCrm.Modules.BranchManagement.csproj" />
+    <ProjectReference Include="../../Modules/CustomerManagement/SquadCrm.Modules.CustomerManagement/SquadCrm.Modules.CustomerManagement.csproj" />
+    <ProjectReference Include="../../Modules/TicketManagement/SquadCrm.Modules.TicketManagement/SquadCrm.Modules.TicketManagement.csproj" />
+  </ItemGroup>
+</Project>

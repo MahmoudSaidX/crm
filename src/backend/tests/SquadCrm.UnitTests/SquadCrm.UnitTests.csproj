@@ -20,6 +20,9 @@
     <ProjectReference Include="..\..\src\BuildingBlocks\SquadCrm.BuildingBlocks\SquadCrm.BuildingBlocks.csproj" />
     <ProjectReference Include="..\..\src\Modules\Audit\SquadCrm.Modules.Audit\SquadCrm.Modules.Audit.csproj" />
     <ProjectReference Include="..\..\src\Modules\Audit\SquadCrm.Modules.Audit.Contracts\SquadCrm.Modules.Audit.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\CustomerManagement\SquadCrm.Modules.CustomerManagement\SquadCrm.Modules.CustomerManagement.csproj" />
+    <ProjectReference Include="..\..\src\Modules\TicketManagement\SquadCrm.Modules.TicketManagement\SquadCrm.Modules.TicketManagement.csproj" />
+    <ProjectReference Include="..\..\src\Tools\SquadCrm.DemoDataSeeder\SquadCrm.DemoDataSeeder.csproj" />
   </ItemGroup>
 
 </Project>

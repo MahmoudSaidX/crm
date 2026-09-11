@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Development demo data seeder. Explicit, non-destructive and idempotent.
+# NEVER run against production: the tool itself refuses any environment other
+# than Development or Test.
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$script_dir/.." && pwd)"
+backend_env_file="${SQUADCRM_BACKEND_ENV_FILE:-$repo_root/env/backend.env}"
+
+# Captured before the env file is sourced: the file sets ASPNETCORE_ENVIRONMENT
+# itself, so sourcing it would silently overwrite the value the caller passed —
+# including a deliberate `ASPNETCORE_ENVIRONMENT=Production ./scripts/seed-demo`,
+# which must reach the tool and be refused there.
+caller_environment="${ASPNETCORE_ENVIRONMENT:-}"
+
+if [[ -f "$backend_env_file" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$backend_env_file"
+  set +a
+fi
+
+export POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
+export POSTGRES_PORT="${POSTGRES_PORT:-5432}"
+export POSTGRES_DB="${POSTGRES_DB:-squadcrm}"
+export POSTGRES_USER="${POSTGRES_USER:-squadcrm}"
+export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-change-me}"
+export ASPNETCORE_ENVIRONMENT="${caller_environment:-${ASPNETCORE_ENVIRONMENT:-Development}}"
+
+cd "$repo_root/src/backend"
+dotnet run --project src/Tools/SquadCrm.DemoDataSeeder -- "$@"
