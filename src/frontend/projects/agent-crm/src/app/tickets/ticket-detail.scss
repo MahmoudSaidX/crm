@@ -1,0 +1,71 @@
+:host {
+  display: block;
+}
+
+.ticket-detail-page {
+  box-sizing: border-box;
+  padding: clamp(1rem, 4vw, 2rem);
+  max-inline-size: 56rem;
+}
+
+.ticket-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-end: 1rem;
+  flex-wrap: wrap;
+}
+
+.ticket-detail-header h1 {
+  margin: 0;
+}
+
+.ticket-detail-section {
+  margin-block-end: 1.5rem;
+}
+
+.ticket-detail-section h2 {
+  font-size: 1.1rem;
+  margin-block-end: 0.5rem;
+}
+
+.ticket-detail-fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0;
+}
+
+.ticket-detail-fields dt {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.ticket-detail-fields dd {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ticket-detail-description {
+  white-space: pre-wrap;
+}
+
+/* Stack the label above its value once the two-column grid stops fitting. */
+@media (max-width: 30rem) {
+  .ticket-detail-fields {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+
+  .ticket-detail-fields dd {
+    margin-block-end: 0.5rem;
+  }
+}
+
+.ticket-detail-actions {
+  margin-block-start: 1rem;
+}

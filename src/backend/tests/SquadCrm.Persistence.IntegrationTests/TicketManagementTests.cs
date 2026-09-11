@@ -222,6 +222,67 @@ public sealed class TicketManagementTests
         Assert.All(filtered.Items, t => Assert.Contains(t.Id, unfilteredIds));
     }
 
+    [Fact]
+    public async Task GetDetail_ReturnsTicketWithResolvedCategoryAndPriorityNames()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        (Guid categoryId, Guid priorityId) = await SeedCategoryAndPriorityAsync(context);
+        TicketService service = CreateService(context, new RecordingAuditRecorder(), "agent@example.test");
+        TicketMutationResult created = await service.CreateAsync(ValidRequest(categoryId, priorityId), CancellationToken.None);
+
+        TicketDetailResponse? detail = await service.GetDetailAsync(created.Ticket!.Id, CancellationToken.None);
+
+        Assert.NotNull(detail);
+        Assert.Equal(created.Ticket.TicketNumber, detail!.TicketNumber);
+        Assert.Equal(created.Ticket.Subject, detail.Subject);
+        Assert.Equal(created.Ticket.Description, detail.Description);
+        Assert.Equal(TicketStatus.Open, detail.Status);
+        Assert.Equal("Category", detail.CategoryEnglishName);
+        Assert.Equal("فئة", detail.CategoryArabicName);
+        Assert.True(detail.CategoryIsActive);
+        Assert.Equal("Priority", detail.PriorityEnglishName);
+        Assert.True(detail.PriorityIsActive);
+        Assert.Equal(1, detail.PriorityRank);
+        Assert.Null(detail.UpdatedAtUtc);
+        Assert.Equal(1, detail.Version);
+    }
+
+    /// <summary>
+    /// BR: historical labels must not disappear merely because the reference
+    /// data was deactivated after the ticket was created.
+    /// </summary>
+    [Fact]
+    public async Task GetDetail_StillReturnsNames_WhenCategoryAndPriorityWereDeactivated()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        (Guid categoryId, Guid priorityId) = await SeedCategoryAndPriorityAsync(context);
+        TicketService service = CreateService(context, new RecordingAuditRecorder(), "agent@example.test");
+        TicketMutationResult created = await service.CreateAsync(ValidRequest(categoryId, priorityId), CancellationToken.None);
+
+        TicketCategory category = await context.TicketCategories.SingleAsync(item => item.Id == categoryId);
+        TicketPriority priority = await context.TicketPriorities.SingleAsync(item => item.Id == priorityId);
+        category.IsActive = false;
+        priority.IsActive = false;
+        await context.SaveChangesAsync();
+
+        TicketDetailResponse? detail = await service.GetDetailAsync(created.Ticket!.Id, CancellationToken.None);
+
+        Assert.NotNull(detail);
+        Assert.Equal("Category", detail!.CategoryEnglishName);
+        Assert.Equal("Priority", detail.PriorityEnglishName);
+        Assert.False(detail.CategoryIsActive);
+        Assert.False(detail.PriorityIsActive);
+    }
+
+    [Fact]
+    public async Task GetDetail_UnknownId_ReturnsNull()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        TicketService service = CreateService(context, new RecordingAuditRecorder(), "agent@example.test");
+
+        Assert.Null(await service.GetDetailAsync(Guid.NewGuid(), CancellationToken.None));
+    }
+
     private static async Task<(Guid CategoryId, Guid PriorityId)> SeedCategoryAndPriorityAsync(
         TicketManagementDbContext context, bool categoryActive = true, bool priorityActive = true)
     {

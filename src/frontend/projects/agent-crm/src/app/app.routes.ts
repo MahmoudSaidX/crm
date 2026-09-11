@@ -100,6 +100,11 @@ export const routes: Routes = [
           import('./ticket-create/ticket-create-form').then((m) => m.TicketCreateForm),
       },
       {
+        path: 'tickets/:id',
+        canActivate: [requirePermission('tickets.view')],
+        loadComponent: () => import('./tickets/ticket-detail').then((m) => m.TicketDetail),
+      },
+      {
         path: 'branches',
         canActivate: [requirePermission('branches.view')],
         loadComponent: () => import('./branches/branch-list').then((m) => m.BranchList),

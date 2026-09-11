@@ -4,9 +4,9 @@ using System.Net.Http.Json;
 namespace SquadCrm.Api.Tests;
 
 /// <summary>
-/// The ticket create route requires an explicit permission policy while
-/// preserving the authentication boundary's 401 response for anonymous
-/// callers (CRM-133, single route only — browse/view are CRM-134/135).
+/// Every ticket route requires an explicit permission policy while preserving
+/// the authentication boundary's 401 response for anonymous callers
+/// (CRM-133 create, CRM-134 list, CRM-135 detail).
 /// </summary>
 public sealed class TicketEndpointsAuthorizationTests
 {
@@ -43,6 +43,18 @@ public sealed class TicketEndpointsAuthorizationTests
         using HttpClient client = factory.CreateClient();
 
         using HttpResponseMessage response = await client.GetAsync("/api/v1/tickets", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync(
+            $"/api/v1/tickets/{Guid.NewGuid()}", CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }

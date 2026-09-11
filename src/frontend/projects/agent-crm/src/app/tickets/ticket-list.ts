@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
@@ -29,7 +30,14 @@ const CHANNEL_OPTIONS: readonly TicketChannel[] = [
 
 @Component({
   selector: 'crm-ticket-list',
-  imports: [FormsModule, InputTextModule, SelectModule, TableModule, AgentLanguageSwitcher],
+  imports: [
+    FormsModule,
+    RouterLink,
+    InputTextModule,
+    SelectModule,
+    TableModule,
+    AgentLanguageSwitcher,
+  ],
   templateUrl: './ticket-list.html',
   styleUrl: './ticket-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

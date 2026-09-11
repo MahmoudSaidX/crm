@@ -80,7 +80,9 @@
     </ng-template>
     <ng-template #body let-ticket>
       <tr>
-        <td>{{ ticket.ticketNumber }}</td>
+        <td>
+          <a [routerLink]="['/tickets', ticket.id]">{{ ticket.ticketNumber }}</a>
+        </td>
         <td>{{ ticket.subject }}</td>
         <td>{{ ticket.status }}</td>
         <td>{{ ticket.channel }}</td>
