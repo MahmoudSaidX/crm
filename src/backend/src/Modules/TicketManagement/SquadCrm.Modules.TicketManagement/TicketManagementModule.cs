@@ -9,6 +9,7 @@ using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Validation;
 using SquadCrm.Infrastructure.Postgres;
+using SquadCrm.Modules.TicketManagement.Contracts;
 using SquadCrm.Modules.TicketManagement.Persistence;
 
 namespace SquadCrm.Modules.TicketManagement;
@@ -41,6 +42,7 @@ public sealed class TicketManagementModule : IModule
         services.AddScoped<TicketPriorityService>();
         services.AddScoped<TicketService>();
         services.AddScoped<TicketTimelineService>();
+        services.AddScoped<ITicketExistsLookup, TicketExistsLookup>();
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule;
         // IDepartmentActiveLookup/IBranchActiveLookup are already registered

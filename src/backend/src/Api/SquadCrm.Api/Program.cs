@@ -16,6 +16,7 @@ using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Infrastructure.FileStorage;
 using SquadCrm.Modules.Audit;
+using SquadCrm.Modules.AgentTaskManagement;
 using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
 using SquadCrm.Modules.BranchManagement;
 using SquadCrm.Modules.CustomerManagement;
@@ -164,6 +165,7 @@ IModule[] modules =
     new BranchManagementModule(),
     new CustomerManagementModule(),
     new TicketManagementModule(),
+    new AgentTaskManagementModule(),
     new SystemConfigurationModule(),
     new BrandingManagementModule(),
     new SquadCrm.Modules.ArchitectureFixture.ArchitectureFixtureModule(),

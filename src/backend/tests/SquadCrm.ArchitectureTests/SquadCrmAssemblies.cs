@@ -5,6 +5,7 @@ using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Infrastructure.FileStorage;
 using SquadCrm.Modules.ArchitectureFixture;
 using SquadCrm.Modules.ArchitectureFixture.Contracts;
+using SquadCrm.Modules.AgentTaskManagement;
 using SquadCrm.Modules.Audit;
 using SquadCrm.Modules.Audit.Contracts;
 using SquadCrm.Modules.RoleManagement;
@@ -67,6 +68,8 @@ internal static class SquadCrmAssemblies
 
     public static Assembly AuditContracts { get; } = typeof(IAuditRecorder).Assembly;
 
+    public static Assembly AgentTaskManagement { get; } = typeof(AgentTaskManagementModule).Assembly;
+
     public static Assembly ApiTests { get; } = typeof(SquadCrm.Api.Tests.HealthEndpointTests).Assembly;
 
     public static Assembly UnitTests { get; } = typeof(SquadCrm.UnitTests.DomainEventTests).Assembly;
@@ -88,6 +91,7 @@ internal static class SquadCrmAssemblies
         RoleManagementBootstrap,
         Audit,
         AuditContracts,
+        AgentTaskManagement,
         ApiTests,
         UnitTests,
         typeof(SquadCrmAssemblies).Assembly,

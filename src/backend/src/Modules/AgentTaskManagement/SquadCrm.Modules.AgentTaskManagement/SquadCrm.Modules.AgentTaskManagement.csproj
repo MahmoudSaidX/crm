@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>SquadCrm.Modules.TicketManagement</RootNamespace>
+    <RootNamespace>SquadCrm.Modules.AgentTaskManagement</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -14,10 +14,8 @@
     <ProjectReference Include="../../../BuildingBlocks/SquadCrm.BuildingBlocks/SquadCrm.BuildingBlocks.csproj" />
     <ProjectReference Include="../../../Infrastructure/SquadCrm.Infrastructure.Postgres/SquadCrm.Infrastructure.Postgres.csproj" />
     <ProjectReference Include="../../Audit/SquadCrm.Modules.Audit.Contracts/SquadCrm.Modules.Audit.Contracts.csproj" />
-    <ProjectReference Include="../../DepartmentManagement/SquadCrm.Modules.DepartmentManagement.Contracts/SquadCrm.Modules.DepartmentManagement.Contracts.csproj" />
-    <ProjectReference Include="../../BranchManagement/SquadCrm.Modules.BranchManagement.Contracts/SquadCrm.Modules.BranchManagement.Contracts.csproj" />
     <ProjectReference Include="../../CustomerManagement/SquadCrm.Modules.CustomerManagement.Contracts/SquadCrm.Modules.CustomerManagement.Contracts.csproj" />
+    <ProjectReference Include="../../TicketManagement/SquadCrm.Modules.TicketManagement.Contracts/SquadCrm.Modules.TicketManagement.Contracts.csproj" />
     <ProjectReference Include="../../StaffIdentity/SquadCrm.Modules.StaffIdentity.Contracts/SquadCrm.Modules.StaffIdentity.Contracts.csproj" />
-    <ProjectReference Include="../SquadCrm.Modules.TicketManagement.Contracts/SquadCrm.Modules.TicketManagement.Contracts.csproj" />
   </ItemGroup>
 </Project>

@@ -110,6 +110,26 @@ export const routes: Routes = [
         loadComponent: () => import('./tickets/ticket-detail').then((m) => m.TicketDetail),
       },
       {
+        path: 'tasks',
+        canActivate: [requirePermission('tasks.view')],
+        loadComponent: () => import('./tasks/task-list').then((m) => m.TaskList),
+      },
+      {
+        path: 'my-tasks',
+        canActivate: [requirePermission('tasks.view')],
+        loadComponent: () => import('./tasks/my-tasks').then((m) => m.MyTasks),
+      },
+      {
+        path: 'tasks/new',
+        canActivate: [requirePermission('tasks.create')],
+        loadComponent: () => import('./task-create/task-create-form').then((m) => m.TaskCreateForm),
+      },
+      {
+        path: 'tasks/:id',
+        canActivate: [requirePermission('tasks.view')],
+        loadComponent: () => import('./tasks/task-detail').then((m) => m.TaskDetail),
+      },
+      {
         path: 'branches',
         canActivate: [requirePermission('branches.view')],
         loadComponent: () => import('./branches/branch-list').then((m) => m.BranchList),

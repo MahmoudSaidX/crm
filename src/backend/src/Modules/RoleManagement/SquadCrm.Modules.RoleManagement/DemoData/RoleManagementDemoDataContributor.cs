@@ -53,6 +53,10 @@ public sealed class RoleManagementDemoDataContributor : IDemoDataContributor
                 "tickets.assign",
                 "tickets.changestatus",
                 "tickets.escalate",
+                "tasks.view",
+                "tasks.create",
+                "tasks.edit",
+                "tasks.complete",
             ]),
         new(
             "support-agent",
@@ -73,6 +77,10 @@ public sealed class RoleManagementDemoDataContributor : IDemoDataContributor
                 "tickets.assign",
                 "tickets.changestatus",
                 "tickets.escalate",
+                "tasks.view",
+                "tasks.create",
+                "tasks.edit",
+                "tasks.complete",
             ]),
         new(
             "read-only",
@@ -86,6 +94,7 @@ public sealed class RoleManagementDemoDataContributor : IDemoDataContributor
                 "ticketpriorities.view",
                 "departments.view",
                 "branches.view",
+                "tasks.view",
             ]),
     ];
 

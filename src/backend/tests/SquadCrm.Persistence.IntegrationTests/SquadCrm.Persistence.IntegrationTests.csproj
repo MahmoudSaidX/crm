@@ -34,6 +34,7 @@
     <ProjectReference Include="..\..\src\Modules\CustomerManagement\SquadCrm.Modules.CustomerManagement\SquadCrm.Modules.CustomerManagement.csproj" />
     <ProjectReference Include="..\..\src\Modules\DepartmentManagement\SquadCrm.Modules.DepartmentManagement.Contracts\SquadCrm.Modules.DepartmentManagement.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\TicketManagement\SquadCrm.Modules.TicketManagement\SquadCrm.Modules.TicketManagement.csproj" />
+    <ProjectReference Include="..\..\src\Modules\AgentTaskManagement\SquadCrm.Modules.AgentTaskManagement\SquadCrm.Modules.AgentTaskManagement.csproj" />
     <ProjectReference Include="..\..\src\Modules\BranchManagement\SquadCrm.Modules.BranchManagement.Contracts\SquadCrm.Modules.BranchManagement.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Infrastructure\SquadCrm.Infrastructure.FileStorage\SquadCrm.Infrastructure.FileStorage.csproj" />
     <!-- Only CustomerHttpContractTests.cs hosts the real API in-process (over
