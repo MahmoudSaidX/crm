@@ -5,6 +5,7 @@ using SquadCrm.Modules.Audit.Contracts;
 using SquadCrm.Modules.BranchManagement.Contracts;
 using SquadCrm.Modules.CustomerManagement.Contracts;
 using SquadCrm.Modules.DepartmentManagement.Contracts;
+using SquadCrm.Modules.StaffIdentity.Contracts;
 using SquadCrm.Modules.TicketManagement;
 using SquadCrm.Modules.TicketManagement.Persistence;
 
@@ -328,20 +329,207 @@ public sealed class TicketManagementTests
         TicketChannel.Agent,
         null);
 
+    [Fact]
+    public async Task Assign_UnassignedTicket_SetsOwner_WritesHistory_BumpsVersion_AndWritesOutboxMessage()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid agentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(agentId, true));
+
+        TicketMutationResult result = await service.AssignAsync(
+            ticketId, new AssignTicketRequest(agentId, null, 1), TicketAssignmentSource.Manual, CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.None, result.Failure);
+        Assert.Equal(agentId, result.Ticket!.AssignedAgentId);
+        Assert.Equal(2, result.Ticket.Version);
+        Assert.NotNull(result.Ticket.UpdatedAtUtc);
+
+        TicketAssignmentHistory history = await context.TicketAssignmentHistory
+            .AsNoTracking()
+            .SingleAsync(entry => entry.TicketId == ticketId);
+        Assert.Null(history.PreviousAgentId);
+        Assert.Equal(agentId, history.NewAgentId);
+        Assert.Equal(TicketAssignmentSource.Manual, history.Source);
+        Assert.Equal("lead@example.test", history.ChangedBy);
+
+        OutboxMessage outboxMessage = await context.OutboxMessages
+            .AsNoTracking()
+            .SingleAsync(message => message.Type == "ticket-management.ticket-assigned.v1"
+                && message.Payload.Contains(ticketId.ToString()));
+        Assert.Contains(agentId.ToString(), outboxMessage.Payload, StringComparison.OrdinalIgnoreCase);
+        Assert.Single(auditRecorder.Requests, request =>
+            request.Action == "assigned" && request.EntityId == ticketId.ToString());
+    }
+
+    [Fact]
+    public async Task Reassign_WithoutReason_Fails_AndLeavesOwnerUnchanged()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid firstAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(firstAgentId, true));
+        await service.AssignAsync(
+            ticketId, new AssignTicketRequest(firstAgentId, null, 1), TicketAssignmentSource.Manual, CancellationToken.None);
+
+        TicketMutationResult result = await service.AssignAsync(
+            ticketId,
+            new AssignTicketRequest(Guid.NewGuid(), "   ", 2),
+            TicketAssignmentSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.ReasonRequired, result.Failure);
+        Ticket stored = await context.Tickets.AsNoTracking().SingleAsync(ticket => ticket.Id == ticketId);
+        Assert.Equal(firstAgentId, stored.AssignedAgentId);
+        Assert.Equal(2, stored.Version);
+    }
+
+    [Fact]
+    public async Task Reassign_WithReason_RecordsPreviousOwner()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid firstAgentId = Guid.NewGuid();
+        Guid secondAgentId = Guid.NewGuid();
+        TicketService firstService = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(firstAgentId, true));
+        await firstService.AssignAsync(
+            ticketId, new AssignTicketRequest(firstAgentId, null, 1), TicketAssignmentSource.Manual, CancellationToken.None);
+        TicketService secondService = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(secondAgentId, true));
+
+        TicketMutationResult result = await secondService.AssignAsync(
+            ticketId,
+            new AssignTicketRequest(secondAgentId, "Original agent is on leave.", 2),
+            TicketAssignmentSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.None, result.Failure);
+        Assert.Equal(secondAgentId, result.Ticket!.AssignedAgentId);
+        Assert.Equal(3, result.Ticket.Version);
+
+        TicketAssignmentHistory latest = await context.TicketAssignmentHistory
+            .AsNoTracking()
+            .Where(entry => entry.TicketId == ticketId)
+            .OrderByDescending(entry => entry.ChangedAtUtc)
+            .FirstAsync();
+        Assert.Equal(firstAgentId, latest.PreviousAgentId);
+        Assert.Equal(secondAgentId, latest.NewAgentId);
+        Assert.Equal("Original agent is on leave.", latest.Reason);
+    }
+
+    [Fact]
+    public async Task Assign_InactiveAgent_Fails_AndLeavesTicketUnchanged()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid agentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(agentId, false));
+
+        TicketMutationResult result = await service.AssignAsync(
+            ticketId, new AssignTicketRequest(agentId, null, 1), TicketAssignmentSource.Manual, CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.IneligibleAgent, result.Failure);
+        Ticket stored = await context.Tickets.AsNoTracking().SingleAsync(ticket => ticket.Id == ticketId);
+        Assert.Null(stored.AssignedAgentId);
+        Assert.Equal(1, stored.Version);
+        Assert.Empty(context.TicketAssignmentHistory.Where(entry => entry.TicketId == ticketId));
+    }
+
+    [Fact]
+    public async Task Assign_UnknownAgent_Fails()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        TicketService service = CreateService(context, auditRecorder, "lead@example.test", targetAgent: null);
+
+        TicketMutationResult result = await service.AssignAsync(
+            ticketId,
+            new AssignTicketRequest(Guid.NewGuid(), null, 1),
+            TicketAssignmentSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.IneligibleAgent, result.Failure);
+    }
+
+    [Fact]
+    public async Task Assign_StaleVersion_Fails_AndLeavesOwnerUnchanged()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid firstAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(firstAgentId, true));
+        await service.AssignAsync(
+            ticketId, new AssignTicketRequest(firstAgentId, null, 1), TicketAssignmentSource.Manual, CancellationToken.None);
+
+        // Version 1 is what a caller that read the ticket BEFORE the first
+        // assignment would send.
+        TicketMutationResult result = await service.AssignAsync(
+            ticketId,
+            new AssignTicketRequest(Guid.NewGuid(), "Taking over.", 1),
+            TicketAssignmentSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.StaleVersion, result.Failure);
+        Ticket stored = await context.Tickets.AsNoTracking().SingleAsync(ticket => ticket.Id == ticketId);
+        Assert.Equal(firstAgentId, stored.AssignedAgentId);
+    }
+
+    [Fact]
+    public async Task Assign_UnknownTicket_Fails()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(Guid.NewGuid(), true));
+
+        TicketMutationResult result = await service.AssignAsync(
+            Guid.NewGuid(),
+            new AssignTicketRequest(Guid.NewGuid(), null, 1),
+            TicketAssignmentSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.TicketNotFound, result.Failure);
+    }
+
+    /// <summary>Creates one persisted open, unassigned ticket and returns its id.</summary>
+    private static async Task<Guid> SeedTicketAsync(
+        TicketManagementDbContext context, RecordingAuditRecorder auditRecorder)
+    {
+        (Guid categoryId, Guid priorityId) = await SeedCategoryAndPriorityAsync(context);
+        TicketService service = CreateService(context, auditRecorder, "agent@example.test");
+        TicketMutationResult created = await service.CreateAsync(
+            ValidRequest(categoryId, priorityId), CancellationToken.None);
+        auditRecorder.Requests.Clear();
+        return created.Ticket!.Id;
+    }
+
     private static TicketService CreateService(
         TicketManagementDbContext context,
         IAuditRecorder auditRecorder,
         string? handle,
         bool customerExists = true,
         bool departmentActive = true,
-        bool branchActive = true) =>
+        bool branchActive = true,
+        StaffSubjectReference? targetAgent = null) =>
         new(
             context,
             new StubCurrentUserAccessor(handle),
             auditRecorder,
             new StubCustomerExistsLookup(customerExists),
             new StubDepartmentActiveLookup(departmentActive),
-            new StubBranchActiveLookup(branchActive));
+            new StubBranchActiveLookup(branchActive),
+            new StubStaffSubjectReferenceReader(targetAgent));
 
     private sealed class StubCurrentUserAccessor(string? handle) : ICurrentUserAccessor
     {
@@ -365,6 +553,20 @@ public sealed class TicketManagementTests
     {
         public Task<bool> IsActiveAsync(Guid branchId, CancellationToken cancellationToken) =>
             Task.FromResult(isActive);
+    }
+
+    /// <summary>
+    /// Returns the configured subject for ANY id — the assignment tests care
+    /// about the active/unknown distinction, not about id matching.
+    /// </summary>
+    private sealed class StubStaffSubjectReferenceReader(StaffSubjectReference? subject)
+        : IStaffSubjectReferenceReader
+    {
+        public Task<StaffSubjectReference?> FindByNormalizedEmailAsync(
+            string normalizedEmail, CancellationToken cancellationToken) => Task.FromResult(subject);
+
+        public Task<StaffSubjectReference?> FindByIdAsync(Guid id, CancellationToken cancellationToken) =>
+            Task.FromResult(subject);
     }
 
     private sealed class RecordingAuditRecorder : IAuditRecorder

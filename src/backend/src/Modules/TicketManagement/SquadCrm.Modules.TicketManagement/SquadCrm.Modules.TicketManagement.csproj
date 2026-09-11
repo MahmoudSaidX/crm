@@ -17,5 +17,6 @@
     <ProjectReference Include="../../DepartmentManagement/SquadCrm.Modules.DepartmentManagement.Contracts/SquadCrm.Modules.DepartmentManagement.Contracts.csproj" />
     <ProjectReference Include="../../BranchManagement/SquadCrm.Modules.BranchManagement.Contracts/SquadCrm.Modules.BranchManagement.Contracts.csproj" />
     <ProjectReference Include="../../CustomerManagement/SquadCrm.Modules.CustomerManagement.Contracts/SquadCrm.Modules.CustomerManagement.Contracts.csproj" />
+    <ProjectReference Include="../../StaffIdentity/SquadCrm.Modules.StaffIdentity.Contracts/SquadCrm.Modules.StaffIdentity.Contracts.csproj" />
   </ItemGroup>
 </Project>
