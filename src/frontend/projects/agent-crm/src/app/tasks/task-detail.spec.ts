@@ -113,9 +113,7 @@ describe('TaskDetail', () => {
 
   it('shows no link placeholder when the task has no linked ticket or customer', async () => {
     configure({
-      get: jasmine
-        .createSpy()
-        .and.resolveTo({ ...task, ticketId: null, customerId: null }),
+      get: jasmine.createSpy().and.resolveTo({ ...task, ticketId: null, customerId: null }),
     });
     const fixture = await createComponent();
 
