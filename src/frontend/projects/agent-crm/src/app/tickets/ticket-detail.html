@@ -118,9 +118,124 @@
             }
           }
         </p-card>
+
+        <!--
+          Internal collaboration (CRM-147). Notes and watchers are internal-only
+          and have no customer-visible counterpart; the banner states that
+          plainly so an agent never mistakes this panel for a customer reply.
+        -->
+        <p-card [header]="localization.translate('tickets.notes.section')">
+          <p-message
+            severity="info"
+            [text]="localization.translate('tickets.notes.internalOnly')"
+          />
+
+          @if (authorization.has('tickets.collaborate')) {
+            <div class="ticket-collaboration-actions">
+              <p-button
+                type="button"
+                [label]="localization.translate('tickets.notes.add')"
+                icon="pi pi-comment"
+                severity="secondary"
+                (onClick)="startAddNote()"
+              />
+            </div>
+          }
+
+          @if (notesUnavailable()) {
+            <p-message
+              severity="warn"
+              [text]="localization.translate('tickets.notes.unavailable')"
+            />
+          } @else if (notes().length === 0) {
+            <sc-state-panel
+              state="empty"
+              icon="pi pi-comment"
+              [message]="localization.translate('tickets.notes.empty')"
+            />
+          } @else {
+            <ol class="ticket-notes">
+              @for (note of notes(); track note.id) {
+                <li class="ticket-note">
+                  <div class="ticket-note-header">
+                    <span class="ticket-note-author">{{ note.createdBy }}</span>
+                    <time>{{ note.createdAtUtc | date: 'medium' }}</time>
+                  </div>
+                  <div class="ticket-note-body">{{ note.body }}</div>
+                  @if (note.mentionedUserIds.length > 0) {
+                    <div class="ticket-note-mentions">
+                      <span>{{ localization.translate('tickets.notes.mentioned') }}:</span>
+                      @for (mentionedUserId of note.mentionedUserIds; track mentionedUserId) {
+                        <p-tag severity="info" [value]="userLabel(mentionedUserId)" />
+                      }
+                    </div>
+                  }
+                </li>
+              }
+            </ol>
+
+            @if (notesTotal() > notesPageSize) {
+              <p-paginator
+                [first]="(notesPage() - 1) * notesPageSize"
+                [rows]="notesPageSize"
+                [totalRecords]="notesTotal()"
+                (onPageChange)="onNotesPageChange($event.first ?? 0)"
+              />
+            }
+          }
+        </p-card>
       </div>
 
       <div class="ticket-workspace-side">
+        <p-card [header]="localization.translate('tickets.watchers.section')">
+          @if (authorization.has('tickets.collaborate')) {
+            <div class="ticket-collaboration-actions">
+              <p-button
+                type="button"
+                [label]="localization.translate('tickets.watchers.add')"
+                icon="pi pi-eye"
+                severity="secondary"
+                (onClick)="startAddWatcher()"
+              />
+            </div>
+          }
+
+          @if (watcherErrorKey(); as errorKey) {
+            <p-message severity="error" [text]="localization.translate(errorKey)" />
+          }
+
+          @if (watchersUnavailable()) {
+            <p-message
+              severity="warn"
+              [text]="localization.translate('tickets.watchers.unavailable')"
+            />
+          } @else if (watchers().length === 0) {
+            <sc-state-panel
+              state="empty"
+              icon="pi pi-eye-slash"
+              [message]="localization.translate('tickets.watchers.empty')"
+            />
+          } @else {
+            <ul class="ticket-watchers">
+              @for (watcher of watchers(); track watcher.userId) {
+                <li class="ticket-watcher">
+                  <span>{{ userLabel(watcher.userId) }}</span>
+                  @if (authorization.has('tickets.collaborate')) {
+                    <p-button
+                      type="button"
+                      [text]="true"
+                      severity="danger"
+                      icon="pi pi-times"
+                      [ariaLabel]="localization.translate('tickets.watchers.remove')"
+                      (onClick)="removeWatcher(watcher.userId)"
+                    />
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </p-card>
+
         @if (customer(); as ctxCustomer) {
           <p-card [header]="localization.translate('tickets.customerContext.section')">
             <sc-detail-grid>
@@ -462,6 +577,114 @@
             [label]="localization.translate('tickets.escalation.submit')"
             icon="pi pi-check"
             [disabled]="submittingEscalation()"
+          />
+        </div>
+      </form>
+    </p-dialog>
+
+    <p-dialog
+      [visible]="addingNote()"
+      (visibleChange)="onNoteDialogVisibleChange($event)"
+      [modal]="true"
+      [draggable]="false"
+      [dismissableMask]="true"
+      [style]="{ width: 'min(32rem, 92vw)' }"
+      [header]="localization.translate('tickets.notes.dialogTitle')"
+    >
+      <form class="sc-form" [formGroup]="noteForm" (ngSubmit)="submitNote()">
+        <label for="noteBody">{{ localization.translate('tickets.notes.fields.body') }}</label>
+        <textarea pTextarea id="noteBody" formControlName="body" rows="5"></textarea>
+
+        <label for="noteMentions">
+          {{ localization.translate('tickets.notes.fields.mentions') }}
+          <span class="field-optional">{{
+            localization.translate('tickets.assign.optional')
+          }}</span>
+        </label>
+        @if (agentsUnavailable()) {
+          <p-message
+            severity="warn"
+            [text]="localization.translate('tickets.assign.agentsUnavailable')"
+          />
+        } @else {
+          <p-multiselect
+            id="noteMentions"
+            formControlName="mentionedUserIds"
+            [options]="agentOptions()"
+            optionLabel="label"
+            optionValue="value"
+            display="chip"
+            [filter]="true"
+            [placeholder]="localization.translate('tickets.notes.mentionsPlaceholder')"
+          />
+        }
+
+        @if (noteErrorKey(); as errorKey) {
+          <p-message severity="error" [text]="localization.translate(errorKey)" />
+        }
+
+        <div class="sc-form-actions">
+          <p-button
+            type="button"
+            [label]="localization.translate('tickets.assign.cancel')"
+            severity="secondary"
+            (onClick)="cancelAddNote()"
+          />
+          <p-button
+            type="submit"
+            [label]="localization.translate('tickets.notes.submit')"
+            icon="pi pi-check"
+            [disabled]="submittingNote()"
+          />
+        </div>
+      </form>
+    </p-dialog>
+
+    <p-dialog
+      [visible]="addingWatcher()"
+      (visibleChange)="onWatcherDialogVisibleChange($event)"
+      [modal]="true"
+      [draggable]="false"
+      [dismissableMask]="true"
+      [style]="{ width: 'min(32rem, 92vw)' }"
+      [header]="localization.translate('tickets.watchers.dialogTitle')"
+    >
+      <form class="sc-form" [formGroup]="watcherForm" (ngSubmit)="submitWatcher()">
+        <label for="watcherUserId">{{
+          localization.translate('tickets.watchers.fields.user')
+        }}</label>
+        @if (agentsUnavailable()) {
+          <p-message
+            severity="warn"
+            [text]="localization.translate('tickets.assign.agentsUnavailable')"
+          />
+        } @else {
+          <p-select
+            id="watcherUserId"
+            formControlName="userId"
+            [options]="agentOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [filter]="true"
+          />
+        }
+
+        @if (watcherErrorKey(); as errorKey) {
+          <p-message severity="error" [text]="localization.translate(errorKey)" />
+        }
+
+        <div class="sc-form-actions">
+          <p-button
+            type="button"
+            [label]="localization.translate('tickets.assign.cancel')"
+            severity="secondary"
+            (onClick)="cancelAddWatcher()"
+          />
+          <p-button
+            type="submit"
+            [label]="localization.translate('tickets.watchers.submit')"
+            icon="pi pi-check"
+            [disabled]="submittingWatcher()"
           />
         </div>
       </form>

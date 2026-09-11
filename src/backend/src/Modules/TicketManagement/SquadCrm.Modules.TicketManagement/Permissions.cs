@@ -25,6 +25,22 @@ public static class Permissions
 
     /// <summary>Escalate a ticket (CRM-138).</summary>
     public const string TicketsEscalate = "tickets.escalate";
+
+    /// <summary>
+    /// Write internal collaboration on a ticket — add a note, add or remove a
+    /// watcher (CRM-147). One permission rather than four: collaboration is a
+    /// single coherent capability, and separate note/watcher permissions would
+    /// seed catalog entries no role or endpoint distinguishes today (YAGNI).
+    /// Reading notes and watchers reuses <see cref="TicketsView"/>, the CRM-139
+    /// precedent for a ticket's read-only sub-resources.
+    /// <para>
+    /// Handing a ticket off is NOT covered here: handoff is reassignment and
+    /// stays behind <see cref="TicketsAssign"/> (CRM-136), so collaboration
+    /// access can never become a second route to changing ownership (BR
+    /// "handoff uses the canonical ticket assignment capability").
+    /// </para>
+    /// </summary>
+    public const string TicketsCollaborate = "tickets.collaborate";
 }
 
 internal static class PermissionPolicies
@@ -38,4 +54,5 @@ internal static class PermissionPolicies
     public const string TicketsAssign = "permission:tickets.assign";
     public const string TicketsChangeStatus = "permission:tickets.changestatus";
     public const string TicketsEscalate = "permission:tickets.escalate";
+    public const string TicketsCollaborate = "permission:tickets.collaborate";
 }

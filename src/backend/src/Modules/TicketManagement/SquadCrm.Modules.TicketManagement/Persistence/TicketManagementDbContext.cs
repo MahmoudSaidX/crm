@@ -18,6 +18,18 @@ public sealed class TicketManagementDbContext(DbContextOptions<TicketManagementD
     /// <summary>Append-only escalation log (CRM-138).</summary>
     public DbSet<TicketEscalationHistory> TicketEscalationHistory => Set<TicketEscalationHistory>();
 
+    /// <summary>Append-only internal collaboration notes (CRM-147).</summary>
+    public DbSet<TicketInternalNote> TicketInternalNotes => Set<TicketInternalNote>();
+
+    /// <summary>Validated staff mentions on internal notes (CRM-147).</summary>
+    public DbSet<TicketNoteMention> TicketNoteMentions => Set<TicketNoteMention>();
+
+    /// <summary>Current watcher membership set (CRM-147).</summary>
+    public DbSet<TicketWatcher> TicketWatchers => Set<TicketWatcher>();
+
+    /// <summary>Append-only watcher membership-change log (CRM-147).</summary>
+    public DbSet<TicketWatcherHistory> TicketWatcherHistory => Set<TicketWatcherHistory>();
+
     /// <summary>This module's own transactional outbox table (CRM-133/ADR-005).</summary>
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
@@ -143,6 +155,82 @@ public sealed class TicketManagementDbContext(DbContextOptions<TicketManagementD
 
             // Read order for a single ticket's history (CRM-139 consumes it).
             entity.HasIndex(history => new { history.TicketId, history.EscalatedAtUtc });
+        });
+
+        modelBuilder.Entity<TicketInternalNote>(entity =>
+        {
+            entity.ToTable("ticket_internal_note");
+            entity.HasKey(note => note.Id);
+            entity.Property(note => note.Id).HasColumnName("id");
+            entity.Property(note => note.TicketId).HasColumnName("ticket_id");
+            entity.Property(note => note.Body).HasColumnName("body").HasMaxLength(4000);
+            entity.Property(note => note.CreatedBy).HasColumnName("created_by").HasMaxLength(256);
+            entity.Property(note => note.CreatedAtUtc).HasColumnName("created_at_utc");
+
+            // Chronological read of one ticket's notes — the notes list and the
+            // CRM-139 timeline arm both use exactly this order.
+            entity.HasIndex(note => new { note.TicketId, note.CreatedAtUtc });
+
+            // Domain events are a runtime-only concern, never persisted.
+            entity.Ignore(note => note.DomainEvents);
+        });
+
+        modelBuilder.Entity<TicketNoteMention>(entity =>
+        {
+            entity.ToTable("ticket_note_mention");
+            entity.HasKey(mention => mention.Id);
+            entity.Property(mention => mention.Id).HasColumnName("id");
+            entity.Property(mention => mention.NoteId).HasColumnName("note_id");
+            entity.Property(mention => mention.TicketId).HasColumnName("ticket_id");
+            entity.Property(mention => mention.MentionedUserId).HasColumnName("mentioned_user_id");
+            entity.Property(mention => mention.CreatedAtUtc).HasColumnName("created_at_utc");
+
+            // A note's mentions die with the note; nothing else references them.
+            entity.HasOne<TicketInternalNote>()
+                .WithMany()
+                .HasForeignKey(mention => mention.NoteId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // One mention per user per note: a request repeating the same id
+            // cannot produce two rows and therefore two notifications.
+            entity.HasIndex(mention => new { mention.NoteId, mention.MentionedUserId }).IsUnique();
+
+            // "Which tickets was I mentioned on" — the read CRM-155 will need.
+            entity.HasIndex(mention => new { mention.MentionedUserId, mention.CreatedAtUtc });
+        });
+
+        modelBuilder.Entity<TicketWatcher>(entity =>
+        {
+            entity.ToTable("ticket_watcher");
+            entity.HasKey(watcher => watcher.Id);
+            entity.Property(watcher => watcher.Id).HasColumnName("id");
+            entity.Property(watcher => watcher.TicketId).HasColumnName("ticket_id");
+            entity.Property(watcher => watcher.UserId).HasColumnName("user_id");
+            entity.Property(watcher => watcher.AddedBy).HasColumnName("added_by").HasMaxLength(256);
+            entity.Property(watcher => watcher.AddedAtUtc).HasColumnName("added_at_utc");
+
+            // Membership is a set: the database, not just the service's
+            // pre-check, rejects a duplicate under a concurrent double-add.
+            entity.HasIndex(watcher => new { watcher.TicketId, watcher.UserId }).IsUnique();
+
+            // Domain events are a runtime-only concern, never persisted.
+            entity.Ignore(watcher => watcher.DomainEvents);
+        });
+
+        modelBuilder.Entity<TicketWatcherHistory>(entity =>
+        {
+            entity.ToTable("ticket_watcher_history");
+            entity.HasKey(history => history.Id);
+            entity.Property(history => history.Id).HasColumnName("id");
+            entity.Property(history => history.TicketId).HasColumnName("ticket_id");
+            entity.Property(history => history.UserId).HasColumnName("user_id");
+            entity.Property(history => history.Action)
+                .HasColumnName("action").HasConversion<string>().HasMaxLength(32);
+            entity.Property(history => history.ChangedBy).HasColumnName("changed_by").HasMaxLength(256);
+            entity.Property(history => history.ChangedAtUtc).HasColumnName("changed_at_utc");
+
+            // Read order for a single ticket's history (CRM-139 consumes it).
+            entity.HasIndex(history => new { history.TicketId, history.ChangedAtUtc });
         });
 
         modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());

@@ -7,7 +7,7 @@ namespace SquadCrm.Api.Tests;
 /// Every ticket route requires an explicit permission policy while preserving
 /// the authentication boundary's 401 response for anonymous callers
 /// (CRM-133 create, CRM-134 list, CRM-135 detail, CRM-136 assign, CRM-137
-/// status, CRM-138 escalate, CRM-139 history).
+/// status, CRM-138 escalate, CRM-139 history, CRM-147 collaboration).
 /// </summary>
 public sealed class TicketEndpointsAuthorizationTests
 {
@@ -126,6 +126,74 @@ public sealed class TicketEndpointsAuthorizationTests
                 version = 1,
             },
             CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AddNote_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync(
+            $"/api/v1/tickets/{Guid.NewGuid()}/notes",
+            new
+            {
+                body = "Checked the customer's account, escalating internally.",
+                mentionedUserIds = Array.Empty<Guid>(),
+            },
+            CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ListNotes_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync(
+            $"/api/v1/tickets/{Guid.NewGuid()}/notes", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AddWatcher_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync(
+            $"/api/v1/tickets/{Guid.NewGuid()}/watchers",
+            new { userId = Guid.NewGuid() },
+            CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ListWatchers_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.GetAsync(
+            $"/api/v1/tickets/{Guid.NewGuid()}/watchers", CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RemoveWatcher_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.DeleteAsync(
+            $"/api/v1/tickets/{Guid.NewGuid()}/watchers/{Guid.NewGuid()}", CancellationToken.None);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }

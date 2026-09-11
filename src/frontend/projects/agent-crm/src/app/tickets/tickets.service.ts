@@ -149,6 +149,43 @@ export interface TicketTimelineEntry {
 }
 
 /**
+ * One internal collaboration note (CRM-147). Internal-only: this shape is
+ * served solely by the agent-facing notes endpoint behind `tickets.view`, and
+ * has no customer-portal equivalent at all.
+ *
+ * `mentionedUserIds` is an explicit, server-validated list rather than
+ * something parsed out of `body` — the backend rejects the whole note if any
+ * id is not an active staff user, so a mention cannot reach someone outside
+ * the organization.
+ */
+export interface TicketInternalNote {
+  readonly id: string;
+  readonly ticketId: string;
+  readonly body: string;
+  readonly createdBy: string;
+  readonly createdAtUtc: string;
+  readonly mentionedUserIds: readonly string[];
+}
+
+/** Add-internal-note command (CRM-147). Notes are append-only: no edit, no delete. */
+export interface AddTicketNoteRequest {
+  readonly body: string;
+  readonly mentionedUserIds: readonly string[];
+}
+
+/** One current watcher of a ticket (CRM-147). */
+export interface TicketWatcher {
+  readonly userId: string;
+  readonly addedBy: string;
+  readonly addedAtUtc: string;
+}
+
+/** Add-watcher command (CRM-147). Adding an existing watcher is a no-op. */
+export interface AddTicketWatcherRequest {
+  readonly userId: string;
+}
+
+/**
  * Ticket browse/search/list (CRM-134), ticket detail (CRM-135), ticket
  * assignment (CRM-136), status lifecycle (CRM-137) and manual escalation
  * (CRM-138) and the history timeline (CRM-139), all stories of the Ticket
@@ -221,5 +258,35 @@ export class TicketsService {
         params: { page: String(page), pageSize: String(pageSize) },
       }),
     );
+  }
+
+  listNotes(id: string, page: number, pageSize: number): Promise<PagedResult<TicketInternalNote>> {
+    return firstValueFrom(
+      this.http.get<PagedResult<TicketInternalNote>>(`/api/v1/tickets/${id}/notes`, {
+        params: { page: String(page), pageSize: String(pageSize) },
+      }),
+    );
+  }
+
+  addNote(id: string, request: AddTicketNoteRequest): Promise<TicketInternalNote> {
+    return firstValueFrom(
+      this.http.post<TicketInternalNote>(`/api/v1/tickets/${id}/notes`, request),
+    );
+  }
+
+  listWatchers(id: string, page: number, pageSize: number): Promise<PagedResult<TicketWatcher>> {
+    return firstValueFrom(
+      this.http.get<PagedResult<TicketWatcher>>(`/api/v1/tickets/${id}/watchers`, {
+        params: { page: String(page), pageSize: String(pageSize) },
+      }),
+    );
+  }
+
+  addWatcher(id: string, request: AddTicketWatcherRequest): Promise<TicketWatcher> {
+    return firstValueFrom(this.http.post<TicketWatcher>(`/api/v1/tickets/${id}/watchers`, request));
+  }
+
+  removeWatcher(id: string, userId: string): Promise<void> {
+    return firstValueFrom(this.http.delete<void>(`/api/v1/tickets/${id}/watchers/${userId}`));
   }
 }

@@ -11,7 +11,9 @@ import { TextareaModule } from 'primeng/textarea';
 import { PaginatorModule } from 'primeng/paginator';
 import {
   TicketDetail as TicketDetailModel,
+  TicketInternalNote,
   TicketTimelineEntry,
+  TicketWatcher,
   TicketsService,
 } from './tickets.service';
 import { TicketEscalationTargetType, TicketStatus } from '../ticket-create/ticket-create.service';
@@ -29,6 +31,7 @@ import { LocalizationService, TranslationKey } from '@squad-crm/platform';
 import { DetailGrid, PageContainer, PageHeader, StatePanel } from '@squad-crm/shared-ui';
 import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
+import { MultiSelectModule } from 'primeng/multiselect';
 
 /**
  * Read-only ticket detail (CRM-135). Follows the `audit-detail` definition-list
@@ -68,10 +71,18 @@ import { DialogModule } from 'primeng/dialog';
  * the ticket without the panel, never a "restricted" placeholder, so missing
  * access never leaks the existence of fields it can't see.
  *
+ * CRM-147 adds the internal collaboration panel — append-only notes with
+ * validated teammate mentions, and the ticket's watcher list — gated on
+ * `tickets.collaborate` for writes (UX only; the backend authorizes every
+ * call). It adds NO handoff control: handing a ticket to another agent is the
+ * existing assignment action above and handing it to a department is the
+ * existing escalation action, because a second ownership path would contradict
+ * the story's own Business Rule.
+ *
  * Not built here, because the capabilities they belong to do not exist yet:
- * customer-facing conversation (CRM-164+), internal notes (CRM-147) and SLA
- * state (CRM-149/150). Each is a separate story that will add its own section
- * and its own backend authorization.
+ * customer-facing conversation (CRM-164+) and SLA state (CRM-149/150). Each is
+ * a separate story that will add its own section and its own backend
+ * authorization.
  */
 @Component({
   selector: 'crm-ticket-detail',
@@ -87,6 +98,7 @@ import { DialogModule } from 'primeng/dialog';
     PaginatorModule,
     CardModule,
     DialogModule,
+    MultiSelectModule,
     PageContainer,
     PageHeader,
     DetailGrid,
@@ -236,6 +248,35 @@ export class TicketDetail {
     const current = this.ticket()?.status;
     const target = this.selectedStatus();
     return target === 'Closed' || current === 'Resolved' || current === 'Closed';
+  });
+
+  /** Page size of the notes and watchers sections; the backend caps at 200. */
+  protected readonly notesPageSize = 10;
+
+  readonly notes = signal<readonly TicketInternalNote[]>([]);
+  readonly notesPage = signal(1);
+  readonly notesTotal = signal(0);
+  readonly notesUnavailable = signal(false);
+  readonly addingNote = signal(false);
+  readonly submittingNote = signal(false);
+  readonly noteErrorKey = signal<TranslationKey | null>(null);
+
+  readonly watchers = signal<readonly TicketWatcher[]>([]);
+  readonly watchersUnavailable = signal(false);
+  readonly addingWatcher = signal(false);
+  readonly submittingWatcher = signal(false);
+  readonly watcherErrorKey = signal<TranslationKey | null>(null);
+
+  readonly noteForm = new FormGroup({
+    body: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.maxLength(4000)],
+    }),
+    mentionedUserIds: new FormControl<string[]>([], { nonNullable: true }),
+  });
+
+  readonly watcherForm = new FormGroup({
+    userId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
   });
 
   readonly categoryName = computed(() =>
@@ -544,6 +585,179 @@ export class TicketDetail {
     }
   }
 
+  /** `p-paginator` reports a 0-based first-row offset; the API pages from 1. */
+  async onNotesPageChange(first: number): Promise<void> {
+    await this.loadNotes(Math.floor(first / this.notesPageSize) + 1);
+  }
+
+  async startAddNote(): Promise<void> {
+    this.noteErrorKey.set(null);
+    this.noteForm.reset({ body: '', mentionedUserIds: [] });
+    this.addingNote.set(true);
+    await this.loadAgentOptions();
+  }
+
+  onNoteDialogVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.cancelAddNote();
+    }
+  }
+
+  cancelAddNote(): void {
+    this.addingNote.set(false);
+    this.noteErrorKey.set(null);
+  }
+
+  async submitNote(): Promise<void> {
+    const ticket = this.ticket();
+    if (!ticket) {
+      return;
+    }
+
+    const body = this.noteForm.controls.body.value.trim();
+    if (this.noteForm.invalid || body.length === 0) {
+      this.noteForm.markAllAsTouched();
+      this.noteErrorKey.set('tickets.notes.validation.body');
+      return;
+    }
+
+    this.submittingNote.set(true);
+    this.noteErrorKey.set(null);
+    try {
+      await this.ticketsService.addNote(ticket.id, {
+        body,
+        mentionedUserIds: this.noteForm.controls.mentionedUserIds.value,
+      });
+    } catch (error) {
+      // 422 means a mentioned user is not an active user — the backend rejects
+      // the whole note rather than dropping that mention, so the author is
+      // never left believing a teammate was notified.
+      const status = error instanceof HttpErrorResponse ? error.status : 0;
+      this.noteErrorKey.set(
+        status === 422 ? 'tickets.notes.errors.ineligibleUser' : 'tickets.notes.errors.failed',
+      );
+      this.submittingNote.set(false);
+      return;
+    }
+
+    this.submittingNote.set(false);
+    this.addingNote.set(false);
+    // Reload both: the note appears in the notes list AND as a history entry.
+    await Promise.all([this.loadNotes(1), this.loadHistory(1)]);
+  }
+
+  async startAddWatcher(): Promise<void> {
+    this.watcherErrorKey.set(null);
+    this.watcherForm.reset({ userId: '' });
+    this.addingWatcher.set(true);
+    await this.loadAgentOptions();
+  }
+
+  onWatcherDialogVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.cancelAddWatcher();
+    }
+  }
+
+  cancelAddWatcher(): void {
+    this.addingWatcher.set(false);
+    this.watcherErrorKey.set(null);
+  }
+
+  async submitWatcher(): Promise<void> {
+    const ticket = this.ticket();
+    if (!ticket) {
+      return;
+    }
+
+    if (this.watcherForm.invalid) {
+      this.watcherForm.markAllAsTouched();
+      this.watcherErrorKey.set('tickets.watchers.validation.user');
+      return;
+    }
+
+    this.submittingWatcher.set(true);
+    this.watcherErrorKey.set(null);
+    try {
+      await this.ticketsService.addWatcher(ticket.id, {
+        userId: this.watcherForm.controls.userId.value,
+      });
+    } catch (error) {
+      const status = error instanceof HttpErrorResponse ? error.status : 0;
+      this.watcherErrorKey.set(
+        status === 422
+          ? 'tickets.watchers.errors.ineligibleUser'
+          : 'tickets.watchers.errors.failed',
+      );
+      this.submittingWatcher.set(false);
+      return;
+    }
+
+    this.submittingWatcher.set(false);
+    this.addingWatcher.set(false);
+    await Promise.all([this.loadWatchers(), this.loadHistory(1)]);
+  }
+
+  async removeWatcher(userId: string): Promise<void> {
+    const ticket = this.ticket();
+    if (!ticket) {
+      return;
+    }
+
+    this.watcherErrorKey.set(null);
+    try {
+      await this.ticketsService.removeWatcher(ticket.id, userId);
+    } catch {
+      this.watcherErrorKey.set('tickets.watchers.errors.removeFailed');
+      return;
+    }
+    await Promise.all([this.loadWatchers(), this.loadHistory(1)]);
+  }
+
+  /**
+   * Resolves a user id to a display label from the agent lookup when it is
+   * loaded, falling back to the raw id — the same "never silently blank"
+   * approach the reference labels above use.
+   */
+  protected userLabel(userId: string): string {
+    return this.agentOptions().find((option) => option.value === userId)?.label ?? userId;
+  }
+
+  private async loadNotes(page: number): Promise<void> {
+    const ticket = this.ticket();
+    if (!ticket) {
+      return;
+    }
+    try {
+      const result = await this.ticketsService.listNotes(ticket.id, page, this.notesPageSize);
+      this.notes.set(result.items);
+      this.notesPage.set(result.page);
+      this.notesTotal.set(result.totalCount);
+      this.notesUnavailable.set(false);
+    } catch {
+      // Isolated like the history section: a notes failure must not blank the
+      // screen.
+      this.notes.set([]);
+      this.notesTotal.set(0);
+      this.notesUnavailable.set(true);
+    }
+  }
+
+  private async loadWatchers(): Promise<void> {
+    const ticket = this.ticket();
+    if (!ticket) {
+      return;
+    }
+    try {
+      const result = await this.ticketsService.listWatchers(ticket.id, 1, 100);
+      this.watchers.set(result.items);
+      this.watchersUnavailable.set(false);
+    } catch {
+      this.watchers.set([]);
+      this.watchersUnavailable.set(true);
+    }
+  }
+
   private async load(id: string): Promise<void> {
     let ticket: TicketDetailModel;
     try {
@@ -557,6 +771,12 @@ export class TicketDetail {
       this.loadReferenceLabels(ticket),
       this.loadHistory(1),
       this.loadCustomerContext(ticket.customerId),
+      this.loadNotes(1),
+      this.loadWatchers(),
+      // Loaded up front, not only when an action dialog opens, because the
+      // watcher list and note mention chips resolve ids to names through it.
+      // It fails softly: a caller without `users.view` sees raw ids.
+      this.loadAgentOptions(),
     ]);
   }
 

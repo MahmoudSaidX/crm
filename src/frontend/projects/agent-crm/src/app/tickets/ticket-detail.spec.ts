@@ -65,6 +65,18 @@ describe('TicketDetail', () => {
 
   const emptyHistoryPage = { items: [], page: 1, pageSize: 10, totalCount: 0 };
 
+  const note = {
+    id: 'note-1',
+    ticketId: 'ticket-1',
+    body: 'Customer called back; billing is investigating.',
+    createdBy: 'agent@example.test',
+    createdAtUtc: '2026-09-11T01:00:00Z',
+    mentionedUserIds: ['user-1'],
+  };
+
+  const emptyNotesPage = { items: [], page: 1, pageSize: 10, totalCount: 0 };
+  const emptyWatchersPage = { items: [], page: 1, pageSize: 100, totalCount: 0 };
+
   function configure(options: {
     get?: jasmine.Spy;
     customerGet?: jasmine.Spy;
@@ -76,6 +88,11 @@ describe('TicketDetail', () => {
     changeStatus?: jasmine.Spy;
     escalate?: jasmine.Spy;
     history?: jasmine.Spy;
+    listNotes?: jasmine.Spy;
+    addNote?: jasmine.Spy;
+    listWatchers?: jasmine.Spy;
+    addWatcher?: jasmine.Spy;
+    removeWatcher?: jasmine.Spy;
     staffList?: jasmine.Spy;
     departmentList?: jasmine.Spy;
     permissions?: readonly string[];
@@ -97,6 +114,12 @@ describe('TicketDetail', () => {
             changeStatus: options.changeStatus ?? jasmine.createSpy().and.resolveTo({}),
             escalate: options.escalate ?? jasmine.createSpy().and.resolveTo({}),
             history: options.history ?? jasmine.createSpy().and.resolveTo(emptyHistoryPage),
+            listNotes: options.listNotes ?? jasmine.createSpy().and.resolveTo(emptyNotesPage),
+            addNote: options.addNote ?? jasmine.createSpy().and.resolveTo(note),
+            listWatchers:
+              options.listWatchers ?? jasmine.createSpy().and.resolveTo(emptyWatchersPage),
+            addWatcher: options.addWatcher ?? jasmine.createSpy().and.resolveTo({}),
+            removeWatcher: options.removeWatcher ?? jasmine.createSpy().and.resolveTo(undefined),
           },
         },
         {
@@ -661,5 +684,120 @@ describe('TicketDetail', () => {
     expect(fixture.componentInstance.customerRecentActivity()).toEqual([]);
     expect(customerListContacts).not.toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).not.toContain('View full profile');
+  });
+
+  it('loads internal notes and watchers on load', async () => {
+    const listNotes = jasmine.createSpy().and.resolveTo({
+      items: [note],
+      page: 1,
+      pageSize: 10,
+      totalCount: 1,
+    });
+    const listWatchers = jasmine.createSpy().and.resolveTo({
+      items: [
+        { userId: 'user-1', addedBy: 'agent@example.test', addedAtUtc: '2026-09-11T02:00:00Z' },
+      ],
+      page: 1,
+      pageSize: 100,
+      totalCount: 1,
+    });
+    configure({ listNotes, listWatchers });
+    const fixture = await createComponent();
+
+    expect(listNotes).toHaveBeenCalledWith('ticket-1', 1, 10);
+    expect(listWatchers).toHaveBeenCalledWith('ticket-1', 1, 100);
+    expect(fixture.componentInstance.notes().length).toBe(1);
+    expect(fixture.componentInstance.watchers().length).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain(note.body);
+  });
+
+  it('keeps the ticket rendered when the notes read fails', async () => {
+    configure({
+      listNotes: jasmine.createSpy().and.rejectWith(new HttpErrorResponse({ status: 500 })),
+    });
+    const fixture = await createComponent();
+
+    expect(fixture.componentInstance.notesUnavailable()).toBeTrue();
+    expect(fixture.componentInstance.ticket()).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('TKT-000001');
+  });
+
+  it('hides the collaboration write actions without tickets.collaborate', async () => {
+    configure({ permissions: [] });
+    const fixture = await createComponent();
+
+    expect(fixture.nativeElement.textContent).not.toContain('Add note');
+    expect(fixture.nativeElement.textContent).not.toContain('Add watcher');
+  });
+
+  it('adds an internal note with the selected mentions and reloads the lists', async () => {
+    const addNote = jasmine.createSpy().and.resolveTo(note);
+    const listNotes = jasmine.createSpy().and.resolveTo(emptyNotesPage);
+    configure({ permissions: ['tickets.collaborate'], addNote, listNotes });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.startAddNote();
+    fixture.componentInstance.noteForm.setValue({
+      body: '  Escalating to billing.  ',
+      mentionedUserIds: ['user-1'],
+    });
+    await fixture.componentInstance.submitNote();
+
+    expect(addNote).toHaveBeenCalledWith('ticket-1', {
+      body: 'Escalating to billing.',
+      mentionedUserIds: ['user-1'],
+    });
+    expect(fixture.componentInstance.addingNote()).toBeFalse();
+    // Reloaded once on load and once after the write.
+    expect(listNotes).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports an ineligible mention instead of clearing the form', async () => {
+    const addNote = jasmine.createSpy().and.rejectWith(new HttpErrorResponse({ status: 422 }));
+    configure({ permissions: ['tickets.collaborate'], addNote });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.startAddNote();
+    fixture.componentInstance.noteForm.setValue({
+      body: 'Please review.',
+      mentionedUserIds: ['user-1'],
+    });
+    await fixture.componentInstance.submitNote();
+
+    expect(fixture.componentInstance.noteErrorKey()).toBe('tickets.notes.errors.ineligibleUser');
+    // The dialog stays open so the author can fix the mention rather than
+    // losing the text they typed.
+    expect(fixture.componentInstance.addingNote()).toBeTrue();
+  });
+
+  it('rejects an empty note before calling the backend', async () => {
+    const addNote = jasmine.createSpy();
+    configure({ permissions: ['tickets.collaborate'], addNote });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.startAddNote();
+    fixture.componentInstance.noteForm.setValue({ body: '   ', mentionedUserIds: [] });
+    await fixture.componentInstance.submitNote();
+
+    expect(addNote).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.noteErrorKey()).toBe('tickets.notes.validation.body');
+  });
+
+  it('adds and removes a watcher', async () => {
+    const addWatcher = jasmine.createSpy().and.resolveTo({});
+    const removeWatcher = jasmine.createSpy().and.resolveTo(undefined);
+    configure({ permissions: ['tickets.collaborate'], addWatcher, removeWatcher });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.startAddWatcher();
+    fixture.componentInstance.watcherForm.setValue({ userId: 'user-1' });
+    await fixture.componentInstance.submitWatcher();
+
+    expect(addWatcher).toHaveBeenCalledWith('ticket-1', { userId: 'user-1' });
+
+    await fixture.componentInstance.removeWatcher('user-1');
+
+    expect(removeWatcher).toHaveBeenCalledWith('ticket-1', 'user-1');
+    expect(fixture.componentInstance.watcherErrorKey()).toBeNull();
   });
 });
