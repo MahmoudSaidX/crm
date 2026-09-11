@@ -170,6 +170,10 @@ describe('TicketCreateForm', () => {
       status: 'Open',
       channel: 'Agent',
       assignedAgentId: null,
+      escalationLevel: 0,
+      escalationTargetType: null,
+      escalationTargetId: null,
+      escalatedAtUtc: null,
       createdAtUtc: '2026-08-29T00:00:00Z',
     });
     const fixture = TestBed.createComponent(TicketCreateForm);

@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 import { TicketListQuery, TicketsService } from './tickets.service';
 import { Ticket, TicketChannel, TicketStatus } from '../ticket-create/ticket-create.service';
 import { TicketCategoriesService } from '../ticket-categories/ticket-categories.service';
@@ -36,6 +37,7 @@ const CHANNEL_OPTIONS: readonly TicketChannel[] = [
     InputTextModule,
     SelectModule,
     TableModule,
+    TagModule,
     AgentLanguageSwitcher,
   ],
   templateUrl: './ticket-list.html',

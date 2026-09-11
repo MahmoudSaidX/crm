@@ -30,6 +30,10 @@ describe('TicketList', () => {
     status: 'Open' as const,
     channel: 'Agent' as const,
     assignedAgentId: null,
+    escalationLevel: 0,
+    escalationTargetType: null,
+    escalationTargetId: null,
+    escalatedAtUtc: null,
     createdAtUtc: '2026-09-02T00:00:00Z',
   };
   const ticketB = {
@@ -37,6 +41,12 @@ describe('TicketList', () => {
     id: 'ticket-b',
     ticketNumber: 'TKT-BBB222',
     subject: 'Billing issue',
+    // Escalated, so the list's escalation column is exercised independently of
+    // the status column (CRM-138).
+    escalationLevel: 2,
+    escalationTargetType: 'Department' as const,
+    escalationTargetId: 'department-a',
+    escalatedAtUtc: '2026-09-03T00:00:00Z',
   };
 
   let ticketsService: jasmine.SpyObj<TicketsService>;

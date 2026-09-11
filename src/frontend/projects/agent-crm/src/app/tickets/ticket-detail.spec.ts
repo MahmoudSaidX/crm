@@ -40,6 +40,10 @@ describe('TicketDetail', () => {
     status: 'Open',
     channel: 'Agent',
     assignedAgentId: null,
+    escalationLevel: 0,
+    escalationTargetType: null,
+    escalationTargetId: null,
+    escalatedAtUtc: null,
     createdAtUtc: '2026-09-11T00:00:00Z',
     updatedAtUtc: null,
     version: 1,
@@ -53,7 +57,9 @@ describe('TicketDetail', () => {
     branchGet?: jasmine.Spy;
     assign?: jasmine.Spy;
     changeStatus?: jasmine.Spy;
+    escalate?: jasmine.Spy;
     staffList?: jasmine.Spy;
+    departmentList?: jasmine.Spy;
     permissions?: readonly string[];
   }): void {
     TestBed.configureTestingModule({
@@ -68,6 +74,7 @@ describe('TicketDetail', () => {
             get: options.get ?? jasmine.createSpy().and.resolveTo(ticket),
             assign: options.assign ?? jasmine.createSpy().and.resolveTo({}),
             changeStatus: options.changeStatus ?? jasmine.createSpy().and.resolveTo({}),
+            escalate: options.escalate ?? jasmine.createSpy().and.resolveTo({}),
           },
         },
         {
@@ -84,6 +91,27 @@ describe('TicketDetail', () => {
             get:
               options.departmentGet ??
               jasmine.createSpy().and.resolveTo({ arabicName: 'الدعم', englishName: 'Support' }),
+            list:
+              options.departmentList ??
+              jasmine.createSpy().and.resolveTo({
+                items: [
+                  {
+                    id: 'department-1',
+                    arabicName: 'الدعم',
+                    englishName: 'Support',
+                    isActive: true,
+                  },
+                  {
+                    id: 'department-2',
+                    arabicName: 'مغلق',
+                    englishName: 'Closed team',
+                    isActive: false,
+                  },
+                ],
+                page: 1,
+                pageSize: 100,
+                totalCount: 2,
+              }),
           },
         },
         {
@@ -348,6 +376,128 @@ describe('TicketDetail', () => {
 
     expect(fixture.componentInstance.statusErrorKey()).toBe('tickets.status.errors.staleVersion');
     expect(fixture.componentInstance.changingStatus()).toBeTrue();
+  });
+
+  it('hides the escalation action without the tickets.escalate permission', async () => {
+    configure({});
+    const fixture = await createComponent();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Escalate ticket');
+  });
+
+  it('offers only active agents as escalation targets by default', async () => {
+    configure({ permissions: ['tickets.escalate'] });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.startEscalation();
+
+    expect(fixture.componentInstance.escalationTargetOptions()).toEqual([
+      { label: 'Agent', value: 'agent-1' },
+    ]);
+    expect(fixture.componentInstance.escalationTargetsUnavailable()).toBeFalse();
+  });
+
+  it('reloads active departments when the escalation target kind changes', async () => {
+    configure({ permissions: ['tickets.escalate'] });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.startEscalation();
+    await fixture.componentInstance.onEscalationTargetTypeSelected('Department');
+
+    expect(fixture.componentInstance.escalationTargetOptions()).toEqual([
+      { label: 'Support', value: 'department-1' },
+    ]);
+    expect(fixture.componentInstance.escalationForm.controls.targetId.value).toBe('');
+  });
+
+  it('submits the escalation target and reason without a level', async () => {
+    const escalate = jasmine.createSpy().and.resolveTo({});
+    configure({ permissions: ['tickets.escalate'], escalate });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.startEscalation();
+    fixture.componentInstance.escalationForm.setValue({
+      targetType: 'Agent',
+      targetId: 'agent-1',
+      reason: 'Needs a senior agent.',
+    });
+    await fixture.componentInstance.submitEscalation();
+
+    expect(escalate).toHaveBeenCalledWith('ticket-1', {
+      targetType: 'Agent',
+      targetId: 'agent-1',
+      reason: 'Needs a senior agent.',
+      version: 1,
+    });
+    expect(fixture.componentInstance.escalating()).toBeFalse();
+  });
+
+  it('requires a reason before escalating', async () => {
+    const escalate = jasmine.createSpy().and.resolveTo({});
+    configure({ permissions: ['tickets.escalate'], escalate });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.startEscalation();
+    fixture.componentInstance.escalationForm.setValue({
+      targetType: 'Agent',
+      targetId: 'agent-1',
+      reason: '   ',
+    });
+    await fixture.componentInstance.submitEscalation();
+
+    expect(escalate).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.escalationErrorKey()).toBe(
+      'tickets.escalation.validation.reason',
+    );
+  });
+
+  it('surfaces the stale-version message when the ticket changed before the escalation', async () => {
+    configure({
+      permissions: ['tickets.escalate'],
+      escalate: jasmine
+        .createSpy()
+        .and.rejectWith(new HttpErrorResponse({ status: 409, statusText: 'Conflict' })),
+    });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.startEscalation();
+    fixture.componentInstance.escalationForm.setValue({
+      targetType: 'Agent',
+      targetId: 'agent-1',
+      reason: 'Needs a senior agent.',
+    });
+    await fixture.componentInstance.submitEscalation();
+
+    expect(fixture.componentInstance.escalationErrorKey()).toBe(
+      'tickets.escalation.errors.staleVersion',
+    );
+    expect(fixture.componentInstance.escalating()).toBeTrue();
+  });
+
+  it('surfaces the not-escalatable message when the backend rejects a finished ticket', async () => {
+    configure({
+      permissions: ['tickets.escalate'],
+      escalate: jasmine.createSpy().and.rejectWith(
+        new HttpErrorResponse({
+          status: 422,
+          statusText: 'Unprocessable',
+          error: { code: 'tickets.not_escalatable' },
+        }),
+      ),
+    });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.startEscalation();
+    fixture.componentInstance.escalationForm.setValue({
+      targetType: 'Agent',
+      targetId: 'agent-1',
+      reason: 'Too late.',
+    });
+    await fixture.componentInstance.submitEscalation();
+
+    expect(fixture.componentInstance.escalationErrorKey()).toBe(
+      'tickets.escalation.errors.notEscalatable',
+    );
   });
 
   it('surfaces the invalid-transition message when the backend rejects the target status', async () => {

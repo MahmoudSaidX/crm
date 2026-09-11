@@ -78,6 +78,24 @@ public sealed record ChangeTicketStatusRequest(
     [property: MaxLength(500)] string? Reason,
     [property: Required] int Version);
 
+/// <summary>
+/// Manual escalation command (CRM-138). <paramref name="Version"/> is the
+/// ticket version the caller last read: a mismatch is rejected instead of
+/// applying a second escalation on top of a newer one (AC).
+/// <para>
+/// The escalation LEVEL is deliberately NOT part of the request — it is
+/// server-derived (<c>current + 1</c>), for the same reason
+/// <c>AssignTicketRequest</c> omits the assignment source: a client that could
+/// name its own level could corrupt the level sequence (AC "prevent unintended
+/// duplicate/escalation-level corruption").
+/// </para>
+/// </summary>
+public sealed record EscalateTicketRequest(
+    [property: Required, JsonConverter(typeof(JsonStringEnumConverter))] TicketEscalationTargetType TargetType,
+    [property: Required] Guid TargetId,
+    [property: Required, MaxLength(500)] string Reason,
+    [property: Required] int Version);
+
 public sealed record TicketResponse(
     Guid Id,
     string TicketNumber,
@@ -92,6 +110,10 @@ public sealed record TicketResponse(
     [property: JsonConverter(typeof(JsonStringEnumConverter))] TicketStatus Status,
     [property: JsonConverter(typeof(JsonStringEnumConverter))] TicketChannel Channel,
     Guid? AssignedAgentId,
+    int EscalationLevel,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] TicketEscalationTargetType? EscalationTargetType,
+    Guid? EscalationTargetId,
+    DateTimeOffset? EscalatedAtUtc,
     DateTimeOffset CreatedAtUtc);
 
 /// <summary>
@@ -107,6 +129,11 @@ public sealed record TicketResponse(
 /// Acceptance Override rules out adding cross-module summary infrastructure.
 /// The client composes them from each owning module's own API, which
 /// authorizes the caller independently.
+/// </para>
+/// <para>
+/// The escalation fields (CRM-138) are reported independently of
+/// <c>Status</c>: escalation is not a lifecycle status (BR). Level 0 means the
+/// ticket is not escalated, and the target fields are then null.
 /// </para>
 /// <para>
 /// <c>AllowedStatusTransitions</c> (CRM-137) is a UX hint so the screen offers
@@ -139,6 +166,10 @@ public sealed record TicketDetailResponse(
     [property: JsonConverter(typeof(JsonStringEnumConverter))] TicketStatus Status,
     [property: JsonConverter(typeof(JsonStringEnumConverter))] TicketChannel Channel,
     Guid? AssignedAgentId,
+    int EscalationLevel,
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] TicketEscalationTargetType? EscalationTargetType,
+    Guid? EscalationTargetId,
+    DateTimeOffset? EscalatedAtUtc,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? UpdatedAtUtc,
     int Version,

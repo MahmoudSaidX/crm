@@ -6,7 +6,8 @@ namespace SquadCrm.Api.Tests;
 /// <summary>
 /// Every ticket route requires an explicit permission policy while preserving
 /// the authentication boundary's 401 response for anonymous callers
-/// (CRM-133 create, CRM-134 list, CRM-135 detail, CRM-136 assign).
+/// (CRM-133 create, CRM-134 list, CRM-135 detail, CRM-136 assign, CRM-137
+/// status, CRM-138 escalate).
 /// </summary>
 public sealed class TicketEndpointsAuthorizationTests
 {
@@ -90,6 +91,26 @@ public sealed class TicketEndpointsAuthorizationTests
             {
                 targetStatus = "InProgress",
                 reason = (string?)null,
+                version = 1,
+            },
+            CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Escalate_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync(
+            $"/api/v1/tickets/{Guid.NewGuid()}/escalate",
+            new
+            {
+                targetType = "Agent",
+                targetId = Guid.NewGuid(),
+                reason = "Needs a senior agent.",
                 version = 1,
             },
             CancellationToken.None);

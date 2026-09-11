@@ -679,6 +679,273 @@ public sealed class TicketManagementTests
             detail!.AllowedStatusTransitions);
     }
 
+    [Fact]
+    public async Task Escalate_Succeeds_SetsLevelAndTarget_WritesHistory_BumpsVersion_AndWritesOutboxMessage()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid targetAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(targetAgentId, true));
+
+        TicketMutationResult result = await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, targetAgentId, "Needs a senior agent.", 1),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.None, result.Failure);
+        Assert.Equal(1, result.Ticket!.EscalationLevel);
+        Assert.Equal(TicketEscalationTargetType.Agent, result.Ticket.EscalationTargetType);
+        Assert.Equal(targetAgentId, result.Ticket.EscalationTargetId);
+        Assert.NotNull(result.Ticket.EscalatedAtUtc);
+        Assert.Equal(2, result.Ticket.Version);
+
+        // Escalation is not a lifecycle status (BR): the status is untouched.
+        Assert.Equal(TicketStatus.Open, result.Ticket.Status);
+
+        TicketEscalationHistory history = await context.TicketEscalationHistory
+            .AsNoTracking()
+            .SingleAsync(entry => entry.TicketId == ticketId);
+        Assert.Equal(0, history.PreviousLevel);
+        Assert.Equal(1, history.NewLevel);
+        Assert.Equal(TicketEscalationTargetType.Agent, history.TargetType);
+        Assert.Equal(targetAgentId, history.TargetId);
+        Assert.Equal("Needs a senior agent.", history.Reason);
+        Assert.Equal(TicketEscalationSource.Manual, history.Source);
+        Assert.Equal("lead@example.test", history.EscalatedBy);
+
+        OutboxMessage outboxMessage = await context.OutboxMessages
+            .AsNoTracking()
+            .SingleAsync(message => message.Type == "ticket-management.ticket-escalated.v1"
+                && message.Payload.Contains(ticketId.ToString()));
+        Assert.Contains("Agent", outboxMessage.Payload, StringComparison.Ordinal);
+        Assert.Single(auditRecorder.Requests, request =>
+            request.Action == "escalated" && request.EntityId == ticketId.ToString());
+    }
+
+    [Fact]
+    public async Task Escalate_Twice_ReachesLevelTwo_AndPreservesEarlierHistory()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid targetAgentId = Guid.NewGuid();
+        Guid departmentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(targetAgentId, true));
+        await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, targetAgentId, "First escalation.", 1),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+
+        TicketMutationResult result = await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Department, departmentId, "Still unresolved.", 2),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.None, result.Failure);
+        Assert.Equal(2, result.Ticket!.EscalationLevel);
+        Assert.Equal(TicketEscalationTargetType.Department, result.Ticket.EscalationTargetType);
+        Assert.Equal(departmentId, result.Ticket.EscalationTargetId);
+
+        List<TicketEscalationHistory> history = await context.TicketEscalationHistory
+            .AsNoTracking()
+            .Where(entry => entry.TicketId == ticketId)
+            .OrderBy(entry => entry.EscalatedAtUtc)
+            .ToListAsync();
+        Assert.Equal(2, history.Count);
+        Assert.Equal(1, history[0].NewLevel);
+        Assert.Equal("First escalation.", history[0].Reason);
+        Assert.Equal(1, history[1].PreviousLevel);
+        Assert.Equal(2, history[1].NewLevel);
+    }
+
+    [Fact]
+    public async Task Escalate_BlankReason_Fails_AndLeavesTicketUnescalated()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid targetAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(targetAgentId, true));
+
+        TicketMutationResult result = await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, targetAgentId, "   ", 1),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.ReasonRequired, result.Failure);
+        Ticket stored = await context.Tickets.AsNoTracking().SingleAsync(ticket => ticket.Id == ticketId);
+        Assert.Equal(0, stored.EscalationLevel);
+        Assert.Equal(1, stored.Version);
+        Assert.Empty(context.TicketEscalationHistory.Where(entry => entry.TicketId == ticketId));
+    }
+
+    [Fact]
+    public async Task Escalate_InactiveAgentTarget_Fails_AndLeavesTicketUnescalated()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid targetAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(targetAgentId, false));
+
+        TicketMutationResult result = await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, targetAgentId, "Needs attention.", 1),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.InvalidEscalationTarget, result.Failure);
+        Ticket stored = await context.Tickets.AsNoTracking().SingleAsync(ticket => ticket.Id == ticketId);
+        Assert.Equal(0, stored.EscalationLevel);
+        Assert.Null(stored.EscalationTargetId);
+    }
+
+    [Fact]
+    public async Task Escalate_UnknownAgentTarget_Fails()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        TicketService service = CreateService(context, auditRecorder, "lead@example.test", targetAgent: null);
+
+        TicketMutationResult result = await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, Guid.NewGuid(), "Needs attention.", 1),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.InvalidEscalationTarget, result.Failure);
+    }
+
+    [Fact]
+    public async Task Escalate_InactiveDepartmentTarget_Fails()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+
+        // The ticket was seeded through a service whose department lookup says
+        // active; this second service reports the ESCALATION target department
+        // as inactive.
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", departmentActive: false);
+
+        TicketMutationResult result = await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Department, Guid.NewGuid(), "Needs the team.", 1),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.InvalidEscalationTarget, result.Failure);
+    }
+
+    [Fact]
+    public async Task Escalate_ClosedTicket_IsRejectedAsNotEscalatable()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid targetAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(targetAgentId, true));
+        await service.ChangeStatusAsync(
+            ticketId, new ChangeTicketStatusRequest(TicketStatus.Resolved, null, 1), CancellationToken.None);
+        await service.ChangeStatusAsync(
+            ticketId, new ChangeTicketStatusRequest(TicketStatus.Closed, "Customer confirmed.", 2), CancellationToken.None);
+
+        TicketMutationResult result = await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, targetAgentId, "Too late.", 3),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.TicketNotEscalatable, result.Failure);
+        Ticket stored = await context.Tickets.AsNoTracking().SingleAsync(ticket => ticket.Id == ticketId);
+        Assert.Equal(0, stored.EscalationLevel);
+    }
+
+    [Fact]
+    public async Task Escalate_StaleVersion_Fails_AndLeavesLevelUnchanged()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid targetAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(targetAgentId, true));
+        await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, targetAgentId, "First escalation.", 1),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+
+        // Version 1 is what a caller that read the ticket BEFORE the first
+        // escalation would send: accepting it would bump the level twice for
+        // one decision.
+        TicketMutationResult result = await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, targetAgentId, "Same decision again.", 1),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.StaleVersion, result.Failure);
+        Ticket stored = await context.Tickets.AsNoTracking().SingleAsync(ticket => ticket.Id == ticketId);
+        Assert.Equal(1, stored.EscalationLevel);
+        Assert.Single(context.TicketEscalationHistory.Where(entry => entry.TicketId == ticketId));
+    }
+
+    [Fact]
+    public async Task Escalate_UnknownTicket_Fails()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        TicketService service = CreateService(
+            context,
+            new RecordingAuditRecorder(),
+            "lead@example.test",
+            targetAgent: new StaffSubjectReference(Guid.NewGuid(), true));
+
+        TicketMutationResult result = await service.EscalateAsync(
+            Guid.NewGuid(),
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, Guid.NewGuid(), "Needs attention.", 1),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.TicketNotFound, result.Failure);
+    }
+
+    [Fact]
+    public async Task GetDetail_ReportsEscalationState()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        Guid targetAgentId = Guid.NewGuid();
+        TicketService service = CreateService(
+            context, auditRecorder, "lead@example.test", targetAgent: new StaffSubjectReference(targetAgentId, true));
+        await service.EscalateAsync(
+            ticketId,
+            new EscalateTicketRequest(TicketEscalationTargetType.Agent, targetAgentId, "Needs a senior agent.", 1),
+            TicketEscalationSource.Manual,
+            CancellationToken.None);
+
+        TicketDetailResponse? detail = await service.GetDetailAsync(ticketId, CancellationToken.None);
+
+        Assert.NotNull(detail);
+        Assert.Equal(1, detail!.EscalationLevel);
+        Assert.Equal(TicketEscalationTargetType.Agent, detail.EscalationTargetType);
+        Assert.Equal(targetAgentId, detail.EscalationTargetId);
+        Assert.NotNull(detail.EscalatedAtUtc);
+    }
+
     /// <summary>Creates one persisted open, unassigned ticket and returns its id.</summary>
     private static async Task<Guid> SeedTicketAsync(
         TicketManagementDbContext context, RecordingAuditRecorder auditRecorder)

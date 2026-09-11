@@ -22,6 +22,9 @@ public static class Permissions
 
     /// <summary>Move a ticket through its lifecycle statuses (CRM-137).</summary>
     public const string TicketsChangeStatus = "tickets.changestatus";
+
+    /// <summary>Escalate a ticket (CRM-138).</summary>
+    public const string TicketsEscalate = "tickets.escalate";
 }
 
 internal static class PermissionPolicies
@@ -34,4 +37,5 @@ internal static class PermissionPolicies
     public const string TicketsView = "permission:tickets.view";
     public const string TicketsAssign = "permission:tickets.assign";
     public const string TicketsChangeStatus = "permission:tickets.changestatus";
+    public const string TicketsEscalate = "permission:tickets.escalate";
 }

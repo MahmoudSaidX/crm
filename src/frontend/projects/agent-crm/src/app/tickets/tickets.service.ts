@@ -1,7 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { Ticket, TicketChannel, TicketStatus } from '../ticket-create/ticket-create.service';
+import {
+  Ticket,
+  TicketChannel,
+  TicketEscalationTargetType,
+  TicketStatus,
+} from '../ticket-create/ticket-create.service';
 
 export type TicketSortBy = 'TicketNumber' | 'CreatedAtUtc';
 export type SortDirection = 'Asc' | 'Desc';
@@ -58,6 +63,15 @@ export interface TicketDetail {
   readonly status: TicketStatus;
   readonly channel: TicketChannel;
   readonly assignedAgentId: string | null;
+
+  /**
+   * Current escalation state (CRM-138). Level 0 means the ticket is not
+   * escalated; the target fields are then null.
+   */
+  readonly escalationLevel: number;
+  readonly escalationTargetType: TicketEscalationTargetType | null;
+  readonly escalationTargetId: string | null;
+  readonly escalatedAtUtc: string | null;
   readonly createdAtUtc: string;
   readonly updatedAtUtc: string | null;
   readonly version: number;
@@ -94,9 +108,21 @@ export interface ChangeTicketStatusRequest {
 }
 
 /**
+ * Manual escalation command (CRM-138). `version` is the ticket version the
+ * screen last read; `reason` is always required. The escalation LEVEL is not
+ * sent — the backend derives it, so a client cannot corrupt the sequence.
+ */
+export interface EscalateTicketRequest {
+  readonly targetType: TicketEscalationTargetType;
+  readonly targetId: string;
+  readonly reason: string;
+  readonly version: number;
+}
+
+/**
  * Ticket browse/search/list (CRM-134), ticket detail (CRM-135), ticket
- * assignment (CRM-136) and status lifecycle (CRM-137), all stories of the
- * Ticket Management epic CRM-130.
+ * assignment (CRM-136), status lifecycle (CRM-137) and manual escalation
+ * (CRM-138), all stories of the Ticket Management epic CRM-130.
  */
 @Injectable({ providedIn: 'root' })
 export class TicketsService {
@@ -150,5 +176,9 @@ export class TicketsService {
 
   changeStatus(id: string, request: ChangeTicketStatusRequest): Promise<Ticket> {
     return firstValueFrom(this.http.post<Ticket>(`/api/v1/tickets/${id}/status`, request));
+  }
+
+  escalate(id: string, request: EscalateTicketRequest): Promise<Ticket> {
+    return firstValueFrom(this.http.post<Ticket>(`/api/v1/tickets/${id}/escalate`, request));
   }
 }

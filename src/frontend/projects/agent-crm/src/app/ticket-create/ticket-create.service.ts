@@ -11,6 +11,12 @@ import { firstValueFrom } from 'rxjs';
 export type TicketStatus =
   'Open' | 'InProgress' | 'PendingCustomer' | 'PendingInternal' | 'Resolved' | 'Closed';
 
+/**
+ * Escalation target kinds (CRM-138). Only the two the backend can validate —
+ * an active agent and an active department — are supported.
+ */
+export type TicketEscalationTargetType = 'Agent' | 'Department';
+
 export type TicketChannel =
   'Agent' | 'Portal' | 'Email' | 'WhatsApp' | 'LiveChat' | 'SMS' | 'WebForm';
 
@@ -28,6 +34,16 @@ export interface Ticket {
   readonly status: TicketStatus;
   readonly channel: TicketChannel;
   readonly assignedAgentId: string | null;
+
+  /**
+   * Current escalation state (CRM-138), reported independently of `status` —
+   * escalation is not a lifecycle status. Level 0 means not escalated, and the
+   * target fields are then null.
+   */
+  readonly escalationLevel: number;
+  readonly escalationTargetType: TicketEscalationTargetType | null;
+  readonly escalationTargetId: string | null;
+  readonly escalatedAtUtc: string | null;
   readonly createdAtUtc: string;
 }
 
