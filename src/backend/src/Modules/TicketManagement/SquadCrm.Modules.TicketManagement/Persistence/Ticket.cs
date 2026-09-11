@@ -75,6 +75,23 @@ public sealed class Ticket : HasDomainEvents
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
     /// <summary>
+    /// Current escalation level (CRM-138). 0 means the ticket is not escalated;
+    /// each escalation raises it by one. Deliberately separate from
+    /// <see cref="Status"/>: escalation is not a lifecycle status (BR), so the
+    /// two are read and rendered independently.
+    /// </summary>
+    public int EscalationLevel { get; private set; }
+
+    /// <summary>Current escalation target kind; null while the ticket is not escalated.</summary>
+    public TicketEscalationTargetType? EscalationTargetType { get; private set; }
+
+    /// <summary>Current escalation target; null while the ticket is not escalated.</summary>
+    public Guid? EscalationTargetId { get; private set; }
+
+    /// <summary>When the CURRENT escalation happened; earlier ones live in history.</summary>
+    public DateTimeOffset? EscalatedAtUtc { get; private set; }
+
+    /// <summary>
     /// Null until a story that mutates a ticket writes it — no update path
     /// exists yet (assignment is CRM-136, status lifecycle CRM-137). Present
     /// because CRM-135's Fields Dictionary requires the detail view to carry
@@ -187,6 +204,41 @@ public sealed class Ticket : HasDomainEvents
 
         AddDomainEvent(new TicketStatusChangedDomainEvent(
             Id, TicketNumber, previousStatus, targetStatus, reason, changedAtUtc));
+    }
+
+    /// <summary>
+    /// Applies an escalation (CRM-138). The single canonical mutation for the
+    /// escalation state, so the version bump and
+    /// <see cref="TicketEscalatedDomainEvent"/> can never be forgotten at a
+    /// second call site — the automatic-escalation stories (CRM-153/154) reuse
+    /// it with <see cref="TicketEscalationSource.Automation"/> (BR). Eligibility,
+    /// authorization, target validity and the next level are decided by
+    /// <c>TicketService</c> before this is called — this method only applies an
+    /// already-validated change.
+    /// </summary>
+    public void Escalate(
+        int newLevel,
+        TicketEscalationTargetType targetType,
+        Guid targetId,
+        string reason,
+        TicketEscalationSource source,
+        DateTimeOffset escalatedAtUtc)
+    {
+        int previousLevel = EscalationLevel;
+        EscalationLevel = newLevel;
+        EscalationTargetType = targetType;
+        EscalationTargetId = targetId;
+        EscalatedAtUtc = escalatedAtUtc;
+        UpdatedAtUtc = escalatedAtUtc;
+
+        // Same reasoning as Assign/ChangeStatus: EF writes the ORIGINAL Version
+        // into the UPDATE's WHERE clause because it is the configured
+        // concurrency token, so a concurrent escalation loses the race with a
+        // DbUpdateConcurrencyException instead of corrupting the level.
+        Version++;
+
+        AddDomainEvent(new TicketEscalatedDomainEvent(
+            Id, TicketNumber, previousLevel, newLevel, targetType, targetId, reason, source, escalatedAtUtc));
     }
 
     private Ticket()

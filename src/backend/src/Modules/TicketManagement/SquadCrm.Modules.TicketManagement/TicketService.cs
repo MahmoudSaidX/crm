@@ -34,6 +34,12 @@ public enum TicketMutationFailure
 
     /// <summary>Target status is not reachable from the ticket's current status.</summary>
     InvalidStatusTransition,
+
+    /// <summary>A resolved or closed ticket has nothing left to escalate.</summary>
+    TicketNotEscalatable,
+
+    /// <summary>Escalation target is unknown or not active.</summary>
+    InvalidEscalationTarget,
 }
 
 public readonly record struct TicketMutationResult(Ticket? Ticket, TicketMutationFailure Failure)
@@ -237,6 +243,10 @@ internal sealed class TicketService(
                 ticket.Status,
                 ticket.Channel,
                 ticket.AssignedAgentId,
+                ticket.EscalationLevel,
+                ticket.EscalationTargetType,
+                ticket.EscalationTargetId,
+                ticket.EscalatedAtUtc,
                 ticket.CreatedAtUtc,
                 ticket.UpdatedAtUtc,
                 ticket.Version,
@@ -427,6 +437,110 @@ internal sealed class TicketService(
         }
 
         await RecordAuditAsync(ticket.Id, "status-changed", cancellationToken);
+        return TicketMutationResult.Success(ticket);
+    }
+
+    /// <summary>
+    /// The canonical escalation capability (CRM-138). The manual endpoint calls
+    /// it today; the automatic-escalation stories (CRM-153/154) call the same
+    /// method with <see cref="TicketEscalationSource.Automation"/> rather than
+    /// adding a second write path (BR).
+    /// <para>
+    /// The new level is derived here as <c>current + 1</c> — never taken from
+    /// the caller — so a client cannot corrupt the level sequence, and the
+    /// version check plus the database concurrency token make two concurrent
+    /// escalations resolve to one winner instead of two level bumps (AC).
+    /// </para>
+    /// <para>
+    /// Escalation leaves <see cref="Ticket.Status"/> untouched: escalation is
+    /// not a lifecycle status (BR).
+    /// </para>
+    /// </summary>
+    public async Task<TicketMutationResult> EscalateAsync(
+        Guid ticketId,
+        EscalateTicketRequest request,
+        TicketEscalationSource source,
+        CancellationToken cancellationToken)
+    {
+        Ticket? ticket = await dbContext.Tickets.SingleOrDefaultAsync(
+            candidate => candidate.Id == ticketId, cancellationToken);
+        if (ticket is null)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.TicketNotFound);
+        }
+
+        // Checked before anything else mutates: a caller working from a stale
+        // read must not stack a second escalation onto a newer one (AC). The
+        // database concurrency token below closes the remaining race window
+        // before SaveChanges.
+        if (ticket.Version != request.Version)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.StaleVersion);
+        }
+
+        // Eligibility: a ticket that is already resolved or closed has nothing
+        // left to escalate. Every other lifecycle status is eligible.
+        if (ticket.Status is TicketStatus.Resolved or TicketStatus.Closed)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.TicketNotEscalatable);
+        }
+
+        string reason = request.Reason.Trim();
+        if (reason.Length == 0)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.ReasonRequired);
+        }
+
+        // Target validity, as strong as the existing cross-module contracts
+        // allow: an active staff user or an active department. No
+        // organizational-scope model exists on ICurrentUserAccessor yet (the
+        // same documented gap as CRM-136), so no scope check is faked here.
+        bool targetValid = request.TargetType switch
+        {
+            TicketEscalationTargetType.Agent =>
+                await staffSubjectReferenceReader.FindByIdAsync(request.TargetId, cancellationToken)
+                    is { IsActive: true },
+            TicketEscalationTargetType.Department =>
+                await departmentActiveLookup.IsActiveAsync(request.TargetId, cancellationToken),
+            _ => false,
+        };
+        if (!targetValid)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.InvalidEscalationTarget);
+        }
+
+        DateTimeOffset escalatedAtUtc = DateTimeOffset.UtcNow;
+        int previousLevel = ticket.EscalationLevel;
+        int newLevel = previousLevel + 1;
+        ticket.Escalate(newLevel, request.TargetType, request.TargetId, reason, source, escalatedAtUtc);
+
+        // Same change tracker, therefore the same transaction as the ticket
+        // update and the outbox row: history, escalation state and event commit
+        // together or not at all.
+        dbContext.TicketEscalationHistory.Add(new TicketEscalationHistory
+        {
+            Id = Guid.NewGuid(),
+            TicketId = ticket.Id,
+            PreviousLevel = previousLevel,
+            NewLevel = newLevel,
+            TargetType = request.TargetType,
+            TargetId = request.TargetId,
+            Reason = reason,
+            Source = source,
+            EscalatedBy = currentUserAccessor.Handle ?? "unknown",
+            EscalatedAtUtc = escalatedAtUtc,
+        });
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.StaleVersion);
+        }
+
+        await RecordAuditAsync(ticket.Id, "escalated", cancellationToken);
         return TicketMutationResult.Success(ticket);
     }
 

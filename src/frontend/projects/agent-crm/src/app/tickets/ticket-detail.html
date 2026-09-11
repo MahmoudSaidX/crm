@@ -200,6 +200,107 @@
     </section>
 
     <section class="ticket-detail-section">
+      <h2>{{ localization.translate('tickets.escalation.section') }}</h2>
+      <dl class="ticket-detail-fields">
+        <dt>{{ localization.translate('tickets.fields.escalation') }}</dt>
+        <dd>
+          @if (detail.escalationLevel > 0) {
+            <p-tag
+              severity="warn"
+              [value]="
+                localization.translate('tickets.escalation.level') + ' ' + detail.escalationLevel
+              "
+            />
+          } @else {
+            {{ localization.translate('tickets.escalation.notEscalated') }}
+          }
+        </dd>
+
+        @if (detail.escalationLevel > 0) {
+          <dt>{{ localization.translate('tickets.escalation.fields.target') }}</dt>
+          <dd>
+            @if (detail.escalationTargetType) {
+              {{ escalationTargetTypeLabel(detail.escalationTargetType) }} —
+            }
+            {{ detail.escalationTargetId }}
+          </dd>
+
+          <dt>{{ localization.translate('tickets.escalation.fields.escalatedAt') }}</dt>
+          <dd>{{ detail.escalatedAtUtc | date: 'medium' }}</dd>
+        }
+      </dl>
+
+      @if (authorization.has('tickets.escalate') && !escalating()) {
+        <p-button
+          [label]="localization.translate('tickets.escalation.escalate')"
+          icon="pi pi-arrow-up"
+          severity="secondary"
+          (onClick)="startEscalation()"
+        />
+      }
+
+      @if (escalating()) {
+        <form
+          class="ticket-assign-form"
+          [formGroup]="escalationForm"
+          (ngSubmit)="submitEscalation()"
+        >
+          <label for="escalationTargetType">{{
+            localization.translate('tickets.escalation.fields.targetType')
+          }}</label>
+          <p-select
+            id="escalationTargetType"
+            formControlName="targetType"
+            [options]="escalationTargetTypeOptions()"
+            optionLabel="label"
+            optionValue="value"
+            (onChange)="onEscalationTargetTypeSelected($event.value)"
+          />
+
+          <label for="escalationTargetId">{{
+            localization.translate('tickets.escalation.fields.target')
+          }}</label>
+          <p-select
+            id="escalationTargetId"
+            formControlName="targetId"
+            [options]="escalationTargetOptions()"
+            optionLabel="label"
+            optionValue="value"
+          />
+          @if (escalationTargetsUnavailable()) {
+            <small class="field-error">{{
+              localization.translate('tickets.escalation.targetsUnavailable')
+            }}</small>
+          }
+
+          <label for="escalationReason">{{
+            localization.translate('tickets.escalation.fields.reason')
+          }}</label>
+          <textarea pTextarea id="escalationReason" formControlName="reason" rows="3"></textarea>
+
+          @if (escalationErrorKey(); as errorKey) {
+            <p-message severity="error" [text]="localization.translate(errorKey)" />
+          }
+
+          <div class="ticket-assign-actions">
+            <p-button
+              type="submit"
+              [label]="localization.translate('tickets.escalation.submit')"
+              icon="pi pi-check"
+              [disabled]="submittingEscalation()"
+            />
+            <p-button
+              type="button"
+              [label]="localization.translate('tickets.assign.cancel')"
+              severity="secondary"
+              (onClick)="cancelEscalation()"
+            />
+          </div>
+        </form>
+      }
+    </section>
+
+    <section class="ticket-detail-section">
       <h2>{{ localization.translate('tickets.detail.timestamps') }}</h2>
       <dl class="ticket-detail-fields">
         <dt>{{ localization.translate('tickets.fields.createdAt') }}</dt>

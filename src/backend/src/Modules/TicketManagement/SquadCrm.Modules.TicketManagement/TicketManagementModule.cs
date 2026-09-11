@@ -85,6 +85,9 @@ public sealed class TicketManagementModule : IModule
         tickets.MapPost("/{id:guid}/status", ChangeTicketStatusAsync)
             .ValidatesDataAnnotations<ChangeTicketStatusRequest>()
             .RequireAuthorization(PermissionPolicies.TicketsChangeStatus);
+        tickets.MapPost("/{id:guid}/escalate", EscalateTicketAsync)
+            .ValidatesDataAnnotations<EscalateTicketRequest>()
+            .RequireAuthorization(PermissionPolicies.TicketsEscalate);
     }
 
     private static async Task<IResult> CreateAsync(
@@ -327,6 +330,41 @@ public sealed class TicketManagementModule : IModule
         };
     }
 
+    private static async Task<IResult> EscalateTicketAsync(
+        Guid id,
+        EscalateTicketRequest request,
+        TicketService ticketService,
+        CancellationToken cancellationToken)
+    {
+        // Source is fixed to Manual here: this endpoint is the manual action.
+        // The automatic-escalation stories (CRM-153/154) call the same service
+        // method with Automation from their own trigger.
+        TicketMutationResult result = await ticketService.EscalateAsync(
+            id, request, Persistence.TicketEscalationSource.Manual, cancellationToken);
+        return result.Failure switch
+        {
+            TicketMutationFailure.None => Results.Ok(ToResponse(result.Ticket!)),
+            TicketMutationFailure.TicketNotFound => NotFoundTicketProblem(),
+            TicketMutationFailure.TicketNotEscalatable => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "A resolved or closed ticket cannot be escalated.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tickets.not_escalatable" }),
+            TicketMutationFailure.InvalidEscalationTarget => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "The selected escalation target is not active.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tickets.invalid_escalation_target" }),
+            TicketMutationFailure.ReasonRequired => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "A reason is required when escalating a ticket.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tickets.reason_required" }),
+            TicketMutationFailure.StaleVersion => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "The ticket was changed by someone else. Reload it and try again.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tickets.stale_version" }),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
     private static IResult NotFoundTicketProblem() => Results.Problem(
         statusCode: StatusCodes.Status404NotFound,
         title: "Ticket not found.",
@@ -346,6 +384,10 @@ public sealed class TicketManagementModule : IModule
         ticket.Status,
         ticket.Channel,
         ticket.AssignedAgentId,
+        ticket.EscalationLevel,
+        ticket.EscalationTargetType,
+        ticket.EscalationTargetId,
+        ticket.EscalatedAtUtc,
         ticket.CreatedAtUtc);
 
     private static IResult NotFoundProblem() => Results.Problem(

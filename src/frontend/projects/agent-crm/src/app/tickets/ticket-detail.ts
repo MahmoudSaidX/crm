@@ -9,7 +9,7 @@ import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { TicketDetail as TicketDetailModel, TicketsService } from './tickets.service';
-import { TicketStatus } from '../ticket-create/ticket-create.service';
+import { TicketEscalationTargetType, TicketStatus } from '../ticket-create/ticket-create.service';
 import { AuthorizationState } from '../auth/authorization.state';
 import { StaffUser, StaffUsersService } from '../staff-users/staff-users.service';
 import { CustomersService } from '../customers/customers.service';
@@ -39,11 +39,15 @@ import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
  * own `allowedStatusTransitions` — the client never hardcodes the lifecycle
  * matrix, and the backend re-validates the transition it receives.
  *
+ * CRM-138 adds the manual escalation action in the same inline-form shape,
+ * gated on `tickets.escalate`. Escalation renders in its own section, never
+ * merged into the status section: escalation is not a lifecycle status (BR).
+ * The escalation LEVEL is never sent — the backend derives it.
+ *
  * Not built here, because the capabilities they belong to do not exist yet:
  * ticket history timeline (CRM-139), customer-facing conversation (CRM-164+),
- * internal notes (CRM-147), SLA/escalation state (CRM-149/150/153), and the
- * manual escalation action (CRM-138). Each is a separate story that
- * will add its own section and its own backend authorization.
+ * internal notes (CRM-147) and SLA state (CRM-149/150). Each is a separate
+ * story that will add its own section and its own backend authorization.
  */
 @Component({
   selector: 'crm-ticket-detail',
@@ -94,6 +98,41 @@ export class TicketDetail {
    */
   readonly agentOptions = signal<{ readonly label: string; readonly value: string }[]>([]);
   readonly agentsUnavailable = signal(false);
+
+  readonly escalating = signal(false);
+  readonly submittingEscalation = signal(false);
+  readonly escalationErrorKey = signal<TranslationKey | null>(null);
+
+  /**
+   * Empty when the caller lacks the owning module's view permission or the
+   * lookup failed — the form then explains why no target can be picked instead
+   * of showing an empty select with no reason.
+   */
+  readonly escalationTargetOptions = signal<{ readonly label: string; readonly value: string }[]>(
+    [],
+  );
+  readonly escalationTargetsUnavailable = signal(false);
+
+  readonly escalationForm = new FormGroup({
+    targetType: new FormControl<TicketEscalationTargetType>('Agent', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    targetId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    reason: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.maxLength(500)],
+    }),
+  });
+
+  readonly escalationTargetTypeOptions = computed(() =>
+    (['Agent', 'Department'] as const).map((targetType) => ({
+      label: this.localization.translate(
+        `tickets.escalation.targetTypes.${targetType}` as TranslationKey,
+      ),
+      value: targetType,
+    })),
+  );
 
   readonly changingStatus = signal(false);
   readonly submittingStatus = signal(false);
@@ -227,6 +266,106 @@ export class TicketDetail {
     await this.load(ticket.id);
   }
 
+  async startEscalation(): Promise<void> {
+    this.escalationErrorKey.set(null);
+    this.escalationForm.reset({ targetType: 'Agent', targetId: '', reason: '' });
+    this.escalating.set(true);
+    await this.loadEscalationTargets('Agent');
+  }
+
+  /** Switching the target kind reloads the target list and clears the choice. */
+  async onEscalationTargetTypeSelected(targetType: TicketEscalationTargetType): Promise<void> {
+    this.escalationForm.controls.targetId.setValue('');
+    await this.loadEscalationTargets(targetType);
+  }
+
+  cancelEscalation(): void {
+    this.escalating.set(false);
+    this.escalationErrorKey.set(null);
+  }
+
+  async submitEscalation(): Promise<void> {
+    const ticket = this.ticket();
+    if (!ticket) {
+      return;
+    }
+
+    const reason = this.escalationForm.controls.reason.value.trim();
+    const targetId = this.escalationForm.controls.targetId.value;
+    if (this.escalationForm.invalid || targetId === '' || reason.length === 0) {
+      this.escalationForm.markAllAsTouched();
+      this.escalationErrorKey.set(
+        targetId === ''
+          ? 'tickets.escalation.validation.target'
+          : 'tickets.escalation.validation.reason',
+      );
+      return;
+    }
+
+    this.submittingEscalation.set(true);
+    this.escalationErrorKey.set(null);
+    try {
+      await this.ticketsService.escalate(ticket.id, {
+        targetType: this.escalationForm.controls.targetType.value,
+        targetId,
+        reason,
+        // The level is NOT sent: the backend derives it from the ticket's
+        // current level, so a stale screen cannot corrupt the sequence.
+        version: ticket.version,
+      });
+    } catch (error) {
+      // 409: someone else changed the ticket first — reload rather than retry
+      // with a version already known to be stale. 422 covers both an
+      // ineligible ticket and an inactive target; the response code
+      // distinguishes them.
+      const response = error instanceof HttpErrorResponse ? error : null;
+      const code = response?.error?.code as string | undefined;
+      this.escalationErrorKey.set(
+        response?.status === 409
+          ? 'tickets.escalation.errors.staleVersion'
+          : code === 'tickets.not_escalatable'
+            ? 'tickets.escalation.errors.notEscalatable'
+            : code === 'tickets.invalid_escalation_target'
+              ? 'tickets.escalation.errors.invalidTarget'
+              : 'tickets.escalation.errors.failed',
+      );
+      this.submittingEscalation.set(false);
+      return;
+    }
+
+    this.submittingEscalation.set(false);
+    this.escalating.set(false);
+    // Reload: the new level, target, timestamp and version are all
+    // server-decided.
+    await this.load(ticket.id);
+  }
+
+  private async loadEscalationTargets(targetType: TicketEscalationTargetType): Promise<void> {
+    try {
+      const options =
+        targetType === 'Agent'
+          ? (await this.staffUsersService.list(1, 100)).items
+              .filter((user: StaffUser) => user.isActive)
+              .map((user: StaffUser) => ({
+                label: user.displayName ?? user.email,
+                value: user.id,
+              }))
+          : (await this.departmentsService.list(1, 100)).items
+              .filter((department) => department.isActive)
+              .map((department) => ({
+                label:
+                  this.localizedName(department.arabicName, department.englishName) ??
+                  department.id,
+                value: department.id,
+              }));
+      this.escalationTargetOptions.set(options);
+      this.escalationTargetsUnavailable.set(false);
+    } catch {
+      this.escalationTargetOptions.set([]);
+      this.escalationTargetsUnavailable.set(true);
+    }
+  }
+
   async startAssignment(): Promise<void> {
     this.assignmentErrorKey.set(null);
     this.assignForm.reset({ targetAgentId: '', reason: '' });
@@ -345,6 +484,12 @@ export class TicketDetail {
     } catch {
       target.set(null);
     }
+  }
+
+  protected escalationTargetTypeLabel(targetType: TicketEscalationTargetType): string {
+    return this.localization.translate(
+      `tickets.escalation.targetTypes.${targetType}` as TranslationKey,
+    );
   }
 
   protected statusLabel(status: TicketStatus): string {

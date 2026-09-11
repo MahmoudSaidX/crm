@@ -15,6 +15,9 @@ public sealed class TicketManagementDbContext(DbContextOptions<TicketManagementD
     /// <summary>Append-only lifecycle status-change log (CRM-137).</summary>
     public DbSet<TicketStatusHistory> TicketStatusHistory => Set<TicketStatusHistory>();
 
+    /// <summary>Append-only escalation log (CRM-138).</summary>
+    public DbSet<TicketEscalationHistory> TicketEscalationHistory => Set<TicketEscalationHistory>();
+
     /// <summary>This module's own transactional outbox table (CRM-133/ADR-005).</summary>
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
@@ -74,6 +77,11 @@ public sealed class TicketManagementDbContext(DbContextOptions<TicketManagementD
             entity.Property(ticket => ticket.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(32);
             entity.Property(ticket => ticket.Channel).HasColumnName("channel").HasConversion<string>().HasMaxLength(32);
             entity.Property(ticket => ticket.AssignedAgentId).HasColumnName("assigned_agent_id");
+            entity.Property(ticket => ticket.EscalationLevel).HasColumnName("escalation_level");
+            entity.Property(ticket => ticket.EscalationTargetType)
+                .HasColumnName("escalation_target_type").HasConversion<string>().HasMaxLength(32);
+            entity.Property(ticket => ticket.EscalationTargetId).HasColumnName("escalation_target_id");
+            entity.Property(ticket => ticket.EscalatedAtUtc).HasColumnName("escalated_at_utc");
             entity.Property(ticket => ticket.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(ticket => ticket.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(ticket => ticket.Version).HasColumnName("version").IsConcurrencyToken();
@@ -115,6 +123,26 @@ public sealed class TicketManagementDbContext(DbContextOptions<TicketManagementD
 
             // Read order for a single ticket's history (CRM-139 consumes it).
             entity.HasIndex(history => new { history.TicketId, history.ChangedAtUtc });
+        });
+
+        modelBuilder.Entity<TicketEscalationHistory>(entity =>
+        {
+            entity.ToTable("ticket_escalation_history");
+            entity.HasKey(history => history.Id);
+            entity.Property(history => history.Id).HasColumnName("id");
+            entity.Property(history => history.TicketId).HasColumnName("ticket_id");
+            entity.Property(history => history.PreviousLevel).HasColumnName("previous_level");
+            entity.Property(history => history.NewLevel).HasColumnName("new_level");
+            entity.Property(history => history.TargetType)
+                .HasColumnName("target_type").HasConversion<string>().HasMaxLength(32);
+            entity.Property(history => history.TargetId).HasColumnName("target_id");
+            entity.Property(history => history.Reason).HasColumnName("reason").HasMaxLength(500);
+            entity.Property(history => history.Source).HasColumnName("source").HasConversion<string>().HasMaxLength(32);
+            entity.Property(history => history.EscalatedBy).HasColumnName("escalated_by").HasMaxLength(256);
+            entity.Property(history => history.EscalatedAtUtc).HasColumnName("escalated_at_utc");
+
+            // Read order for a single ticket's history (CRM-139 consumes it).
+            entity.HasIndex(history => new { history.TicketId, history.EscalatedAtUtc });
         });
 
         modelBuilder.ApplyConfiguration(new OutboxMessageConfiguration());
