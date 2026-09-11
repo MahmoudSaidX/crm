@@ -80,6 +80,8 @@ public sealed class TicketManagementModule : IModule
             .RequireAuthorization(PermissionPolicies.TicketsCreate);
         tickets.MapGet("", ListTicketsAsync).RequireAuthorization(PermissionPolicies.TicketsView);
         tickets.MapGet("/{id:guid}", GetTicketAsync).RequireAuthorization(PermissionPolicies.TicketsView);
+        tickets.MapPost("/{id:guid}/assign", AssignTicketAsync).ValidatesDataAnnotations<AssignTicketRequest>()
+            .RequireAuthorization(PermissionPolicies.TicketsAssign);
     }
 
     private static async Task<IResult> CreateAsync(
@@ -262,6 +264,37 @@ public sealed class TicketManagementModule : IModule
     {
         TicketDetailResponse? detail = await ticketService.GetDetailAsync(id, cancellationToken);
         return detail is null ? NotFoundTicketProblem() : Results.Ok(detail);
+    }
+
+    private static async Task<IResult> AssignTicketAsync(
+        Guid id,
+        AssignTicketRequest request,
+        TicketService ticketService,
+        CancellationToken cancellationToken)
+    {
+        // Source is fixed to Manual here: this endpoint is the manual action.
+        // The automatic-assignment stories (CRM-151/152) call the same service
+        // method with Automation from their own trigger.
+        TicketMutationResult result = await ticketService.AssignAsync(
+            id, request, Persistence.TicketAssignmentSource.Manual, cancellationToken);
+        return result.Failure switch
+        {
+            TicketMutationFailure.None => Results.Ok(ToResponse(result.Ticket!)),
+            TicketMutationFailure.TicketNotFound => NotFoundTicketProblem(),
+            TicketMutationFailure.IneligibleAgent => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "The selected agent is not an active user.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tickets.ineligible_agent" }),
+            TicketMutationFailure.ReasonRequired => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "A reason is required when reassigning a ticket that already has an owner.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tickets.reason_required" }),
+            TicketMutationFailure.StaleVersion => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "The ticket was changed by someone else. Reload it and try again.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tickets.stale_version" }),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
     }
 
     private static IResult NotFoundTicketProblem() => Results.Problem(

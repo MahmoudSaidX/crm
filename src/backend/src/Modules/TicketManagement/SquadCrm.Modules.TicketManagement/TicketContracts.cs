@@ -52,6 +52,21 @@ public sealed record CreateTicketRequest(
     [property: JsonConverter(typeof(JsonStringEnumConverter))] TicketChannel Channel,
     Guid? AssignedAgentId);
 
+/// <summary>
+/// Assignment/reassignment command (CRM-136). <paramref name="Version"/> is the
+/// ticket version the caller last read: a mismatch is rejected instead of
+/// silently overwriting a newer owner (AC).
+/// <para>
+/// <c>AssignmentSource</c> is deliberately NOT part of the request — it is
+/// server-decided (always <c>Manual</c> on this endpoint) so a client cannot
+/// label its own call as an automation and bypass the reassignment-reason rule.
+/// </para>
+/// </summary>
+public sealed record AssignTicketRequest(
+    [property: Required] Guid TargetAgentId,
+    [property: MaxLength(500)] string? Reason,
+    [property: Required] int Version);
+
 public sealed record TicketResponse(
     Guid Id,
     string TicketNumber,

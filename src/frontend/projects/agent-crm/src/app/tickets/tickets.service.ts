@@ -64,8 +64,20 @@ export interface TicketDetail {
 }
 
 /**
- * Ticket browse/search/list (CRM-134) and ticket detail (CRM-135), both
- * stories of the Ticket Management epic CRM-130.
+ * Assignment/reassignment command (CRM-136). `version` is the ticket version
+ * the screen last read: the backend rejects a stale value instead of
+ * overwriting a newer owner. `reason` is required by the backend only when an
+ * existing owner is replaced.
+ */
+export interface AssignTicketRequest {
+  readonly targetAgentId: string;
+  readonly reason: string | null;
+  readonly version: number;
+}
+
+/**
+ * Ticket browse/search/list (CRM-134), ticket detail (CRM-135) and ticket
+ * assignment (CRM-136), all stories of the Ticket Management epic CRM-130.
  */
 @Injectable({ providedIn: 'root' })
 export class TicketsService {
@@ -111,5 +123,9 @@ export class TicketsService {
 
   get(id: string): Promise<TicketDetail> {
     return firstValueFrom(this.http.get<TicketDetail>(`/api/v1/tickets/${id}`));
+  }
+
+  assign(id: string, request: AssignTicketRequest): Promise<Ticket> {
+    return firstValueFrom(this.http.post<Ticket>(`/api/v1/tickets/${id}/assign`, request));
   }
 }

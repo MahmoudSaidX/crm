@@ -53,7 +53,7 @@ public sealed class Ticket : HasDomainEvents
     public Guid BranchId { get; set; }
     public TicketStatus Status { get; private set; } = TicketStatus.Open;
     public TicketChannel Channel { get; set; }
-    public Guid? AssignedAgentId { get; set; }
+    public Guid? AssignedAgentId { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
     /// <summary>
@@ -62,7 +62,7 @@ public sealed class Ticket : HasDomainEvents
     /// because CRM-135's Fields Dictionary requires the detail view to carry
     /// it; null reads as "never updated" rather than as a fabricated value.
     /// </summary>
-    public DateTimeOffset? UpdatedAtUtc { get; set; }
+    public DateTimeOffset? UpdatedAtUtc { get; private set; }
 
     /// <summary>
     /// Optimistic-concurrency token, starting at 1 and configured as a
@@ -115,6 +115,35 @@ public sealed class Ticket : HasDomainEvents
         };
         ticket.AddDomainEvent(new TicketCreatedDomainEvent(id, ticketNumber, customerId, createdAtUtc));
         return ticket;
+    }
+
+    /// <summary>
+    /// Applies an ownership change (CRM-136). The single canonical mutation
+    /// for <see cref="AssignedAgentId"/>: manual assignment today and the
+    /// automatic-assignment stories (CRM-151/152) both go through here, so the
+    /// version bump and <see cref="TicketAssignedDomainEvent"/> can never be
+    /// forgotten at a second call site. Eligibility, authorization and the
+    /// reason policy are enforced by <c>TicketService</c> before this is
+    /// called — this method only applies an already-validated change.
+    /// </summary>
+    public void Assign(
+        Guid targetAgentId,
+        string? reason,
+        TicketAssignmentSource source,
+        DateTimeOffset changedAtUtc)
+    {
+        Guid? previousAgentId = AssignedAgentId;
+        AssignedAgentId = targetAgentId;
+        UpdatedAtUtc = changedAtUtc;
+
+        // Explicit increment rather than a database-generated value: EF still
+        // writes the ORIGINAL value into the UPDATE's WHERE clause because
+        // Version is the configured concurrency token, so a concurrent writer
+        // loses the race with a DbUpdateConcurrencyException.
+        Version++;
+
+        AddDomainEvent(new TicketAssignedDomainEvent(
+            Id, TicketNumber, previousAgentId, targetAgentId, reason, source, changedAtUtc));
     }
 
     private Ticket()

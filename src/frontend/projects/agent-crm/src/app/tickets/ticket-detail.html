@@ -77,6 +77,68 @@
         <dt>{{ localization.translate('tickets.fields.assignedAgent') }}</dt>
         <dd>{{ detail.assignedAgentId ?? localization.translate('tickets.detail.unassigned') }}</dd>
       </dl>
+
+      @if (authorization.has('tickets.assign') && !assigning()) {
+        <p-button
+          [label]="
+            detail.assignedAgentId
+              ? localization.translate('tickets.assign.reassign')
+              : localization.translate('tickets.assign.assign')
+          "
+          icon="pi pi-user-edit"
+          severity="secondary"
+          (onClick)="startAssignment()"
+        />
+      }
+
+      @if (assigning()) {
+        <form class="ticket-assign-form" [formGroup]="assignForm" (ngSubmit)="submitAssignment()">
+          <label for="targetAgentId">{{
+            localization.translate('tickets.assign.fields.agent')
+          }}</label>
+          <p-select
+            id="targetAgentId"
+            formControlName="targetAgentId"
+            [options]="agentOptions()"
+            optionLabel="label"
+            optionValue="value"
+          />
+          @if (agentsUnavailable()) {
+            <small class="field-error">{{
+              localization.translate('tickets.assign.agentsUnavailable')
+            }}</small>
+          }
+
+          <label for="assignReason">
+            {{ localization.translate('tickets.assign.fields.reason') }}
+            @if (!reasonRequired()) {
+              <span class="field-optional">{{
+                localization.translate('tickets.assign.optional')
+              }}</span>
+            }
+          </label>
+          <textarea pTextarea id="assignReason" formControlName="reason" rows="3"></textarea>
+
+          @if (assignmentErrorKey(); as errorKey) {
+            <p-message severity="error" [text]="localization.translate(errorKey)" />
+          }
+
+          <div class="ticket-assign-actions">
+            <p-button
+              type="submit"
+              [label]="localization.translate('tickets.assign.submit')"
+              icon="pi pi-check"
+              [disabled]="submittingAssignment()"
+            />
+            <p-button
+              type="button"
+              [label]="localization.translate('tickets.assign.cancel')"
+              severity="secondary"
+              (onClick)="cancelAssignment()"
+            />
+          </div>
+        </form>
+      }
     </section>
 
     <section class="ticket-detail-section">

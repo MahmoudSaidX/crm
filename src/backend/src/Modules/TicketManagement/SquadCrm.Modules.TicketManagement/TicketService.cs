@@ -6,6 +6,7 @@ using SquadCrm.Modules.Audit.Contracts;
 using SquadCrm.Modules.BranchManagement.Contracts;
 using SquadCrm.Modules.CustomerManagement.Contracts;
 using SquadCrm.Modules.DepartmentManagement.Contracts;
+using SquadCrm.Modules.StaffIdentity.Contracts;
 using SquadCrm.Modules.TicketManagement.Persistence;
 
 namespace SquadCrm.Modules.TicketManagement;
@@ -20,6 +21,16 @@ public enum TicketMutationFailure
     InactiveDepartment,
     InactiveBranch,
     DuplicateTicketNumber,
+    TicketNotFound,
+
+    /// <summary>Target agent is unknown or not an active staff user.</summary>
+    IneligibleAgent,
+
+    /// <summary>Reassignment away from an existing owner needs a reason.</summary>
+    ReasonRequired,
+
+    /// <summary>The caller's version is behind the stored ticket version.</summary>
+    StaleVersion,
 }
 
 public readonly record struct TicketMutationResult(Ticket? Ticket, TicketMutationFailure Failure)
@@ -39,7 +50,8 @@ internal sealed class TicketService(
     IAuditRecorder auditRecorder,
     ICustomerExistsLookup customerExistsLookup,
     IDepartmentActiveLookup departmentActiveLookup,
-    IBranchActiveLookup branchActiveLookup)
+    IBranchActiveLookup branchActiveLookup,
+    IStaffSubjectReferenceReader staffSubjectReferenceReader)
 {
     private const string PostgresUniqueViolationSqlState = "23505";
 
@@ -224,6 +236,101 @@ internal sealed class TicketService(
                    ticket.UpdatedAtUtc,
                    ticket.Version))
             .SingleOrDefaultAsync(cancellationToken);
+
+    /// <summary>
+    /// The canonical assignment capability (CRM-136). Manual assignment calls
+    /// it today; the automatic-assignment stories (CRM-151/152) call the same
+    /// method with <see cref="TicketAssignmentSource.Automation"/> rather than
+    /// adding a second write path (BR).
+    /// <para>
+    /// Target eligibility is checked as "is an active staff user" only.
+    /// <c>StaffUser.Branch</c>/<c>.Department</c> are free-text strings, not
+    /// references to the Branch/Department modules, and no organizational-scope
+    /// model exists on <c>ICurrentUserAccessor</c> yet — the story's Deadline
+    /// Acceptance Override reduces eligibility to exactly this check rather
+    /// than inventing a scope or capability model here.
+    /// </para>
+    /// </summary>
+    public async Task<TicketMutationResult> AssignAsync(
+        Guid ticketId,
+        AssignTicketRequest request,
+        TicketAssignmentSource source,
+        CancellationToken cancellationToken)
+    {
+        Ticket? ticket = await dbContext.Tickets.SingleOrDefaultAsync(
+            candidate => candidate.Id == ticketId, cancellationToken);
+        if (ticket is null)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.TicketNotFound);
+        }
+
+        // Checked before anything else mutates: a caller working from a stale
+        // read must not silently overwrite a newer owner (AC). The database
+        // concurrency token below closes the remaining race window between
+        // this check and SaveChanges.
+        if (ticket.Version != request.Version)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.StaleVersion);
+        }
+
+        StaffSubjectReference? targetAgent =
+            await staffSubjectReferenceReader.FindByIdAsync(request.TargetAgentId, cancellationToken);
+        if (targetAgent is not { IsActive: true })
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.IneligibleAgent);
+        }
+
+        string? reason = string.IsNullOrWhiteSpace(request.Reason) ? null : request.Reason.Trim();
+
+        // Required only when an existing owner is replaced — assigning an
+        // unassigned ticket takes an optional reason (BR). Automation supplies
+        // its own reason, so the same rule applies to it without a special case.
+        bool replacesExistingOwner = ticket.AssignedAgentId is not null
+            && ticket.AssignedAgentId != request.TargetAgentId;
+        if (replacesExistingOwner && reason is null)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.ReasonRequired);
+        }
+
+        // Re-assigning to the current owner is accepted as a no-op: no version
+        // bump, no history row and no event, so a double-submit cannot produce
+        // a duplicate assignment record (BR).
+        if (ticket.AssignedAgentId == request.TargetAgentId)
+        {
+            return TicketMutationResult.Success(ticket);
+        }
+
+        Guid? previousAgentId = ticket.AssignedAgentId;
+        DateTimeOffset changedAtUtc = DateTimeOffset.UtcNow;
+        ticket.Assign(request.TargetAgentId, reason, source, changedAtUtc);
+
+        // Same change tracker, therefore the same transaction as the ticket
+        // update and the outbox row: history, owner and event commit together
+        // or not at all.
+        dbContext.TicketAssignmentHistory.Add(new TicketAssignmentHistory
+        {
+            Id = Guid.NewGuid(),
+            TicketId = ticket.Id,
+            PreviousAgentId = previousAgentId,
+            NewAgentId = request.TargetAgentId,
+            Reason = reason,
+            Source = source,
+            ChangedBy = currentUserAccessor.Handle ?? "unknown",
+            ChangedAtUtc = changedAtUtc,
+        });
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.StaleVersion);
+        }
+
+        await RecordAuditAsync(ticket.Id, "assigned", cancellationToken);
+        return TicketMutationResult.Success(ticket);
+    }
 
     private Task RecordAuditAsync(Guid ticketId, string action, CancellationToken cancellationToken) =>
         auditRecorder.RecordAsync(
