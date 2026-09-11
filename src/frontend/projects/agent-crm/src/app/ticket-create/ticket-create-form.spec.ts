@@ -175,6 +175,7 @@ describe('TicketCreateForm', () => {
       escalationTargetId: null,
       escalatedAtUtc: null,
       createdAtUtc: '2026-08-29T00:00:00Z',
+      updatedAtUtc: null,
     });
     const fixture = TestBed.createComponent(TicketCreateForm);
     fixture.detectChanges();

@@ -80,6 +80,15 @@ export class AgentShell {
           },
         ]
       : []),
+    ...(this.authorization.state.has('tickets.view')
+      ? [
+          {
+            label: this.localization.translate('agent.navigation.myTickets'),
+            icon: 'pi pi-inbox',
+            routerLink: '/my-tickets',
+          },
+        ]
+      : []),
     ...(this.authorization.state.has('tickets.create')
       ? [
           {

@@ -141,6 +141,22 @@ internal sealed class TicketService(
     {
         IQueryable<Ticket> filtered = dbContext.Tickets.AsNoTracking();
 
+        // "My queue" (CRM-141). The agent id comes from the authenticated
+        // principal, never from the request, so a caller cannot read another
+        // agent's queue by editing the query. Fail-closed: a missing or
+        // unparsable handle yields an empty page rather than the unfiltered
+        // list. Applied as an additional AND alongside AssigneeIds, so neither
+        // filter can widen the other.
+        if (query.AssignedToMe)
+        {
+            if (!Guid.TryParse(currentUserAccessor.Handle, out Guid currentUserId))
+            {
+                return new PagedResult<Ticket>([], pagination.Page, pagination.PageSize, 0);
+            }
+
+            filtered = filtered.Where(ticket => ticket.AssignedAgentId == currentUserId);
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             string search = query.Search.Trim();
@@ -191,6 +207,13 @@ internal sealed class TicketService(
         {
             (TicketSortBy.CreatedAtUtc, SortDirection.Desc) => filtered.OrderByDescending(t => t.CreatedAtUtc),
             (TicketSortBy.CreatedAtUtc, _) => filtered.OrderBy(t => t.CreatedAtUtc),
+            // A ticket that was never changed since creation has a null
+            // UpdatedAtUtc; ordering falls back to CreatedAtUtc so those rows
+            // sort by when they actually last changed rather than all
+            // collapsing to one end of the queue.
+            (TicketSortBy.UpdatedAtUtc, SortDirection.Desc) =>
+                filtered.OrderByDescending(t => t.UpdatedAtUtc ?? t.CreatedAtUtc),
+            (TicketSortBy.UpdatedAtUtc, _) => filtered.OrderBy(t => t.UpdatedAtUtc ?? t.CreatedAtUtc),
             (_, SortDirection.Desc) => filtered.OrderByDescending(t => t.TicketNumber),
             _ => filtered.OrderBy(t => t.TicketNumber),
         };

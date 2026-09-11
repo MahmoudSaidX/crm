@@ -8,6 +8,12 @@ public enum TicketSortBy
 {
     TicketNumber,
     CreatedAtUtc,
+
+    /// <summary>
+    /// Last material change to the ticket (CRM-141). The agent queue orders by
+    /// it so the least recently touched work is easy to find.
+    /// </summary>
+    UpdatedAtUtc,
 }
 
 /// <summary>
@@ -37,6 +43,16 @@ public sealed record TicketListQuery(
     Guid[]? DepartmentIds = null,
     Guid[]? BranchIds = null,
     TicketChannel[]? Channels = null,
+
+    /// <summary>
+    /// Restrict the result to tickets assigned to the CALLER (CRM-141). The
+    /// agent id is resolved server-side from the authenticated principal, never
+    /// supplied by the client, so the agent queue cannot be pointed at another
+    /// agent by editing the request. It composes with
+    /// <see cref="AssigneeIds"/> as an additional AND — neither filter can
+    /// widen the other.
+    /// </summary>
+    bool AssignedToMe = false,
     TicketSortBy SortBy = TicketSortBy.TicketNumber,
     SortDirection SortDirection = SortDirection.Asc);
 
@@ -114,7 +130,8 @@ public sealed record TicketResponse(
     [property: JsonConverter(typeof(JsonStringEnumConverter))] TicketEscalationTargetType? EscalationTargetType,
     Guid? EscalationTargetId,
     DateTimeOffset? EscalatedAtUtc,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    DateTimeOffset? UpdatedAtUtc);
 
 /// <summary>
 /// Ticket detail projection (CRM-135). Category/priority names are resolved in

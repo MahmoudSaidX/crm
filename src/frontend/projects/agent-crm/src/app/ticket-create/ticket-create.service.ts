@@ -45,6 +45,9 @@ export interface Ticket {
   readonly escalationTargetId: string | null;
   readonly escalatedAtUtc: string | null;
   readonly createdAtUtc: string;
+
+  /** Last material change, or null when the ticket was never changed since creation. */
+  readonly updatedAtUtc: string | null;
 }
 
 export interface TicketRequest {

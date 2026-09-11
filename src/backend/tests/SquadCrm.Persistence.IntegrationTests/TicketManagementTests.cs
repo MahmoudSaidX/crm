@@ -229,6 +229,99 @@ public sealed class TicketManagementTests
     }
 
     [Fact]
+    public async Task List_AssignedToMe_ReturnsOnlyCallersTickets()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        (Guid categoryId, Guid priorityId) = await SeedCategoryAndPriorityAsync(context);
+        Guid callerId = Guid.NewGuid();
+        Guid otherAgentId = Guid.NewGuid();
+        TicketService service = CreateService(context, new RecordingAuditRecorder(), callerId.ToString());
+        TicketMutationResult mine = await service.CreateAsync(
+            ValidRequest(categoryId, priorityId) with { AssignedAgentId = callerId }, CancellationToken.None);
+        TicketMutationResult theirs = await service.CreateAsync(
+            ValidRequest(categoryId, priorityId) with { AssignedAgentId = otherAgentId }, CancellationToken.None);
+        TicketMutationResult unassigned = await service.CreateAsync(
+            ValidRequest(categoryId, priorityId), CancellationToken.None);
+
+        PagedResult<Ticket> result = await service.ListAsync(
+            new TicketListQuery(AssignedToMe: true), new PaginationRequest(1, 100), CancellationToken.None);
+
+        Assert.Contains(result.Items, t => t.Id == mine.Ticket!.Id);
+        Assert.DoesNotContain(result.Items, t => t.Id == theirs.Ticket!.Id);
+        Assert.DoesNotContain(result.Items, t => t.Id == unassigned.Ticket!.Id);
+        Assert.All(result.Items, t => Assert.Equal(callerId, t.AssignedAgentId));
+    }
+
+    /// <summary>
+    /// The client cannot widen its own queue: AssignedToMe is an additional
+    /// AND, so naming another agent in AssigneeIds yields nothing rather than
+    /// that agent's tickets.
+    /// </summary>
+    [Fact]
+    public async Task List_AssignedToMe_IgnoresClientSuppliedAssigneeWidening()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        (Guid categoryId, Guid priorityId) = await SeedCategoryAndPriorityAsync(context);
+        Guid callerId = Guid.NewGuid();
+        Guid otherAgentId = Guid.NewGuid();
+        TicketService service = CreateService(context, new RecordingAuditRecorder(), callerId.ToString());
+        await service.CreateAsync(
+            ValidRequest(categoryId, priorityId) with { AssignedAgentId = callerId }, CancellationToken.None);
+        await service.CreateAsync(
+            ValidRequest(categoryId, priorityId) with { AssignedAgentId = otherAgentId }, CancellationToken.None);
+
+        PagedResult<Ticket> result = await service.ListAsync(
+            new TicketListQuery(AssignedToMe: true, AssigneeIds: [otherAgentId]),
+            new PaginationRequest(1, 100),
+            CancellationToken.None);
+
+        Assert.Empty(result.Items);
+        Assert.Equal(0, result.TotalCount);
+    }
+
+    /// <summary>Fail-closed: an unusable caller handle yields an empty page, never the whole list.</summary>
+    [Fact]
+    public async Task List_AssignedToMe_WithUnusableCallerHandle_ReturnsEmptyPage()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        (Guid categoryId, Guid priorityId) = await SeedCategoryAndPriorityAsync(context);
+        TicketService service = CreateService(context, new RecordingAuditRecorder(), handle: null);
+        await service.CreateAsync(ValidRequest(categoryId, priorityId), CancellationToken.None);
+
+        PagedResult<Ticket> result = await service.ListAsync(
+            new TicketListQuery(AssignedToMe: true), new PaginationRequest(1, 100), CancellationToken.None);
+
+        Assert.Empty(result.Items);
+        Assert.Equal(0, result.TotalCount);
+    }
+
+    [Fact]
+    public async Task List_SortByUpdatedAtUtc_IsOrderedAndStableAcrossPages()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        (Guid categoryId, Guid priorityId) = await SeedCategoryAndPriorityAsync(context);
+        Guid callerId = Guid.NewGuid();
+        TicketService service = CreateService(context, new RecordingAuditRecorder(), callerId.ToString());
+        for (int i = 0; i < 3; i++)
+        {
+            await service.CreateAsync(
+                ValidRequest(categoryId, priorityId) with { AssignedAgentId = callerId }, CancellationToken.None);
+        }
+
+        TicketListQuery query = new(AssignedToMe: true, SortBy: TicketSortBy.UpdatedAtUtc, SortDirection: SortDirection.Desc);
+        PagedResult<Ticket> page1 = await service.ListAsync(query, new PaginationRequest(1, 2), CancellationToken.None);
+        PagedResult<Ticket> page2 = await service.ListAsync(query, new PaginationRequest(2, 2), CancellationToken.None);
+
+        Assert.Equal(3, page1.TotalCount);
+        Assert.Equal(2, page1.Items.Count);
+        Assert.Single(page2.Items);
+        Assert.DoesNotContain(page1.Items.Select(t => t.Id), id => page2.Items.Any(t => t.Id == id));
+        List<DateTimeOffset> effective = page1.Items.Concat(page2.Items)
+            .Select(t => t.UpdatedAtUtc ?? t.CreatedAtUtc).ToList();
+        Assert.Equal(effective.OrderByDescending(value => value), effective);
+    }
+
+    [Fact]
     public async Task GetDetail_ReturnsTicketWithResolvedCategoryAndPriorityNames()
     {
         await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();

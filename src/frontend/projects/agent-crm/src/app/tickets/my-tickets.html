@@ -1,0 +1,130 @@
+<main class="my-tickets-page">
+  <header class="my-tickets-header">
+    <h1>{{ localization.translate('tickets.mine.title') }}</h1>
+    <div class="my-tickets-header-actions">
+      <p-button
+        [label]="localization.translate('tickets.mine.refresh')"
+        icon="pi pi-refresh"
+        severity="secondary"
+        [disabled]="loading()"
+        (onClick)="onRefresh()"
+      />
+      <crm-agent-language-switcher />
+    </div>
+  </header>
+
+  <div class="my-tickets-filters">
+    <input
+      pInputText
+      type="search"
+      [placeholder]="localization.translate('tickets.search')"
+      [(ngModel)]="search"
+      (keyup.enter)="onFilter()"
+    />
+    <p-select
+      [options]="statusOptions"
+      [(ngModel)]="status"
+      [showClear]="true"
+      [placeholder]="localization.translate('tickets.fields.status')"
+      (onChange)="onFilter()"
+      (onClear)="onFilter()"
+    >
+      <ng-template #item let-option>{{ statusLabel(option.value) }}</ng-template>
+      <ng-template #selectedItem let-option>{{ statusLabel(option.value) }}</ng-template>
+    </p-select>
+    <p-select
+      [options]="categoryOptions()"
+      [(ngModel)]="categoryId"
+      [showClear]="true"
+      [placeholder]="localization.translate('tickets.fields.category')"
+      (onChange)="onFilter()"
+      (onClear)="onFilter()"
+    />
+    <p-select
+      [options]="priorityOptions()"
+      [(ngModel)]="priorityId"
+      [showClear]="true"
+      [placeholder]="localization.translate('tickets.fields.priority')"
+      (onChange)="onFilter()"
+      (onClear)="onFilter()"
+    />
+    <p-select
+      [options]="sortOptions"
+      [(ngModel)]="sort"
+      [placeholder]="localization.translate('tickets.mine.sortBy')"
+      (onChange)="onFilter()"
+    >
+      <ng-template #item let-option>{{ sortLabel(option.value) }}</ng-template>
+      <ng-template #selectedItem let-option>{{ sortLabel(option.value) }}</ng-template>
+    </p-select>
+  </div>
+
+  @if (loadFailed()) {
+    <p class="my-tickets-error" role="alert">
+      {{ localization.translate('tickets.mine.loadFailed') }}
+    </p>
+  }
+
+  <p-table
+    [value]="tickets()"
+    [lazy]="true"
+    [paginator]="true"
+    [rows]="pageSize"
+    [totalRecords]="totalRecords()"
+    [paginatorLocale]="localization.locale()"
+    [loading]="loading()"
+    [scrollable]="true"
+    (onLazyLoad)="onLazyLoad($event)"
+    dataKey="id"
+  >
+    <ng-template #header>
+      <tr>
+        <th style="min-width: 10rem">
+          {{ localization.translate('tickets.fields.ticketNumber') }}
+        </th>
+        <th style="min-width: 16rem">{{ localization.translate('tickets.fields.subject') }}</th>
+        <th style="min-width: 8rem">{{ localization.translate('tickets.fields.status') }}</th>
+        <th style="min-width: 8rem">{{ localization.translate('tickets.fields.escalation') }}</th>
+        <th style="min-width: 10rem">{{ localization.translate('tickets.fields.updatedAt') }}</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-ticket>
+      <tr>
+        <td>
+          <a [routerLink]="['/tickets', ticket.id]">{{ ticket.ticketNumber }}</a>
+        </td>
+        <td>{{ ticket.subject }}</td>
+        <td>{{ statusLabel(ticket.status) }}</td>
+        <td>
+          @if (ticket.escalationLevel > 0) {
+            <p-tag
+              severity="warn"
+              [value]="
+                localization.translate('tickets.escalation.level') + ' ' + ticket.escalationLevel
+              "
+            />
+          } @else {
+            {{ localization.translate('tickets.escalation.notEscalated') }}
+          }
+        </td>
+        <td>
+          {{
+            (ticket.updatedAtUtc ?? ticket.createdAtUtc
+              | date: 'medium' : undefined : localization.locale()) ?? ''
+          }}
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="5">
+          @if (loadFailed()) {
+            {{ localization.translate('tickets.mine.loadFailed') }}
+          } @else {
+            {{ localization.translate('tickets.mine.empty') }}
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</main>
