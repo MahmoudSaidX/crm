@@ -419,7 +419,8 @@ public sealed class TicketManagementModule : IModule
         ticket.EscalationTargetType,
         ticket.EscalationTargetId,
         ticket.EscalatedAtUtc,
-        ticket.CreatedAtUtc);
+        ticket.CreatedAtUtc,
+        ticket.UpdatedAtUtc);
 
     private static IResult NotFoundProblem() => Results.Problem(
         statusCode: StatusCodes.Status404NotFound,

@@ -8,7 +8,7 @@ import {
   TicketStatus,
 } from '../ticket-create/ticket-create.service';
 
-export type TicketSortBy = 'TicketNumber' | 'CreatedAtUtc';
+export type TicketSortBy = 'TicketNumber' | 'CreatedAtUtc' | 'UpdatedAtUtc';
 export type SortDirection = 'Asc' | 'Desc';
 
 export interface TicketListQuery {
@@ -20,6 +20,13 @@ export interface TicketListQuery {
   readonly departmentIds?: readonly string[];
   readonly branchIds?: readonly string[];
   readonly channels?: readonly TicketChannel[];
+
+  /**
+   * Restrict the result to the signed-in agent's own queue (CRM-141). No agent
+   * id is sent: the backend resolves the caller from the authenticated
+   * principal, so the queue cannot be pointed at another agent.
+   */
+  readonly assignedToMe?: boolean;
   readonly sortBy?: TicketSortBy;
   readonly sortDirection?: SortDirection;
 }
@@ -179,6 +186,9 @@ export class TicketsService {
     }
     if (query.channels?.length) {
       params = { ...params, channels: query.channels };
+    }
+    if (query.assignedToMe) {
+      params = { ...params, assignedToMe: 'true' };
     }
     if (query.sortBy) {
       params = { ...params, sortBy: query.sortBy };

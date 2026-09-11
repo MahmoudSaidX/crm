@@ -94,6 +94,11 @@ export const routes: Routes = [
         loadComponent: () => import('./tickets/ticket-list').then((m) => m.TicketList),
       },
       {
+        path: 'my-tickets',
+        canActivate: [requirePermission('tickets.view')],
+        loadComponent: () => import('./tickets/my-tickets').then((m) => m.MyTickets),
+      },
+      {
         path: 'tickets/new',
         canActivate: [requirePermission('tickets.create')],
         loadComponent: () =>

@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+
+.my-tickets-page {
+  box-sizing: border-box;
+  padding: clamp(1rem, 4vw, 2rem);
+}
+
+.my-tickets-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-end: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.my-tickets-header h1 {
+  margin: 0;
+}
+
+.my-tickets-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-block-end: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 40rem) {
+  .my-tickets-header h1 {
+    inline-size: 100%;
+  }
+}
+
+.my-tickets-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.my-tickets-error {
+  margin-block: 0 1rem;
+  color: var(--p-red-600, #c81e1e);
+}
