@@ -119,10 +119,33 @@ export interface EscalateTicketRequest {
   readonly version: number;
 }
 
+export type TicketTimelineActorType = 'User' | 'System' | 'Automation' | 'Integration';
+export type TicketTimelineVisibility = 'Internal' | 'Customer';
+
+/**
+ * One entry of a ticket's history timeline (CRM-139). `summary` is built
+ * server-side from allow-listed stored values only, so it stays readable after
+ * reference data changes; `reason` is the stored free-text reason, present only
+ * for entries that carry one. `sequence` is the entry's 1-based position in the
+ * whole timeline, so it does not shift with the page size.
+ */
+export interface TicketTimelineEntry {
+  readonly eventId: string;
+  readonly eventType: string;
+  readonly occurredAtUtc: string;
+  readonly sequence: number;
+  readonly actorType: TicketTimelineActorType;
+  readonly actorId: string | null;
+  readonly summary: string;
+  readonly reason: string | null;
+  readonly visibility: TicketTimelineVisibility;
+}
+
 /**
  * Ticket browse/search/list (CRM-134), ticket detail (CRM-135), ticket
  * assignment (CRM-136), status lifecycle (CRM-137) and manual escalation
- * (CRM-138), all stories of the Ticket Management epic CRM-130.
+ * (CRM-138) and the history timeline (CRM-139), all stories of the Ticket
+ * Management epic CRM-130.
  */
 @Injectable({ providedIn: 'root' })
 export class TicketsService {
@@ -180,5 +203,13 @@ export class TicketsService {
 
   escalate(id: string, request: EscalateTicketRequest): Promise<Ticket> {
     return firstValueFrom(this.http.post<Ticket>(`/api/v1/tickets/${id}/escalate`, request));
+  }
+
+  history(id: string, page: number, pageSize: number): Promise<PagedResult<TicketTimelineEntry>> {
+    return firstValueFrom(
+      this.http.get<PagedResult<TicketTimelineEntry>>(`/api/v1/tickets/${id}/history`, {
+        params: { page: String(page), pageSize: String(pageSize) },
+      }),
+    );
   }
 }

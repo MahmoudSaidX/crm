@@ -1,6 +1,7 @@
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { TicketDetail } from './ticket-detail';
 import { TicketDetail as TicketDetailModel, TicketsService } from './tickets.service';
 import { CustomersService } from '../customers/customers.service';
@@ -50,6 +51,20 @@ describe('TicketDetail', () => {
     allowedStatusTransitions: ['InProgress', 'PendingCustomer', 'PendingInternal', 'Resolved'],
   };
 
+  const historyEntry = {
+    eventId: 'event-1',
+    eventType: 'TicketCreated',
+    occurredAtUtc: '2026-09-11T00:00:00Z',
+    sequence: 1,
+    actorType: 'User' as const,
+    actorId: null,
+    summary: 'Ticket TKT-000001 created with status Open via Agent',
+    reason: null,
+    visibility: 'Customer' as const,
+  };
+
+  const emptyHistoryPage = { items: [], page: 1, pageSize: 10, totalCount: 0 };
+
   function configure(options: {
     get?: jasmine.Spy;
     customerGet?: jasmine.Spy;
@@ -58,6 +73,7 @@ describe('TicketDetail', () => {
     assign?: jasmine.Spy;
     changeStatus?: jasmine.Spy;
     escalate?: jasmine.Spy;
+    history?: jasmine.Spy;
     staffList?: jasmine.Spy;
     departmentList?: jasmine.Spy;
     permissions?: readonly string[];
@@ -65,6 +81,9 @@ describe('TicketDetail', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        // PrimeNG's p-message relies on Angular animations; the real app
+        // provides them in its bootstrap config, so the test does the same.
+        provideNoopAnimations(),
         provideAppConfig(),
         provideTranslations(COMMON_TRANSLATIONS),
         provideTranslations(TICKET_TRANSLATIONS),
@@ -75,6 +94,7 @@ describe('TicketDetail', () => {
             assign: options.assign ?? jasmine.createSpy().and.resolveTo({}),
             changeStatus: options.changeStatus ?? jasmine.createSpy().and.resolveTo({}),
             escalate: options.escalate ?? jasmine.createSpy().and.resolveTo({}),
+            history: options.history ?? jasmine.createSpy().and.resolveTo(emptyHistoryPage),
           },
         },
         {
@@ -517,5 +537,49 @@ describe('TicketDetail', () => {
     expect(fixture.componentInstance.statusErrorKey()).toBe(
       'tickets.status.errors.invalidTransition',
     );
+  });
+
+  it('loads the ticket history timeline on load', async () => {
+    const history = jasmine.createSpy().and.resolveTo({
+      items: [historyEntry],
+      page: 1,
+      pageSize: 10,
+      totalCount: 1,
+    });
+    configure({ history });
+    const fixture = await createComponent();
+
+    expect(history).toHaveBeenCalledWith('ticket-1', 1, 10);
+    expect(fixture.componentInstance.history().length).toBe(1);
+    expect(fixture.componentInstance.historyUnavailable()).toBeFalse();
+    expect(fixture.nativeElement.textContent).toContain('Ticket created');
+    expect(fixture.nativeElement.textContent).toContain(historyEntry.summary);
+  });
+
+  it('requests the next history page without reloading the ticket', async () => {
+    const history = jasmine.createSpy().and.resolveTo({
+      items: [historyEntry],
+      page: 1,
+      pageSize: 10,
+      totalCount: 25,
+    });
+    const get = jasmine.createSpy().and.resolveTo(ticket);
+    configure({ history, get });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.onHistoryPageChange(10);
+
+    expect(history).toHaveBeenCalledWith('ticket-1', 2, 10);
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps rendering the ticket when the history cannot be loaded', async () => {
+    const history = jasmine.createSpy().and.rejectWith(new Error('boom'));
+    configure({ history });
+    const fixture = await createComponent();
+
+    expect(fixture.componentInstance.ticket()).toEqual(ticket);
+    expect(fixture.componentInstance.historyUnavailable()).toBeTrue();
+    expect(fixture.nativeElement.textContent).toContain('The ticket history could not be loaded.');
   });
 });
