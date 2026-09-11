@@ -17,7 +17,12 @@ import {
 import { TicketEscalationTargetType, TicketStatus } from '../ticket-create/ticket-create.service';
 import { AuthorizationState } from '../auth/authorization.state';
 import { StaffUser, StaffUsersService } from '../staff-users/staff-users.service';
-import { CustomersService } from '../customers/customers.service';
+import {
+  Customer,
+  CustomerContact,
+  CustomerTimelineEvent,
+  CustomersService,
+} from '../customers/customers.service';
 import { DepartmentsService } from '../departments/departments.service';
 import { BranchesService } from '../branches/branches.service';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
@@ -55,6 +60,13 @@ import { DialogModule } from 'primeng/dialog';
  * every successful action on this screen, because each of those appends an
  * entry. A failed history load is isolated: the section explains itself and the
  * rest of the ticket still renders.
+ *
+ * CRM-142 adds a read-only customer context panel, reusing the existing
+ * Customer Management reads (`get`, `listContacts`, `getTimeline`) — all
+ * already gated on `customers.view` server-side. The panel renders only when
+ * the customer fetch itself succeeds; a caller without `customers.view` sees
+ * the ticket without the panel, never a "restricted" placeholder, so missing
+ * access never leaks the existence of fields it can't see.
  *
  * Not built here, because the capabilities they belong to do not exist yet:
  * customer-facing conversation (CRM-164+), internal notes (CRM-147) and SLA
@@ -104,6 +116,27 @@ export class TicketDetail {
   readonly customerName = signal<string | null>(null);
   readonly departmentName = signal<string | null>(null);
   readonly branchName = signal<string | null>(null);
+
+  /**
+   * Null until the customer read succeeds. The whole context panel is gated
+   * on this signal rather than a separate permission check, so a caller who
+   * cannot read the customer sees no panel at all — not a placeholder that
+   * would leak the customer's existence.
+   */
+  readonly customer = signal<Customer | null>(null);
+  readonly customerDepartmentName = signal<string | null>(null);
+  readonly customerBranchName = signal<string | null>(null);
+  readonly customerContacts = signal<readonly CustomerContact[]>([]);
+  readonly customerRecentActivity = signal<readonly CustomerTimelineEvent[]>([]);
+
+  private static readonly customerRecentActivityLimit = 5;
+
+  readonly customerPrimaryEmail = computed(
+    () => this.primaryContact(this.customerContacts(), 'Email')?.value ?? null,
+  );
+  readonly customerPrimaryPhone = computed(
+    () => this.primaryContact(this.customerContacts(), 'Phone')?.value ?? null,
+  );
 
   /** Page size of the history section; the backend caps page size at 200. */
   protected readonly historyPageSize = 10;
@@ -520,7 +553,78 @@ export class TicketDetail {
       return;
     }
     this.ticket.set(ticket);
-    await Promise.all([this.loadReferenceLabels(ticket), this.loadHistory(1)]);
+    await Promise.all([
+      this.loadReferenceLabels(ticket),
+      this.loadHistory(1),
+      this.loadCustomerContext(ticket.customerId),
+    ]);
+  }
+
+  /**
+   * The customer fetch gates the whole panel: if it fails (403/404), the
+   * contacts and timeline calls are skipped and every context signal stays
+   * empty, so the panel renders nothing rather than a "restricted" state.
+   */
+  private async loadCustomerContext(customerId: string): Promise<void> {
+    let customer: Customer;
+    try {
+      customer = await this.customersService.get(customerId);
+    } catch {
+      this.customer.set(null);
+      this.customerDepartmentName.set(null);
+      this.customerBranchName.set(null);
+      this.customerContacts.set([]);
+      this.customerRecentActivity.set([]);
+      return;
+    }
+    this.customer.set(customer);
+
+    await Promise.all([
+      this.resolve(
+        () =>
+          customer.departmentId
+            ? this.departmentsService.get(customer.departmentId)
+            : Promise.reject(),
+        (department) => this.localizedName(department.arabicName, department.englishName),
+        this.customerDepartmentName,
+      ),
+      this.resolve(
+        () => (customer.branchId ? this.branchesService.get(customer.branchId) : Promise.reject()),
+        (branch) => this.localizedName(branch.arabicName, branch.englishName),
+        this.customerBranchName,
+      ),
+      (async () => {
+        try {
+          this.customerContacts.set(
+            (await this.customersService.listContacts(customerId)).filter(
+              (contact) => contact.isActive,
+            ),
+          );
+        } catch {
+          this.customerContacts.set([]);
+        }
+      })(),
+      (async () => {
+        try {
+          const timeline = await this.customersService.getTimeline(customerId);
+          this.customerRecentActivity.set(
+            [...timeline]
+              .sort((a, b) => b.occurredAtUtc.localeCompare(a.occurredAtUtc))
+              .slice(0, TicketDetail.customerRecentActivityLimit),
+          );
+        } catch {
+          this.customerRecentActivity.set([]);
+        }
+      })(),
+    ]);
+  }
+
+  private primaryContact(
+    contacts: readonly CustomerContact[],
+    type: CustomerContact['type'],
+  ): CustomerContact | null {
+    const matching = contacts.filter((contact) => contact.type === type);
+    return matching.find((contact) => contact.isPrimary) ?? matching[0] ?? null;
   }
 
   /**
@@ -568,6 +672,12 @@ export class TicketDetail {
 
   protected statusLabel(status: TicketStatus): string {
     return this.localization.translate(`tickets.statuses.${status}` as TranslationKey);
+  }
+
+  protected customerStatusLabel(status: Customer['status']): string {
+    return this.localization.translate(
+      `tickets.customerContext.statuses.${status}` as TranslationKey,
+    );
   }
 
   private localizedName(arabicName: string | null, englishName: string | null): string | null {

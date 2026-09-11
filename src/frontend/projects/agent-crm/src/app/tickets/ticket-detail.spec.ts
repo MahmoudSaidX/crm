@@ -68,6 +68,8 @@ describe('TicketDetail', () => {
   function configure(options: {
     get?: jasmine.Spy;
     customerGet?: jasmine.Spy;
+    customerListContacts?: jasmine.Spy;
+    customerGetTimeline?: jasmine.Spy;
     departmentGet?: jasmine.Spy;
     branchGet?: jasmine.Spy;
     assign?: jasmine.Spy;
@@ -102,7 +104,21 @@ describe('TicketDetail', () => {
           useValue: {
             get:
               options.customerGet ??
-              jasmine.createSpy().and.resolveTo({ firstName: 'Sara', lastName: 'Ali' }),
+              jasmine.createSpy().and.resolveTo({
+                id: 'customer-1',
+                customerNumber: 'CUST-000001',
+                firstName: 'Sara',
+                lastName: 'Ali',
+                preferredLanguage: null,
+                departmentId: null,
+                branchId: null,
+                status: 'Active',
+                version: 1,
+                createdAtUtc: '2026-09-01T00:00:00Z',
+                updatedAtUtc: '2026-09-01T00:00:00Z',
+              }),
+            listContacts: options.customerListContacts ?? jasmine.createSpy().and.resolveTo([]),
+            getTimeline: options.customerGetTimeline ?? jasmine.createSpy().and.resolveTo([]),
           },
         },
         {
@@ -581,5 +597,69 @@ describe('TicketDetail', () => {
     expect(fixture.componentInstance.ticket()).toEqual(ticket);
     expect(fixture.componentInstance.historyUnavailable()).toBeTrue();
     expect(fixture.nativeElement.textContent).toContain('The ticket history could not be loaded.');
+  });
+
+  it('renders the customer context panel with number, name, status, contacts and recent activity', async () => {
+    configure({
+      customerListContacts: jasmine.createSpy().and.resolveTo([
+        {
+          id: 'contact-1',
+          customerId: 'customer-1',
+          type: 'Email',
+          value: 'sara@example.test',
+          label: null,
+          isPrimary: true,
+          isActive: true,
+          createdAtUtc: '2026-09-01T00:00:00Z',
+          updatedAtUtc: '2026-09-01T00:00:00Z',
+        },
+        {
+          id: 'contact-2',
+          customerId: 'customer-1',
+          type: 'Phone',
+          value: '+966500000000',
+          label: null,
+          isPrimary: true,
+          isActive: true,
+          createdAtUtc: '2026-09-01T00:00:00Z',
+          updatedAtUtc: '2026-09-01T00:00:00Z',
+        },
+      ]),
+      customerGetTimeline: jasmine.createSpy().and.resolveTo([
+        {
+          eventType: 'TicketCreated',
+          occurredAtUtc: '2026-09-10T00:00:00Z',
+          actorDisplay: null,
+          relatedEntityType: 'Ticket',
+          relatedEntityId: 'ticket-1',
+          summary: 'Ticket TKT-000001 created',
+          visibility: 'Internal',
+        },
+      ]),
+    });
+    const fixture = await createComponent();
+
+    expect(fixture.componentInstance.customer()?.customerNumber).toBe('CUST-000001');
+    expect(fixture.componentInstance.customerPrimaryEmail()).toBe('sara@example.test');
+    expect(fixture.componentInstance.customerPrimaryPhone()).toBe('+966500000000');
+    expect(fixture.componentInstance.customerRecentActivity().length).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('CUST-000001');
+    expect(fixture.nativeElement.textContent).toContain('sara@example.test');
+    expect(fixture.nativeElement.textContent).toContain('View full profile');
+  });
+
+  it('renders no customer context panel when the customer read is forbidden', async () => {
+    const customerListContacts = jasmine.createSpy().and.resolveTo([]);
+    configure({
+      customerGet: jasmine.createSpy().and.rejectWith(new HttpErrorResponse({ status: 403 })),
+      customerListContacts,
+    });
+    const fixture = await createComponent();
+
+    expect(fixture.componentInstance.customer()).toBeNull();
+    expect(fixture.componentInstance.customerContacts()).toEqual([]);
+    expect(fixture.componentInstance.customerRecentActivity()).toEqual([]);
+    expect(customerListContacts).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).not.toContain('View full profile');
   });
 });
