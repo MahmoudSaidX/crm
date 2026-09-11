@@ -20,11 +20,69 @@
         <dd class="ticket-detail-description">{{ detail.description }}</dd>
 
         <dt>{{ localization.translate('tickets.fields.status') }}</dt>
-        <dd>{{ detail.status }}</dd>
+        <dd>{{ statusLabel(detail.status) }}</dd>
 
         <dt>{{ localization.translate('tickets.fields.channel') }}</dt>
         <dd>{{ detail.channel }}</dd>
       </dl>
+
+      @if (
+        authorization.has('tickets.changestatus') &&
+        !changingStatus() &&
+        detail.allowedStatusTransitions.length > 0
+      ) {
+        <p-button
+          [label]="localization.translate('tickets.status.change')"
+          icon="pi pi-sync"
+          severity="secondary"
+          (onClick)="startStatusChange()"
+        />
+      }
+
+      @if (changingStatus()) {
+        <form class="ticket-assign-form" [formGroup]="statusForm" (ngSubmit)="submitStatusChange()">
+          <label for="targetStatus">{{
+            localization.translate('tickets.status.fields.targetStatus')
+          }}</label>
+          <p-select
+            id="targetStatus"
+            formControlName="targetStatus"
+            [options]="statusOptions()"
+            optionLabel="label"
+            optionValue="value"
+            (onChange)="onStatusSelected($event.value)"
+          />
+
+          <label for="statusReason">
+            {{ localization.translate('tickets.status.fields.reason') }}
+            @if (!statusReasonRequired()) {
+              <span class="field-optional">{{
+                localization.translate('tickets.assign.optional')
+              }}</span>
+            }
+          </label>
+          <textarea pTextarea id="statusReason" formControlName="reason" rows="3"></textarea>
+
+          @if (statusErrorKey(); as errorKey) {
+            <p-message severity="error" [text]="localization.translate(errorKey)" />
+          }
+
+          <div class="ticket-assign-actions">
+            <p-button
+              type="submit"
+              [label]="localization.translate('tickets.status.submit')"
+              icon="pi pi-check"
+              [disabled]="submittingStatus()"
+            />
+            <p-button
+              type="button"
+              [label]="localization.translate('tickets.assign.cancel')"
+              severity="secondary"
+              (onClick)="cancelStatusChange()"
+            />
+          </div>
+        </form>
+      }
     </section>
 
     <section class="ticket-detail-section">

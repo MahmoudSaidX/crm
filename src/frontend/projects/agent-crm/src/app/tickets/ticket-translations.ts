@@ -44,6 +44,23 @@ export const TICKET_TRANSLATIONS: TranslationResources = {
     'tickets.assign.errors.staleVersion':
       'This ticket was changed by someone else. Reload it and try again.',
     'tickets.assign.errors.failed': 'The assignment could not be saved.',
+    'tickets.statuses.Open': 'Open',
+    'tickets.statuses.InProgress': 'In progress',
+    'tickets.statuses.PendingCustomer': 'Pending customer',
+    'tickets.statuses.PendingInternal': 'Pending internal',
+    'tickets.statuses.Resolved': 'Resolved',
+    'tickets.statuses.Closed': 'Closed',
+    'tickets.status.change': 'Change status',
+    'tickets.status.fields.targetStatus': 'New status',
+    'tickets.status.fields.reason': 'Reason',
+    'tickets.status.submit': 'Save status',
+    'tickets.status.validation.status': 'Select a status.',
+    'tickets.status.validation.reason': 'A reason is required when closing or reopening a ticket.',
+    'tickets.status.errors.invalidTransition':
+      'This status change is no longer available for the ticket.',
+    'tickets.status.errors.staleVersion':
+      'This ticket was changed by someone else. Reload it and try again.',
+    'tickets.status.errors.failed': 'The status change could not be saved.',
   },
   ar: {
     'tickets.title': 'التذاكر',
@@ -88,5 +105,21 @@ export const TICKET_TRANSLATIONS: TranslationResources = {
     'tickets.assign.errors.staleVersion':
       'تم تعديل التذكرة من مستخدم آخر. أعد تحميلها ثم حاول مجددًا.',
     'tickets.assign.errors.failed': 'تعذر حفظ الإسناد.',
+    'tickets.statuses.Open': 'مفتوحة',
+    'tickets.statuses.InProgress': 'قيد المعالجة',
+    'tickets.statuses.PendingCustomer': 'بانتظار العميل',
+    'tickets.statuses.PendingInternal': 'بانتظار جهة داخلية',
+    'tickets.statuses.Resolved': 'تم الحل',
+    'tickets.statuses.Closed': 'مغلقة',
+    'tickets.status.change': 'تغيير الحالة',
+    'tickets.status.fields.targetStatus': 'الحالة الجديدة',
+    'tickets.status.fields.reason': 'السبب',
+    'tickets.status.submit': 'حفظ الحالة',
+    'tickets.status.validation.status': 'اختر حالة.',
+    'tickets.status.validation.reason': 'السبب مطلوب عند إغلاق التذكرة أو إعادة فتحها.',
+    'tickets.status.errors.invalidTransition': 'لم يعد هذا التغيير متاحًا لحالة التذكرة الحالية.',
+    'tickets.status.errors.staleVersion':
+      'تم تعديل التذكرة من مستخدم آخر. أعد تحميلها ثم حاول مجددًا.',
+    'tickets.status.errors.failed': 'تعذر حفظ تغيير الحالة.',
   },
 };

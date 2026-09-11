@@ -31,6 +31,9 @@ public enum TicketMutationFailure
 
     /// <summary>The caller's version is behind the stored ticket version.</summary>
     StaleVersion,
+
+    /// <summary>Target status is not reachable from the ticket's current status.</summary>
+    InvalidStatusTransition,
 }
 
 public readonly record struct TicketMutationResult(Ticket? Ticket, TicketMutationFailure Failure)
@@ -202,40 +205,57 @@ internal sealed class TicketService(
     /// value's label (BR). Left joins, so a reference row deleted outright
     /// yields null names instead of hiding the ticket.
     /// </summary>
-    public async Task<TicketDetailResponse?> GetDetailAsync(Guid id, CancellationToken cancellationToken) =>
-        await (from ticket in dbContext.Tickets.AsNoTracking()
-               where ticket.Id == id
-               join category in dbContext.TicketCategories.AsNoTracking()
-                   on ticket.CategoryId equals category.Id into categories
-               from category in categories.DefaultIfEmpty()
-               join priority in dbContext.TicketPriorities.AsNoTracking()
-                   on ticket.PriorityId equals priority.Id into priorities
-               from priority in priorities.DefaultIfEmpty()
-               select new TicketDetailResponse(
-                   ticket.Id,
-                   ticket.TicketNumber,
-                   ticket.CustomerId,
-                   ticket.Subject,
-                   ticket.Description,
-                   ticket.CategoryId,
-                   category != null ? category.ArabicName : null,
-                   category != null ? category.EnglishName : null,
-                   category != null ? category.IsActive : (bool?)null,
-                   ticket.SubcategoryId,
-                   ticket.PriorityId,
-                   priority != null ? priority.ArabicName : null,
-                   priority != null ? priority.EnglishName : null,
-                   priority != null ? priority.IsActive : (bool?)null,
-                   priority != null ? priority.Rank : (int?)null,
-                   ticket.DepartmentId,
-                   ticket.BranchId,
-                   ticket.Status,
-                   ticket.Channel,
-                   ticket.AssignedAgentId,
-                   ticket.CreatedAtUtc,
-                   ticket.UpdatedAtUtc,
-                   ticket.Version))
-            .SingleOrDefaultAsync(cancellationToken);
+    public async Task<TicketDetailResponse?> GetDetailAsync(Guid id, CancellationToken cancellationToken)
+    {
+        IQueryable<TicketDetailResponse> query =
+            from ticket in dbContext.Tickets.AsNoTracking()
+            where ticket.Id == id
+            join category in dbContext.TicketCategories.AsNoTracking()
+                on ticket.CategoryId equals category.Id into categories
+            from category in categories.DefaultIfEmpty()
+            join priority in dbContext.TicketPriorities.AsNoTracking()
+                on ticket.PriorityId equals priority.Id into priorities
+            from priority in priorities.DefaultIfEmpty()
+            select new TicketDetailResponse(
+                ticket.Id,
+                ticket.TicketNumber,
+                ticket.CustomerId,
+                ticket.Subject,
+                ticket.Description,
+                ticket.CategoryId,
+                category != null ? category.ArabicName : null,
+                category != null ? category.EnglishName : null,
+                category != null ? category.IsActive : (bool?)null,
+                ticket.SubcategoryId,
+                ticket.PriorityId,
+                priority != null ? priority.ArabicName : null,
+                priority != null ? priority.EnglishName : null,
+                priority != null ? priority.IsActive : (bool?)null,
+                priority != null ? priority.Rank : (int?)null,
+                ticket.DepartmentId,
+                ticket.BranchId,
+                ticket.Status,
+                ticket.Channel,
+                ticket.AssignedAgentId,
+                ticket.CreatedAtUtc,
+                ticket.UpdatedAtUtc,
+                ticket.Version,
+                Array.Empty<string>());
+
+        TicketDetailResponse? detail = await query.SingleOrDefaultAsync(cancellationToken);
+
+        // Computed after materialization rather than inside the query: the
+        // transition matrix is domain code, not something EF can translate to
+        // SQL, and it is a UX hint only — ChangeStatusAsync re-validates it.
+        return detail is null
+            ? null
+            : detail with
+            {
+                AllowedStatusTransitions = TicketStatusTransitions.AllowedFrom(detail.Status)
+                    .Select(status => status.ToString())
+                    .ToArray(),
+            };
+    }
 
     /// <summary>
     /// The canonical assignment capability (CRM-136). Manual assignment calls
@@ -329,6 +349,84 @@ internal sealed class TicketService(
         }
 
         await RecordAuditAsync(ticket.Id, "assigned", cancellationToken);
+        return TicketMutationResult.Success(ticket);
+    }
+
+    /// <summary>
+    /// The canonical lifecycle transition capability (CRM-137). The manual
+    /// endpoint calls it today; the escalation/automation stories
+    /// (CRM-153/154) call the same method rather than adding a second write
+    /// path.
+    /// <para>
+    /// Validity comes from <see cref="TicketStatusTransitions"/> — the same
+    /// matrix the detail projection reports to the UI, so the hint and the
+    /// enforced rule cannot drift apart. The UI gate is UX only; this check is
+    /// authoritative.
+    /// </para>
+    /// </summary>
+    public async Task<TicketMutationResult> ChangeStatusAsync(
+        Guid ticketId,
+        ChangeTicketStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        Ticket? ticket = await dbContext.Tickets.SingleOrDefaultAsync(
+            candidate => candidate.Id == ticketId, cancellationToken);
+        if (ticket is null)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.TicketNotFound);
+        }
+
+        // Checked before anything else mutates: a caller working from a stale
+        // read must not overwrite a newer status (AC). The database concurrency
+        // token below closes the remaining race window before SaveChanges.
+        if (ticket.Version != request.Version)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.StaleVersion);
+        }
+
+        // A transition to the ticket's current status is not in the matrix, so
+        // a double-submit is rejected here rather than producing a second
+        // history row and a duplicate event.
+        if (!TicketStatusTransitions.IsAllowed(ticket.Status, request.TargetStatus))
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.InvalidStatusTransition);
+        }
+
+        string? reason = string.IsNullOrWhiteSpace(request.Reason) ? null : request.Reason.Trim();
+        if (reason is null && TicketStatusTransitions.RequiresReason(ticket.Status, request.TargetStatus))
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.ReasonRequired);
+        }
+
+        TicketStatus previousStatus = ticket.Status;
+        DateTimeOffset changedAtUtc = DateTimeOffset.UtcNow;
+        ticket.ChangeStatus(request.TargetStatus, reason, changedAtUtc);
+
+        // Same change tracker, therefore the same transaction as the ticket
+        // update and the outbox row: history, status and event commit together
+        // or not at all. Reopening appends a row; earlier rows are untouched,
+        // so a prior resolution/closure is preserved (BR).
+        dbContext.TicketStatusHistory.Add(new TicketStatusHistory
+        {
+            Id = Guid.NewGuid(),
+            TicketId = ticket.Id,
+            PreviousStatus = previousStatus,
+            NewStatus = request.TargetStatus,
+            Reason = reason,
+            ChangedBy = currentUserAccessor.Handle ?? "unknown",
+            ChangedAtUtc = changedAtUtc,
+        });
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return TicketMutationResult.Failed(TicketMutationFailure.StaleVersion);
+        }
+
+        await RecordAuditAsync(ticket.Id, "status-changed", cancellationToken);
         return TicketMutationResult.Success(ticket);
     }
 

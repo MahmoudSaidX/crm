@@ -104,6 +104,14 @@ internal sealed class TicketManagementOutboxInterceptor(ICorrelationIdAccessor? 
             assigned.Reason,
             assigned.Source,
             assigned.OccurredAtUtc),
+        TicketStatusChangedDomainEvent statusChanged => new TicketStatusChangedIntegrationEvent(
+            Guid.NewGuid(),
+            statusChanged.TicketId,
+            statusChanged.TicketNumber,
+            statusChanged.PreviousStatus.ToString(),
+            statusChanged.NewStatus.ToString(),
+            statusChanged.Reason,
+            statusChanged.OccurredAtUtc),
         _ => throw new InvalidOperationException(
             $"No integration-event translation registered for domain event type '{domainEvent.GetType()}'."),
     };

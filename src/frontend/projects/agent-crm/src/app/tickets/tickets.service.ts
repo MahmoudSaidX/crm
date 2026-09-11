@@ -61,6 +61,13 @@ export interface TicketDetail {
   readonly createdAtUtc: string;
   readonly updatedAtUtc: string | null;
   readonly version: number;
+
+  /**
+   * Statuses this ticket may currently move to (CRM-137), reported by the
+   * backend so the screen offers only valid actions. A UX hint only: the
+   * transition endpoint re-validates every call.
+   */
+  readonly allowedStatusTransitions: readonly TicketStatus[];
 }
 
 /**
@@ -76,8 +83,20 @@ export interface AssignTicketRequest {
 }
 
 /**
- * Ticket browse/search/list (CRM-134), ticket detail (CRM-135) and ticket
- * assignment (CRM-136), all stories of the Ticket Management epic CRM-130.
+ * Lifecycle status-transition command (CRM-137). `version` is the ticket
+ * version the screen last read; `reason` is required by the backend for close
+ * and reopen transitions.
+ */
+export interface ChangeTicketStatusRequest {
+  readonly targetStatus: TicketStatus;
+  readonly reason: string | null;
+  readonly version: number;
+}
+
+/**
+ * Ticket browse/search/list (CRM-134), ticket detail (CRM-135), ticket
+ * assignment (CRM-136) and status lifecycle (CRM-137), all stories of the
+ * Ticket Management epic CRM-130.
  */
 @Injectable({ providedIn: 'root' })
 export class TicketsService {
@@ -127,5 +146,9 @@ export class TicketsService {
 
   assign(id: string, request: AssignTicketRequest): Promise<Ticket> {
     return firstValueFrom(this.http.post<Ticket>(`/api/v1/tickets/${id}/assign`, request));
+  }
+
+  changeStatus(id: string, request: ChangeTicketStatusRequest): Promise<Ticket> {
+    return firstValueFrom(this.http.post<Ticket>(`/api/v1/tickets/${id}/status`, request));
   }
 }

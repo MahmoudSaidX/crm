@@ -19,6 +19,9 @@ public static class Permissions
 
     /// <summary>Assign or reassign a ticket's owning agent (CRM-136).</summary>
     public const string TicketsAssign = "tickets.assign";
+
+    /// <summary>Move a ticket through its lifecycle statuses (CRM-137).</summary>
+    public const string TicketsChangeStatus = "tickets.changestatus";
 }
 
 internal static class PermissionPolicies
@@ -30,4 +33,5 @@ internal static class PermissionPolicies
     public const string TicketsCreate = "permission:tickets.create";
     public const string TicketsView = "permission:tickets.view";
     public const string TicketsAssign = "permission:tickets.assign";
+    public const string TicketsChangeStatus = "permission:tickets.changestatus";
 }

@@ -5,12 +5,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { TicketListQuery, TicketsService } from './tickets.service';
-import { Ticket, TicketChannel } from '../ticket-create/ticket-create.service';
+import { Ticket, TicketChannel, TicketStatus } from '../ticket-create/ticket-create.service';
 import { TicketCategoriesService } from '../ticket-categories/ticket-categories.service';
 import { TicketPrioritiesService } from '../ticket-priorities/ticket-priorities.service';
 import { DepartmentsService } from '../departments/departments.service';
 import { BranchesService } from '../branches/branches.service';
-import { LocalizationService } from '@squad-crm/platform';
+import { LocalizationService, TranslationKey } from '@squad-crm/platform';
 import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
 
 interface SelectOption {
@@ -68,6 +68,11 @@ export class TicketList {
     value,
   }));
   readonly pageSize = 20;
+
+  /** Localized lifecycle status label (CRM-137). */
+  protected statusLabel(status: TicketStatus): string {
+    return this.localization.translate(`tickets.statuses.${status}` as TranslationKey);
+  }
 
   constructor() {
     void this.loadFilterOptions();

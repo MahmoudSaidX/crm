@@ -67,6 +67,17 @@ public sealed record AssignTicketRequest(
     [property: MaxLength(500)] string? Reason,
     [property: Required] int Version);
 
+/// <summary>
+/// Lifecycle status-transition command (CRM-137). <paramref name="Version"/> is
+/// the ticket version the caller last read: a mismatch is rejected instead of
+/// silently overwriting a newer change (AC). <paramref name="Reason"/> is
+/// required by the server for close/reopen transitions only.
+/// </summary>
+public sealed record ChangeTicketStatusRequest(
+    [property: Required, JsonConverter(typeof(JsonStringEnumConverter))] TicketStatus TargetStatus,
+    [property: MaxLength(500)] string? Reason,
+    [property: Required] int Version);
+
 public sealed record TicketResponse(
     Guid Id,
     string TicketNumber,
@@ -97,6 +108,15 @@ public sealed record TicketResponse(
 /// The client composes them from each owning module's own API, which
 /// authorizes the caller independently.
 /// </para>
+/// <para>
+/// <c>AllowedStatusTransitions</c> (CRM-137) is a UX hint so the screen offers
+/// only currently valid actions; the transition endpoint re-validates every
+/// call against the same matrix, so a client that ignores the hint gains
+/// nothing. It carries status NAMES rather than the enum: no global
+/// string-enum serializer is configured in this API, so a
+/// <c>List&lt;TicketStatus&gt;</c> would serialize as numbers while every
+/// scalar status field serializes as a name.
+/// </para>
 /// </summary>
 public sealed record TicketDetailResponse(
     Guid Id,
@@ -121,4 +141,5 @@ public sealed record TicketDetailResponse(
     Guid? AssignedAgentId,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? UpdatedAtUtc,
-    int Version);
+    int Version,
+    IReadOnlyList<string> AllowedStatusTransitions);

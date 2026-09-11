@@ -84,7 +84,7 @@
           <a [routerLink]="['/tickets', ticket.id]">{{ ticket.ticketNumber }}</a>
         </td>
         <td>{{ ticket.subject }}</td>
-        <td>{{ ticket.status }}</td>
+        <td>{{ statusLabel(ticket.status) }}</td>
         <td>{{ ticket.channel }}</td>
         <td>{{ ticket.departmentId }}</td>
         <td>{{ ticket.branchId }}</td>

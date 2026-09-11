@@ -12,6 +12,9 @@ public sealed class TicketManagementDbContext(DbContextOptions<TicketManagementD
     /// <summary>Append-only ownership-change log (CRM-136).</summary>
     public DbSet<TicketAssignmentHistory> TicketAssignmentHistory => Set<TicketAssignmentHistory>();
 
+    /// <summary>Append-only lifecycle status-change log (CRM-137).</summary>
+    public DbSet<TicketStatusHistory> TicketStatusHistory => Set<TicketStatusHistory>();
+
     /// <summary>This module's own transactional outbox table (CRM-133/ADR-005).</summary>
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
@@ -89,6 +92,24 @@ public sealed class TicketManagementDbContext(DbContextOptions<TicketManagementD
             entity.Property(history => history.NewAgentId).HasColumnName("new_agent_id");
             entity.Property(history => history.Reason).HasColumnName("reason").HasMaxLength(500);
             entity.Property(history => history.Source).HasColumnName("source").HasConversion<string>().HasMaxLength(32);
+            entity.Property(history => history.ChangedBy).HasColumnName("changed_by").HasMaxLength(256);
+            entity.Property(history => history.ChangedAtUtc).HasColumnName("changed_at_utc");
+
+            // Read order for a single ticket's history (CRM-139 consumes it).
+            entity.HasIndex(history => new { history.TicketId, history.ChangedAtUtc });
+        });
+
+        modelBuilder.Entity<TicketStatusHistory>(entity =>
+        {
+            entity.ToTable("ticket_status_history");
+            entity.HasKey(history => history.Id);
+            entity.Property(history => history.Id).HasColumnName("id");
+            entity.Property(history => history.TicketId).HasColumnName("ticket_id");
+            entity.Property(history => history.PreviousStatus)
+                .HasColumnName("previous_status").HasConversion<string>().HasMaxLength(32);
+            entity.Property(history => history.NewStatus)
+                .HasColumnName("new_status").HasConversion<string>().HasMaxLength(32);
+            entity.Property(history => history.Reason).HasColumnName("reason").HasMaxLength(500);
             entity.Property(history => history.ChangedBy).HasColumnName("changed_by").HasMaxLength(256);
             entity.Property(history => history.ChangedAtUtc).HasColumnName("changed_at_utc");
 
