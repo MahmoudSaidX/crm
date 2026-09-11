@@ -1,0 +1,33 @@
+<div
+  class="layout-wrapper"
+  [class.layout-static]="!layout.isOverlay()"
+  [class.layout-overlay]="layout.isOverlay()"
+  [class.layout-static-inactive]="staticMenuDesktopInactive()"
+  [class.layout-overlay-active]="overlayMenuActive()"
+  [class.layout-mobile-active]="mobileMenuActive()"
+>
+  <sc-app-topbar
+    [title]="title()"
+    [logoUrl]="logoUrl()"
+    [menuLabel]="menuLabel()"
+    [actionsLabel]="actionsLabel()"
+    [darkModeLabel]="darkModeLabel()"
+  >
+    <ng-content select="[shell-actions]" ngProjectAs="[shell-actions]" />
+  </sc-app-topbar>
+
+  <sc-app-sidebar [items]="navigationItems()" [navigationLabel]="navigationLabel()" />
+
+  <div class="layout-main-container">
+    <main class="layout-main" tabindex="-1"><router-outlet /></main>
+    <sc-app-footer [text]="footerText()" />
+  </div>
+
+  <button
+    type="button"
+    class="layout-mask"
+    [attr.aria-label]="closeMenuLabel()"
+    data-testid="shell-mask"
+    (click)="layout.hideMenu()"
+  ></button>
+</div>

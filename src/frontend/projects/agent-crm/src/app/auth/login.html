@@ -1,7 +1,7 @@
 <main class="login-page">
   <section class="login-card" aria-labelledby="login-title">
     <header>
-      <crm-agent-language-switcher />
+      <div class="login-switcher"><crm-agent-language-switcher /></div>
       <span class="brand-mark" aria-hidden="true"><i class="pi pi-users"></i></span>
       <p class="eyebrow">Squad CRM</p>
       <h1 id="login-title">{{ localization.translate('agent.login.title') }}</h1>
@@ -14,7 +14,7 @@
       }}</p-message>
     }
 
-    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <form class="sc-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
       <label for="email">{{ localization.translate('agent.login.email') }}</label>
       <input
         pInputText

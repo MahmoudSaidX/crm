@@ -1,3 +1,4 @@
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -10,7 +11,7 @@ import { Customer, CustomersService } from './customers.service';
 import { DepartmentsService } from '../departments/departments.service';
 import { BranchesService } from '../branches/branches.service';
 import { LocalizationService } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 import { AuthorizationState } from '../auth/authorization.state';
 
 interface SelectOption {
@@ -21,6 +22,9 @@ interface SelectOption {
 @Component({
   selector: 'crm-customer-list',
   imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
     RouterLink,
     FormsModule,
     ButtonModule,
@@ -28,7 +32,6 @@ interface SelectOption {
     SelectModule,
     TableModule,
     TagModule,
-    AgentLanguageSwitcher,
   ],
   templateUrl: './customer-list.html',
   styleUrl: './customer-list.scss',

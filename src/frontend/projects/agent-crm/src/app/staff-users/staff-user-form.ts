@@ -1,3 +1,4 @@
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,20 +9,21 @@ import { MessageModule } from 'primeng/message';
 import { PasswordModule } from 'primeng/password';
 import { StaffUsersService } from './staff-users.service';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 
 @Component({
   selector: 'crm-staff-user-form',
   imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
     ReactiveFormsModule,
     ButtonModule,
     InputTextModule,
     MessageModule,
     PasswordModule,
-    AgentLanguageSwitcher,
   ],
   templateUrl: './staff-user-form.html',
-  styleUrl: './staff-user-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StaffUserForm {

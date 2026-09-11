@@ -1,3 +1,4 @@
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,20 +9,21 @@ import { MessageModule } from 'primeng/message';
 import { TextareaModule } from 'primeng/textarea';
 import { BranchesService } from './branches.service';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 
 @Component({
   selector: 'crm-branch-form',
   imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
     ReactiveFormsModule,
     ButtonModule,
     InputTextModule,
     MessageModule,
     TextareaModule,
-    AgentLanguageSwitcher,
   ],
   templateUrl: './branch-form.html',
-  styleUrl: './branch-form.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BranchForm {

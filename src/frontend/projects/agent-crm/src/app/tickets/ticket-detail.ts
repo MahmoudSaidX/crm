@@ -21,7 +21,9 @@ import { CustomersService } from '../customers/customers.service';
 import { DepartmentsService } from '../departments/departments.service';
 import { BranchesService } from '../branches/branches.service';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { DetailGrid, PageContainer, PageHeader, StatePanel } from '@squad-crm/shared-ui';
+import { CardModule } from 'primeng/card';
+import { DialogModule } from 'primeng/dialog';
 
 /**
  * Read-only ticket detail (CRM-135). Follows the `audit-detail` definition-list
@@ -71,7 +73,12 @@ import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
     TagModule,
     TextareaModule,
     PaginatorModule,
-    AgentLanguageSwitcher,
+    CardModule,
+    DialogModule,
+    PageContainer,
+    PageHeader,
+    DetailGrid,
+    StatePanel,
   ],
   templateUrl: './ticket-detail.html',
   styleUrl: './ticket-detail.scss',
@@ -228,6 +235,25 @@ export class TicketDetail {
 
   onStatusSelected(status: TicketStatus | ''): void {
     this.selectedStatus.set(status);
+  }
+
+  /** Dialog close (mask, escape, close button) maps onto the existing cancel flow. */
+  onStatusDialogVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.cancelStatusChange();
+    }
+  }
+
+  onAssignDialogVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.cancelAssignment();
+    }
+  }
+
+  onEscalationDialogVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.cancelEscalation();
+    }
   }
 
   cancelStatusChange(): void {

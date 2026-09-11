@@ -1,3 +1,4 @@
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -9,13 +10,16 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
 import { AuthorizationState } from '../auth/authorization.state';
 import { ConfigurationValue, SystemConfigurationService } from './system-configuration.service';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 
 @Component({
   selector: 'crm-system-configuration-list',
   imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
     FormsModule,
     ButtonModule,
     InputNumberModule,
@@ -24,7 +28,6 @@ import { ConfigurationValue, SystemConfigurationService } from './system-configu
     TableModule,
     TagModule,
     ToggleSwitchModule,
-    AgentLanguageSwitcher,
   ],
   templateUrl: './system-configuration-list.html',
   styleUrl: './system-configuration-list.scss',

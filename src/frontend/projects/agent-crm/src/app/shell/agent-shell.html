@@ -1,19 +1,23 @@
-<sc-responsive-shell
+<sc-app-layout
   [title]="shellTitle()"
   [logoUrl]="branding.value().compactLogoUrl"
   [menuLabel]="localization.translate('common.navigation.openMenu')"
   [closeMenuLabel]="localization.translate('common.navigation.closeMenu')"
+  [actionsLabel]="localization.translate('common.navigation.moreActions')"
+  [darkModeLabel]="localization.translate('common.theme.toggle')"
   [navigationLabel]="localization.translate('common.navigation.primary')"
   [navigationItems]="navigationItems()"
+  [footerText]="localization.translate('agent.shell.footer')"
 >
-  <div shell-actions>
+  <div shell-actions class="sc-shell-actions">
     <crm-agent-language-switcher />
     <p-button
       icon="pi pi-sign-out"
       [label]="localization.translate('common.actions.signOut')"
       severity="secondary"
+      [text]="true"
       data-testid="sign-out"
       (onClick)="signOut()"
     />
   </div>
-</sc-responsive-shell>
+</sc-app-layout>

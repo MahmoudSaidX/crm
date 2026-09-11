@@ -1,0 +1,30 @@
+html {
+  block-size: 100%;
+  font-size: 14px;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-block-size: 100%;
+  background-color: var(--surface-ground);
+  color: var(--text-color);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+a {
+  text-decoration: none;
+}
+
+.layout-wrapper {
+  min-block-size: 100dvh;
+}

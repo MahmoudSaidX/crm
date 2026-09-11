@@ -1,10 +1,7 @@
-<main class="tickets-page">
-  <header class="tickets-header">
-    <h1>{{ localization.translate('tickets.title') }}</h1>
-    <crm-agent-language-switcher />
-  </header>
+<sc-page-container>
+  <sc-page-header [title]="localization.translate('tickets.title')"> </sc-page-header>
 
-  <div class="tickets-filters">
+  <div class="sc-filter-toolbar">
     <input
       pInputText
       type="search"
@@ -54,59 +51,63 @@
     />
   </div>
 
-  <p-table
-    [value]="tickets()"
-    [lazy]="true"
-    [paginator]="true"
-    [rows]="pageSize"
-    [totalRecords]="totalRecords()"
-    [paginatorLocale]="localization.locale()"
-    [loading]="loading()"
-    [scrollable]="true"
-    (onLazyLoad)="onLazyLoad($event)"
-    dataKey="id"
-  >
-    <ng-template #header>
-      <tr>
-        <th style="min-width: 10rem">
-          {{ localization.translate('tickets.fields.ticketNumber') }}
-        </th>
-        <th style="min-width: 16rem">{{ localization.translate('tickets.fields.subject') }}</th>
-        <th style="min-width: 8rem">{{ localization.translate('tickets.fields.status') }}</th>
-        <th style="min-width: 8rem">{{ localization.translate('tickets.fields.escalation') }}</th>
-        <th style="min-width: 8rem">{{ localization.translate('tickets.fields.channel') }}</th>
-        <th style="min-width: 10rem">{{ localization.translate('tickets.fields.department') }}</th>
-        <th style="min-width: 10rem">{{ localization.translate('tickets.fields.branch') }}</th>
-      </tr>
-    </ng-template>
-    <ng-template #body let-ticket>
-      <tr>
-        <td>
-          <a [routerLink]="['/tickets', ticket.id]">{{ ticket.ticketNumber }}</a>
-        </td>
-        <td>{{ ticket.subject }}</td>
-        <td>{{ statusLabel(ticket.status) }}</td>
-        <td>
-          @if (ticket.escalationLevel > 0) {
-            <p-tag
-              severity="warn"
-              [value]="
-                localization.translate('tickets.escalation.level') + ' ' + ticket.escalationLevel
-              "
-            />
-          } @else {
-            {{ localization.translate('tickets.escalation.notEscalated') }}
-          }
-        </td>
-        <td>{{ ticket.channel }}</td>
-        <td>{{ ticket.departmentId }}</td>
-        <td>{{ ticket.branchId }}</td>
-      </tr>
-    </ng-template>
-    <ng-template #emptymessage>
-      <tr>
-        <td colspan="7">{{ localization.translate('tickets.empty') }}</td>
-      </tr>
-    </ng-template>
-  </p-table>
-</main>
+  <p-card>
+    <p-table
+      [value]="tickets()"
+      [lazy]="true"
+      [paginator]="true"
+      [rows]="pageSize"
+      [totalRecords]="totalRecords()"
+      [paginatorLocale]="localization.locale()"
+      [loading]="loading()"
+      [scrollable]="true"
+      (onLazyLoad)="onLazyLoad($event)"
+      dataKey="id"
+    >
+      <ng-template #header>
+        <tr>
+          <th style="min-width: 10rem">
+            {{ localization.translate('tickets.fields.ticketNumber') }}
+          </th>
+          <th style="min-width: 16rem">{{ localization.translate('tickets.fields.subject') }}</th>
+          <th style="min-width: 8rem">{{ localization.translate('tickets.fields.status') }}</th>
+          <th style="min-width: 8rem">{{ localization.translate('tickets.fields.escalation') }}</th>
+          <th style="min-width: 8rem">{{ localization.translate('tickets.fields.channel') }}</th>
+          <th style="min-width: 10rem">
+            {{ localization.translate('tickets.fields.department') }}
+          </th>
+          <th style="min-width: 10rem">{{ localization.translate('tickets.fields.branch') }}</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-ticket>
+        <tr>
+          <td>
+            <a [routerLink]="['/tickets', ticket.id]">{{ ticket.ticketNumber }}</a>
+          </td>
+          <td>{{ ticket.subject }}</td>
+          <td>{{ statusLabel(ticket.status) }}</td>
+          <td>
+            @if (ticket.escalationLevel > 0) {
+              <p-tag
+                severity="warn"
+                [value]="
+                  localization.translate('tickets.escalation.level') + ' ' + ticket.escalationLevel
+                "
+              />
+            } @else {
+              {{ localization.translate('tickets.escalation.notEscalated') }}
+            }
+          </td>
+          <td>{{ ticket.channel }}</td>
+          <td>{{ ticket.departmentId }}</td>
+          <td>{{ ticket.branchId }}</td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="7">{{ localization.translate('tickets.empty') }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</sc-page-container>

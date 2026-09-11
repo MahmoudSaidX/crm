@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { BrandingService, LocalizationService } from '@squad-crm/platform';
-import { ResponsiveShell, ShellNavigationItem } from '@squad-crm/shared-ui';
+import { AppLayout, ShellMenuItem } from '@squad-crm/shared-ui';
 import { PortalLanguageSwitcher } from '../i18n/portal-language-switcher';
 
 @Component({
   selector: 'portal-shell',
-  imports: [ResponsiveShell, PortalLanguageSwitcher],
+  imports: [AppLayout, PortalLanguageSwitcher],
   templateUrl: './portal-shell.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -21,12 +21,17 @@ export class PortalShell {
       ? branding.organizationDisplayNameAr
       : branding.organizationDisplayNameEn;
   });
-  protected readonly navigationItems = computed<readonly ShellNavigationItem[]>(() => [
+  protected readonly navigationItems = computed<readonly ShellMenuItem[]>(() => [
     {
-      label: this.localization.translate('portal.navigation.home'),
-      icon: 'pi pi-home',
-      routerLink: '/',
-      exact: true,
+      label: this.localization.translate('portal.navigation.primaryGroup'),
+      items: [
+        {
+          label: this.localization.translate('portal.navigation.home'),
+          icon: 'pi pi-home',
+          routerLink: '/',
+          exact: true,
+        },
+      ],
     },
   ]);
 

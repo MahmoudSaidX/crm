@@ -1,5 +1,13 @@
-<main class="home">
-  <h1>{{ localization.translate('agent.home.title') }}</h1>
-  <p data-testid="surface">{{ config.appSurface }}</p>
-  <p data-testid="direction">{{ localization.locale() }} / {{ localization.direction() }}</p>
-</main>
+<sc-page-container>
+  <sc-page-header [title]="localization.translate('agent.home.title')" />
+
+  <p-card>
+    <sc-detail-grid>
+      <dt>{{ localization.translate('agent.home.surface') }}</dt>
+      <dd data-testid="surface">{{ config.appSurface }}</dd>
+
+      <dt>{{ localization.translate('agent.home.locale') }}</dt>
+      <dd data-testid="direction">{{ localization.locale() }} / {{ localization.direction() }}</dd>
+    </sc-detail-grid>
+  </p-card>
+</sc-page-container>

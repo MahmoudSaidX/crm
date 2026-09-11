@@ -1,40 +1,40 @@
-<main class="role-form-page">
-  <header>
-    <h1>{{ localization.translate(isEdit() ? 'roles.edit' : 'roles.new') }}</h1>
-    <crm-agent-language-switcher />
-  </header>
+<sc-page-container>
+  <sc-page-header [title]="localization.translate(isEdit() ? 'roles.edit' : 'roles.new')">
+  </sc-page-header>
 
   @if (errorKey(); as key) {
     <p-message severity="error">{{ localization.translate(key) }}</p-message>
   }
 
-  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-    <label for="name">{{ localization.translate('roles.fields.name') }}</label>
-    <input pInputText id="name" type="text" formControlName="name" />
-    @if (form.controls.name.touched && form.controls.name.invalid) {
-      <small class="field-error">{{ localization.translate('roles.validation.name') }}</small>
-    }
+  <p-card styleClass="sc-form-card">
+    <form class="sc-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label for="name">{{ localization.translate('roles.fields.name') }}</label>
+      <input pInputText id="name" type="text" formControlName="name" />
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <small class="field-error">{{ localization.translate('roles.validation.name') }}</small>
+      }
 
-    <label for="code">{{ localization.translate('roles.fields.code') }}</label>
-    <input pInputText id="code" type="text" formControlName="code" />
-    @if (form.controls.code.touched && form.controls.code.invalid) {
-      <small class="field-error">{{ localization.translate('roles.validation.code') }}</small>
-    }
+      <label for="code">{{ localization.translate('roles.fields.code') }}</label>
+      <input pInputText id="code" type="text" formControlName="code" />
+      @if (form.controls.code.touched && form.controls.code.invalid) {
+        <small class="field-error">{{ localization.translate('roles.validation.code') }}</small>
+      }
 
-    <label for="description">{{ localization.translate('roles.fields.description') }}</label>
-    <textarea pTextarea id="description" formControlName="description" rows="3"></textarea>
-    @if (form.controls.description.touched && form.controls.description.invalid) {
-      <small class="field-error">{{
-        localization.translate('roles.validation.description')
-      }}</small>
-    }
+      <label for="description">{{ localization.translate('roles.fields.description') }}</label>
+      <textarea pTextarea id="description" formControlName="description" rows="3"></textarea>
+      @if (form.controls.description.touched && form.controls.description.invalid) {
+        <small class="field-error">{{
+          localization.translate('roles.validation.description')
+        }}</small>
+      }
 
-    <p-button
-      type="submit"
-      [label]="localization.translate('common.actions.save')"
-      icon="pi pi-check"
-      [loading]="submitting()"
-      [disabled]="form.invalid"
-    />
-  </form>
-</main>
+      <p-button
+        type="submit"
+        [label]="localization.translate('common.actions.save')"
+        icon="pi pi-check"
+        [loading]="submitting()"
+        [disabled]="form.invalid"
+      />
+    </form>
+  </p-card>
+</sc-page-container>

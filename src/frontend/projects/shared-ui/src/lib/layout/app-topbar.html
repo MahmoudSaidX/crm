@@ -1,0 +1,53 @@
+<div class="layout-topbar">
+  <div class="layout-topbar-logo-container">
+    <button
+      type="button"
+      class="layout-menu-button layout-topbar-action"
+      [attr.aria-label]="menuLabel()"
+      data-testid="mobile-menu-trigger"
+      (click)="layout.onMenuToggle()"
+    >
+      <i class="pi pi-bars" aria-hidden="true"></i>
+    </button>
+    <a class="layout-topbar-logo" routerLink="/">
+      @if (logoUrl(); as logo) {
+        <img [src]="logo" alt="" />
+      }
+      <span>{{ title() }}</span>
+    </a>
+  </div>
+
+  <div class="layout-topbar-actions">
+    <button
+      type="button"
+      class="layout-topbar-action"
+      [attr.aria-label]="darkModeLabel()"
+      data-testid="dark-mode-toggle"
+      (click)="layout.toggleDarkMode()"
+    >
+      <i
+        class="pi"
+        [class.pi-moon]="layout.isDarkTheme()"
+        [class.pi-sun]="!layout.isDarkTheme()"
+        aria-hidden="true"
+      ></i>
+    </button>
+
+    <button
+      type="button"
+      class="layout-topbar-menu-button layout-topbar-action"
+      [attr.aria-label]="actionsLabel()"
+      [attr.aria-expanded]="actionsExpanded()"
+      data-testid="topbar-actions-trigger"
+      (click)="toggleActions()"
+    >
+      <i class="pi pi-ellipsis-v" aria-hidden="true"></i>
+    </button>
+
+    <div class="layout-topbar-menu" [class.sc-topbar-menu-collapsed]="!actionsExpanded()">
+      <div class="layout-topbar-menu-content">
+        <ng-content select="[shell-actions]" />
+      </div>
+    </div>
+  </div>
+</div>

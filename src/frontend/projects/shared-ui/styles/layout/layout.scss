@@ -1,0 +1,13 @@
+/* Squad CRM layout system.
+   Adapted from PrimeNG Sakai (MIT, PrimeTek), tag 20.0.0, src/assets/layout.
+   Physical left/right rules were converted to logical properties for RTL. */
+@use 'variables';
+@use 'mixins';
+@use 'core';
+@use 'main';
+@use 'topbar';
+@use 'menu';
+@use 'footer';
+@use 'responsive';
+@use 'typography';
+@use 'page';

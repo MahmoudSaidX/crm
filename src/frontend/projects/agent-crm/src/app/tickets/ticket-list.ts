@@ -1,3 +1,4 @@
+import { CardModule } from 'primeng/card';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -12,7 +13,7 @@ import { TicketPrioritiesService } from '../ticket-priorities/ticket-priorities.
 import { DepartmentsService } from '../departments/departments.service';
 import { BranchesService } from '../branches/branches.service';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
-import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
+import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 
 interface SelectOption {
   readonly label: string;
@@ -32,16 +33,17 @@ const CHANNEL_OPTIONS: readonly TicketChannel[] = [
 @Component({
   selector: 'crm-ticket-list',
   imports: [
+    CardModule,
+    PageContainer,
+    PageHeader,
     FormsModule,
     RouterLink,
     InputTextModule,
     SelectModule,
     TableModule,
     TagModule,
-    AgentLanguageSwitcher,
   ],
   templateUrl: './ticket-list.html',
-  styleUrl: './ticket-list.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TicketList {
