@@ -129,6 +129,55 @@ internal sealed class TicketTimelineService(TicketManagementDbContext dbContext)
             // Internal routing, same reasoning as assignment.
             TicketTimelineVisibility.Internal)));
 
+        List<TicketInternalNote> notes = await dbContext.TicketInternalNotes
+            .AsNoTracking()
+            .Where(note => note.TicketId == ticketId)
+            .ToListAsync(cancellationToken);
+        List<TicketNoteMention> mentions = await dbContext.TicketNoteMentions
+            .AsNoTracking()
+            .Where(mention => mention.TicketId == ticketId)
+            .ToListAsync(cancellationToken);
+        entries.AddRange(notes.Select(note => new TicketTimelineEntryResponse(
+            note.Id,
+            "TicketNoteAdded",
+            note.CreatedAtUtc,
+            0,
+            TicketTimelineActorType.User,
+            note.CreatedBy,
+            // The note BODY never reaches a timeline summary. This method
+            // builds one entry list and then filters it by audience, so any
+            // internal text placed in a summary would be one filtering bug away
+            // from a customer; a mention count says an internal note happened
+            // without carrying its content (AC 6).
+            MentionCountOf(mentions, note.Id) is var mentionCount && mentionCount > 0
+                ? $"Internal note added, mentioning {mentionCount} teammate(s)"
+                : "Internal note added",
+            null,
+            // Internal collaboration has no customer-visible representation at
+            // all — customer-visible messages are Conversation's data (BR).
+            TicketTimelineVisibility.Internal)));
+
+        List<TicketWatcherHistory> watcherChanges = await dbContext.TicketWatcherHistory
+            .AsNoTracking()
+            .Where(history => history.TicketId == ticketId)
+            .ToListAsync(cancellationToken);
+        entries.AddRange(watcherChanges.Select(history => new TicketTimelineEntryResponse(
+            history.Id,
+            history.Action == TicketWatcherAction.Added
+                ? "TicketWatcherAdded"
+                : "TicketWatcherRemoved",
+            history.ChangedAtUtc,
+            0,
+            TicketTimelineActorType.User,
+            history.ChangedBy,
+            history.Action == TicketWatcherAction.Added
+                ? $"User {history.UserId} started watching the ticket"
+                : $"User {history.UserId} stopped watching the ticket",
+            null,
+            // Who follows a ticket internally is routing information, same
+            // reasoning as assignment.
+            TicketTimelineVisibility.Internal)));
+
         // Audience filtering happens BEFORE sequencing and paging: a customer's
         // page numbering must match what that audience can actually see, and an
         // internal entry must not occupy a slot in their timeline.
@@ -165,6 +214,9 @@ internal sealed class TicketTimelineService(TicketManagementDbContext dbContext)
     /// actor (BR). CRM-136/138 already carry the source on every row, so this
     /// stays a mapping rather than a guess.
     /// </summary>
+    private static int MentionCountOf(List<TicketNoteMention> mentions, Guid noteId) =>
+        mentions.Count(mention => mention.NoteId == noteId);
+
     private static TicketTimelineActorType ActorTypeOf(TicketAssignmentSource source) =>
         source == TicketAssignmentSource.Automation
             ? TicketTimelineActorType.Automation

@@ -79,6 +79,8 @@ public sealed class RoleManagementModule : IModule
                 policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.TicketsChangeStatus)));
             options.AddPolicy(PermissionPolicies.TicketsEscalate, policy =>
                 policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.TicketsEscalate)));
+            options.AddPolicy(PermissionPolicies.TicketsCollaborate, policy =>
+                policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.TicketsCollaborate)));
             options.AddPolicy(PermissionPolicies.TasksView, policy =>
                 policy.RequireAuthenticatedUser().AddRequirements(new PermissionRequirement(Permissions.TasksView)));
             options.AddPolicy(PermissionPolicies.TasksCreate, policy =>

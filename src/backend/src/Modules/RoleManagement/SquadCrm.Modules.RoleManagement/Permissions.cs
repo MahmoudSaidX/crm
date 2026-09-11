@@ -26,6 +26,7 @@ public static class Permissions
     public const string TicketsAssign = "tickets.assign";
     public const string TicketsChangeStatus = "tickets.changestatus";
     public const string TicketsEscalate = "tickets.escalate";
+    public const string TicketsCollaborate = "tickets.collaborate";
     public const string TasksView = "tasks.view";
     public const string TasksCreate = "tasks.create";
     public const string TasksEdit = "tasks.edit";
@@ -58,6 +59,7 @@ internal static class PermissionPolicies
     public const string TicketsAssign = "permission:tickets.assign";
     public const string TicketsChangeStatus = "permission:tickets.changestatus";
     public const string TicketsEscalate = "permission:tickets.escalate";
+    public const string TicketsCollaborate = "permission:tickets.collaborate";
     public const string TasksView = "permission:tasks.view";
     public const string TasksCreate = "permission:tasks.create";
     public const string TasksEdit = "permission:tasks.edit";

@@ -42,6 +42,7 @@ public sealed class TicketManagementModule : IModule
         services.AddScoped<TicketPriorityService>();
         services.AddScoped<TicketService>();
         services.AddScoped<TicketTimelineService>();
+        services.AddScoped<TicketCollaborationService>();
         services.AddScoped<ITicketExistsLookup, TicketExistsLookup>();
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule;
@@ -98,7 +99,123 @@ public sealed class TicketManagementModule : IModule
         tickets.MapPost("/{id:guid}/escalate", EscalateTicketAsync)
             .ValidatesDataAnnotations<EscalateTicketRequest>()
             .RequireAuthorization(PermissionPolicies.TicketsEscalate);
+
+        // Internal collaboration (CRM-147). Reads reuse "tickets.view" — the
+        // CRM-129/139 precedent that a caller who may read a ticket may read
+        // its ticket-scoped sub-resources; writes need "tickets.collaborate".
+        //
+        // There is deliberately NO handoff endpoint here: handing a ticket to
+        // another agent is reassignment and stays on /assign above (CRM-136),
+        // and department handoff is /escalate — a second ownership path would
+        // violate the story's own Business Rule.
+        tickets.MapPost("/{id:guid}/notes", AddTicketNoteAsync)
+            .ValidatesDataAnnotations<AddTicketNoteRequest>()
+            .RequireAuthorization(PermissionPolicies.TicketsCollaborate);
+        tickets.MapGet("/{id:guid}/notes", ListTicketNotesAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .RequireAuthorization(PermissionPolicies.TicketsView);
+        tickets.MapPost("/{id:guid}/watchers", AddTicketWatcherAsync)
+            .ValidatesDataAnnotations<AddTicketWatcherRequest>()
+            .RequireAuthorization(PermissionPolicies.TicketsCollaborate);
+        tickets.MapGet("/{id:guid}/watchers", ListTicketWatchersAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .RequireAuthorization(PermissionPolicies.TicketsView);
+        tickets.MapDelete("/{id:guid}/watchers/{userId:guid}", RemoveTicketWatcherAsync)
+            .RequireAuthorization(PermissionPolicies.TicketsCollaborate);
     }
+
+    private static async Task<IResult> AddTicketNoteAsync(
+        Guid id,
+        AddTicketNoteRequest request,
+        TicketCollaborationService ticketCollaborationService,
+        CancellationToken cancellationToken)
+    {
+        TicketNoteResult result = await ticketCollaborationService.AddNoteAsync(id, request, cancellationToken);
+        return result.Failure switch
+        {
+            TicketCollaborationFailure.None => Results.Created(
+                $"/api/v1/tickets/{id}/notes/{result.Note!.Id}", result.Note),
+            TicketCollaborationFailure.TicketNotFound => NotFoundTicketProblem(),
+            TicketCollaborationFailure.IneligibleUser => IneligibleCollaboratorProblem(),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> ListTicketNotesAsync(
+        Guid id,
+        [AsParameters] PaginationRequest pagination,
+        TicketCollaborationService ticketCollaborationService,
+        CancellationToken cancellationToken)
+    {
+        TicketCollaborationListResult<TicketInternalNoteResponse> result =
+            await ticketCollaborationService.ListNotesAsync(id, pagination, cancellationToken);
+        return result.Failure switch
+        {
+            TicketCollaborationFailure.None => Results.Ok(result.Page),
+            TicketCollaborationFailure.TicketNotFound => NotFoundTicketProblem(),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> AddTicketWatcherAsync(
+        Guid id,
+        AddTicketWatcherRequest request,
+        TicketCollaborationService ticketCollaborationService,
+        CancellationToken cancellationToken)
+    {
+        TicketWatcherResult result = await ticketCollaborationService.AddWatcherAsync(id, request, cancellationToken);
+        return result.Failure switch
+        {
+            // 200, not 201: adding an existing watcher is an accepted no-op, so
+            // the response describes the resulting membership rather than
+            // claiming a row was created.
+            TicketCollaborationFailure.None => Results.Ok(result.Watcher),
+            TicketCollaborationFailure.TicketNotFound => NotFoundTicketProblem(),
+            TicketCollaborationFailure.IneligibleUser => IneligibleCollaboratorProblem(),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> ListTicketWatchersAsync(
+        Guid id,
+        [AsParameters] PaginationRequest pagination,
+        TicketCollaborationService ticketCollaborationService,
+        CancellationToken cancellationToken)
+    {
+        TicketCollaborationListResult<TicketWatcherResponse> result =
+            await ticketCollaborationService.ListWatchersAsync(id, pagination, cancellationToken);
+        return result.Failure switch
+        {
+            TicketCollaborationFailure.None => Results.Ok(result.Page),
+            TicketCollaborationFailure.TicketNotFound => NotFoundTicketProblem(),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> RemoveTicketWatcherAsync(
+        Guid id,
+        Guid userId,
+        TicketCollaborationService ticketCollaborationService,
+        CancellationToken cancellationToken)
+    {
+        TicketCollaborationFailure failure =
+            await ticketCollaborationService.RemoveWatcherAsync(id, userId, cancellationToken);
+        return failure switch
+        {
+            TicketCollaborationFailure.None => Results.NoContent(),
+            TicketCollaborationFailure.TicketNotFound => NotFoundTicketProblem(),
+            TicketCollaborationFailure.WatcherNotFound => Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "That user is not watching this ticket.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tickets.watcher_not_found" }),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static IResult IneligibleCollaboratorProblem() => Results.Problem(
+        statusCode: StatusCodes.Status422UnprocessableEntity,
+        title: "A selected user is not an active user.",
+        extensions: new Dictionary<string, object?> { ["code"] = "tickets.ineligible_collaborator" });
 
     private static async Task<IResult> CreateAsync(
         CreateTicketCategoryRequest request,

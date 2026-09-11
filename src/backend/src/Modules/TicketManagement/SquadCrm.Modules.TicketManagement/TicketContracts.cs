@@ -258,3 +258,47 @@ public sealed record TicketTimelineEntryResponse(
     string Summary,
     string? Reason,
     [property: JsonConverter(typeof(JsonStringEnumConverter))] TicketTimelineVisibility Visibility);
+
+/// <summary>
+/// Add-internal-note command (CRM-147).
+/// <para>
+/// <c>MentionedUserIds</c> is an explicit, server-validated id list rather than
+/// something parsed out of <c>Body</c>. Free-text <c>@name</c> parsing is named
+/// stretch by the story's deadline override, and — more importantly — a parser
+/// cannot enforce the Business Rule that a mentioned user must be an eligible
+/// teammate: the server validates every id against StaffIdentity and rejects
+/// the whole note if any is unknown or inactive, so a mention can never be used
+/// to reach someone who should not be reachable.
+/// </para>
+/// </summary>
+public sealed record AddTicketNoteRequest(
+    [property: Required]
+    [property: StringLength(4000, MinimumLength = 1)]
+    string Body,
+    Guid[]? MentionedUserIds = null);
+
+/// <summary>
+/// One internal collaboration note (CRM-147). Internal-only: this shape is
+/// returned solely by the agent-facing notes endpoint and is never projected
+/// into the customer timeline or any portal response (AC 6).
+/// </summary>
+public sealed record TicketInternalNoteResponse(
+    Guid Id,
+    Guid TicketId,
+    string Body,
+    string CreatedBy,
+    DateTimeOffset CreatedAtUtc,
+    IReadOnlyList<Guid> MentionedUserIds);
+
+/// <summary>Add-watcher command (CRM-147).</summary>
+public sealed record AddTicketWatcherRequest([property: Required] Guid UserId);
+
+/// <summary>
+/// One current watcher of a ticket (CRM-147). The watcher LIST is internal
+/// routing information, like assignment, and is never exposed to a customer
+/// audience (AC 6).
+/// </summary>
+public sealed record TicketWatcherResponse(
+    Guid UserId,
+    string AddedBy,
+    DateTimeOffset AddedAtUtc);

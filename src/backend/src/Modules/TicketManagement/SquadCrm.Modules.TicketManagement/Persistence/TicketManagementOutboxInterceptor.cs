@@ -123,6 +123,20 @@ internal sealed class TicketManagementOutboxInterceptor(ICorrelationIdAccessor? 
             escalated.Reason,
             escalated.Source.ToString(),
             escalated.OccurredAtUtc),
+        TicketNoteAddedDomainEvent noteAdded => new TicketNoteAddedIntegrationEvent(
+            Guid.NewGuid(),
+            noteAdded.TicketId,
+            noteAdded.NoteId,
+            noteAdded.MentionedUserIds,
+            noteAdded.CreatedBy,
+            noteAdded.OccurredAtUtc),
+        TicketWatcherChangedDomainEvent watcherChanged => new TicketWatcherChangedIntegrationEvent(
+            Guid.NewGuid(),
+            watcherChanged.TicketId,
+            watcherChanged.UserId,
+            watcherChanged.Action.ToString(),
+            watcherChanged.ChangedBy,
+            watcherChanged.OccurredAtUtc),
         _ => throw new InvalidOperationException(
             $"No integration-event translation registered for domain event type '{domainEvent.GetType()}'."),
     };
