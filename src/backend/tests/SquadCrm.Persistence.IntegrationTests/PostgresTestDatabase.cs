@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using SquadCrm.Infrastructure.Postgres;
+using SquadCrm.Modules.AgentTaskManagement.Persistence;
 using SquadCrm.Modules.ArchitectureFixture.Persistence;
 using SquadCrm.Modules.Audit.Persistence;
 using SquadCrm.Modules.BranchManagement.Persistence;
@@ -107,6 +108,8 @@ public sealed class PostgresTestDatabase : IAsyncLifetime
         await customerManagement.Database.MigrateAsync();
         await using TicketManagementDbContext ticketManagement = CreateTicketManagementContext();
         await ticketManagement.Database.MigrateAsync();
+        await using AgentTaskManagementDbContext agentTaskManagement = CreateAgentTaskManagementContext();
+        await agentTaskManagement.Database.MigrateAsync();
     }
 
     public async Task DisposeAsync()
@@ -164,6 +167,9 @@ public sealed class PostgresTestDatabase : IAsyncLifetime
 
     public static TicketManagementDbContext CreateTicketManagementContext() =>
         new TicketManagementDbContextFactory().CreateDbContext([]);
+
+    public static AgentTaskManagementDbContext CreateAgentTaskManagementContext() =>
+        new AgentTaskManagementDbContextFactory().CreateDbContext([]);
 
     /// <summary>Opens a raw connection for <c>information_schema</c> assertions.</summary>
     public async Task<NpgsqlConnection> OpenConnectionAsync()

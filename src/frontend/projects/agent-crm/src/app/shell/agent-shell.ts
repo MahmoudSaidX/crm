@@ -73,6 +73,34 @@ export class AgentShell {
         ],
       },
       {
+        label: t('agent.navigation.groups.tasks'),
+        items: [
+          ...(has('tasks.view')
+            ? [
+                {
+                  label: t('agent.navigation.tasks'),
+                  icon: 'pi pi-check-square',
+                  routerLink: '/tasks',
+                },
+                {
+                  label: t('agent.navigation.myTasks'),
+                  icon: 'pi pi-list-check',
+                  routerLink: '/my-tasks',
+                },
+              ]
+            : []),
+          ...(has('tasks.create')
+            ? [
+                {
+                  label: t('agent.navigation.taskCreate'),
+                  icon: 'pi pi-plus-circle',
+                  routerLink: '/tasks/new',
+                },
+              ]
+            : []),
+        ],
+      },
+      {
         label: t('agent.navigation.groups.customers'),
         items: [
           ...(has('customers.manage')

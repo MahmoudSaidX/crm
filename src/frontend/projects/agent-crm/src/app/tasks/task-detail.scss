@@ -1,0 +1,15 @@
+:host {
+  display: block;
+}
+
+.task-status-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
+}
+
+.task-detail-details {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

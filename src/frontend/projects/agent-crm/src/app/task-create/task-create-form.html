@@ -1,0 +1,53 @@
+<sc-page-container>
+  <sc-page-header [title]="localization.translate('taskCreate.title')"> </sc-page-header>
+
+  @if (errorKey(); as key) {
+    <p-message severity="error">{{ localization.translate(key) }}</p-message>
+  }
+
+  <p-card styleClass="sc-form-card">
+    <form class="sc-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label for="title">{{ localization.translate('taskCreate.fields.title') }}</label>
+      <input pInputText id="title" type="text" formControlName="title" />
+      @if (form.controls.title.touched && form.controls.title.invalid) {
+        <small class="field-error">{{
+          localization.translate('taskCreate.validation.title')
+        }}</small>
+      }
+
+      <label for="details">{{ localization.translate('taskCreate.fields.details') }}</label>
+      <textarea pTextarea id="details" formControlName="details" rows="4"></textarea>
+
+      <label for="dueAtUtc">{{ localization.translate('taskCreate.fields.dueAt') }}</label>
+      <p-datepicker id="dueAtUtc" formControlName="dueAtUtc" [showTime]="true" [showIcon]="true" />
+
+      <label for="ticket">{{ localization.translate('taskCreate.fields.ticket') }}</label>
+      <p-autoComplete
+        id="ticket"
+        formControlName="ticket"
+        [suggestions]="ticketSuggestions()"
+        (completeMethod)="searchTickets($event)"
+        [optionLabel]="ticketLabel"
+        [dropdown]="false"
+      />
+
+      <label for="customer">{{ localization.translate('taskCreate.fields.customer') }}</label>
+      <p-autoComplete
+        id="customer"
+        formControlName="customer"
+        [suggestions]="customerSuggestions()"
+        (completeMethod)="searchCustomers($event)"
+        [optionLabel]="customerLabel"
+        [dropdown]="false"
+      />
+
+      <p-button
+        type="submit"
+        [label]="localization.translate('common.actions.save')"
+        icon="pi pi-check"
+        [loading]="submitting()"
+        [disabled]="form.invalid"
+      />
+    </form>
+  </p-card>
+</sc-page-container>

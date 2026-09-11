@@ -28,6 +28,7 @@
     <ProjectReference Include="..\..\src\Modules\StaffIdentity\SquadCrm.Modules.StaffIdentity.Contracts\SquadCrm.Modules.StaffIdentity.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\RoleManagement\SquadCrm.Modules.RoleManagement\SquadCrm.Modules.RoleManagement.csproj" />
     <ProjectReference Include="..\..\src\Modules\Audit\SquadCrm.Modules.Audit\SquadCrm.Modules.Audit.csproj" />
+    <ProjectReference Include="..\..\src\Modules\AgentTaskManagement\SquadCrm.Modules.AgentTaskManagement\SquadCrm.Modules.AgentTaskManagement.csproj" />
     <ProjectReference Include="..\..\src\Modules\Audit\SquadCrm.Modules.Audit.Contracts\SquadCrm.Modules.Audit.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\StaffIdentity\SquadCrm.Modules.StaffIdentity.Bootstrap\SquadCrm.Modules.StaffIdentity.Bootstrap.csproj" />
     <ProjectReference Include="..\..\src\Tools\SquadCrm.RoleManagement.Bootstrap\SquadCrm.RoleManagement.Bootstrap.csproj" />

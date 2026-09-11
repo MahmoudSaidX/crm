@@ -1,0 +1,113 @@
+<sc-page-container>
+  @if (notFound()) {
+    <sc-page-header [title]="localization.translate('tasks.detail.title')" />
+    <sc-state-panel state="error" [message]="localization.translate('tasks.detail.notFound')">
+      <p-button
+        actions
+        [label]="localization.translate('tasks.detail.back')"
+        icon="pi pi-arrow-left"
+        severity="secondary"
+        routerLink="/tasks"
+      />
+    </sc-state-panel>
+  } @else if (task(); as detail) {
+    <sc-page-header
+      [title]="detail.title"
+      [subtitle]="localization.translate('tasks.detail.title')"
+    >
+      <div actions class="sc-row-actions">
+        @if (authorization.has('tasks.complete')) {
+          @if (detail.status === 'Open') {
+            <p-button
+              [label]="localization.translate('tasks.detail.complete')"
+              icon="pi pi-check"
+              [loading]="submittingAction()"
+              (onClick)="complete()"
+            />
+          } @else {
+            <p-button
+              [label]="localization.translate('tasks.detail.reopen')"
+              icon="pi pi-refresh"
+              severity="secondary"
+              [loading]="submittingAction()"
+              (onClick)="reopen()"
+            />
+          }
+        }
+        <p-button
+          [label]="localization.translate('tasks.detail.back')"
+          icon="pi pi-arrow-left"
+          [text]="true"
+          routerLink="/tasks"
+        />
+      </div>
+    </sc-page-header>
+
+    @if (actionErrorKey(); as errorKey) {
+      <p-message severity="error" [text]="localization.translate(errorKey)" />
+    }
+
+    <p-card>
+      <div class="task-status-tags">
+        <p-tag
+          [severity]="detail.status === 'Completed' ? 'success' : undefined"
+          [value]="statusLabel(detail.status)"
+        />
+      </div>
+
+      <sc-detail-grid>
+        <dt>{{ localization.translate('tasks.fields.details') }}</dt>
+        <dd class="task-detail-details">
+          {{ detail.details ?? localization.translate('tasks.detail.none') }}
+        </dd>
+
+        <dt>{{ localization.translate('tasks.fields.owner') }}</dt>
+        <dd>{{ detail.ownerUserId }}</dd>
+
+        <dt>{{ localization.translate('tasks.fields.dueAt') }}</dt>
+        <dd>
+          @if (detail.dueAtUtc) {
+            {{ detail.dueAtUtc | date: 'medium' }}
+          } @else {
+            {{ localization.translate('tasks.fields.noDueDate') }}
+          }
+        </dd>
+
+        <dt>{{ localization.translate('tasks.detail.linkedTicket') }}</dt>
+        <dd>
+          @if (detail.ticketId) {
+            <a [routerLink]="['/tickets', detail.ticketId]">{{ detail.ticketId }}</a>
+          } @else {
+            {{ localization.translate('tasks.detail.noLink') }}
+          }
+        </dd>
+
+        <dt>{{ localization.translate('tasks.detail.linkedCustomer') }}</dt>
+        <dd>
+          @if (detail.customerId) {
+            <a [routerLink]="['/customers', detail.customerId]">{{ detail.customerId }}</a>
+          } @else {
+            {{ localization.translate('tasks.detail.noLink') }}
+          }
+        </dd>
+
+        @if (detail.status === 'Completed') {
+          <dt>{{ localization.translate('tasks.fields.completedAt') }}</dt>
+          <dd>{{ detail.completedAtUtc | date: 'medium' }}</dd>
+        }
+
+        <dt>{{ localization.translate('tasks.fields.createdAt') }}</dt>
+        <dd>{{ detail.createdAtUtc | date: 'medium' }}</dd>
+
+        <dt>{{ localization.translate('tasks.fields.updatedAt') }}</dt>
+        <dd>
+          @if (detail.updatedAtUtc) {
+            {{ detail.updatedAtUtc | date: 'medium' }}
+          } @else {
+            {{ localization.translate('tasks.detail.neverUpdated') }}
+          }
+        </dd>
+      </sc-detail-grid>
+    </p-card>
+  }
+</sc-page-container>

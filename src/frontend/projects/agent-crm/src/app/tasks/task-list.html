@@ -1,0 +1,85 @@
+<sc-page-container>
+  <sc-page-header [title]="localization.translate('tasks.title')"> </sc-page-header>
+
+  <div class="sc-filter-toolbar">
+    <input
+      pInputText
+      type="search"
+      [placeholder]="localization.translate('tasks.search')"
+      [(ngModel)]="search"
+      (keyup.enter)="onFilter()"
+    />
+    <p-select
+      [options]="statusOptions"
+      [(ngModel)]="status"
+      [showClear]="true"
+      [placeholder]="localization.translate('tasks.fields.status')"
+      (onChange)="onFilter()"
+      (onClear)="onFilter()"
+    >
+      <ng-template #item let-option>{{ statusLabel(option.value) }}</ng-template>
+      <ng-template #selectedItem let-option>{{ statusLabel(option.value) }}</ng-template>
+    </p-select>
+    <p-select
+      [options]="dueFilterOptions"
+      [(ngModel)]="dueFilter"
+      [showClear]="true"
+      [placeholder]="localization.translate('tasks.dueFilter.placeholder')"
+      (onChange)="onFilter()"
+      (onClear)="onFilter()"
+    >
+      <ng-template #item let-option>{{ dueFilterLabel(option.value) }}</ng-template>
+      <ng-template #selectedItem let-option>{{ dueFilterLabel(option.value) }}</ng-template>
+    </p-select>
+  </div>
+
+  <p-card>
+    <p-table
+      [value]="tasks()"
+      [lazy]="true"
+      [paginator]="true"
+      [rows]="pageSize"
+      [totalRecords]="totalRecords()"
+      [paginatorLocale]="localization.locale()"
+      [loading]="loading()"
+      [scrollable]="true"
+      (onLazyLoad)="onLazyLoad($event)"
+      dataKey="id"
+    >
+      <ng-template #header>
+        <tr>
+          <th style="min-width: 16rem">{{ localization.translate('tasks.fields.title') }}</th>
+          <th style="min-width: 8rem">{{ localization.translate('tasks.fields.status') }}</th>
+          <th style="min-width: 10rem">{{ localization.translate('tasks.fields.dueAt') }}</th>
+          <th style="min-width: 10rem">{{ localization.translate('tasks.fields.createdAt') }}</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-task>
+        <tr>
+          <td>
+            <a [routerLink]="['/tasks', task.id]">{{ task.title }}</a>
+          </td>
+          <td>
+            <p-tag
+              [severity]="task.status === 'Completed' ? 'success' : undefined"
+              [value]="statusLabel(task.status)"
+            />
+          </td>
+          <td>
+            @if (task.dueAtUtc) {
+              {{ task.dueAtUtc | date: 'medium' : undefined : localization.locale() }}
+            } @else {
+              {{ localization.translate('tasks.fields.noDueDate') }}
+            }
+          </td>
+          <td>{{ task.createdAtUtc | date: 'medium' : undefined : localization.locale() }}</td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="4">{{ localization.translate('tasks.empty') }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</sc-page-container>
