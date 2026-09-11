@@ -43,6 +43,7 @@ describe('TicketDetail', () => {
     createdAtUtc: '2026-09-11T00:00:00Z',
     updatedAtUtc: null,
     version: 1,
+    allowedStatusTransitions: ['InProgress', 'PendingCustomer', 'PendingInternal', 'Resolved'],
   };
 
   function configure(options: {
@@ -51,6 +52,7 @@ describe('TicketDetail', () => {
     departmentGet?: jasmine.Spy;
     branchGet?: jasmine.Spy;
     assign?: jasmine.Spy;
+    changeStatus?: jasmine.Spy;
     staffList?: jasmine.Spy;
     permissions?: readonly string[];
   }): void {
@@ -65,6 +67,7 @@ describe('TicketDetail', () => {
           useValue: {
             get: options.get ?? jasmine.createSpy().and.resolveTo(ticket),
             assign: options.assign ?? jasmine.createSpy().and.resolveTo({}),
+            changeStatus: options.changeStatus ?? jasmine.createSpy().and.resolveTo({}),
           },
         },
         {
@@ -266,5 +269,103 @@ describe('TicketDetail', () => {
       'tickets.assign.errors.staleVersion',
     );
     expect(fixture.componentInstance.assigning()).toBeTrue();
+  });
+
+  it('hides the status action without the tickets.changestatus permission', async () => {
+    configure({});
+    const fixture = await createComponent();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Change status');
+  });
+
+  it('offers only the transitions the backend reported as allowed', async () => {
+    configure({
+      permissions: ['tickets.changestatus'],
+      get: jasmine
+        .createSpy()
+        .and.resolveTo({ ...ticket, status: 'Resolved', allowedStatusTransitions: ['Closed'] }),
+    });
+    const fixture = await createComponent();
+
+    fixture.componentInstance.startStatusChange();
+
+    expect(fixture.componentInstance.statusOptions()).toEqual([
+      { label: 'Closed', value: 'Closed' },
+    ]);
+  });
+
+  it('submits the selected status with the version it last read', async () => {
+    const changeStatus = jasmine.createSpy().and.resolveTo({});
+    configure({ permissions: ['tickets.changestatus'], changeStatus });
+    const fixture = await createComponent();
+
+    fixture.componentInstance.startStatusChange();
+    fixture.componentInstance.statusForm.setValue({ targetStatus: 'InProgress', reason: '' });
+    fixture.componentInstance.onStatusSelected('InProgress');
+    await fixture.componentInstance.submitStatusChange();
+
+    expect(changeStatus).toHaveBeenCalledWith('ticket-1', {
+      targetStatus: 'InProgress',
+      reason: null,
+      version: 1,
+    });
+    expect(fixture.componentInstance.changingStatus()).toBeFalse();
+  });
+
+  it('requires a reason before closing a ticket', async () => {
+    const changeStatus = jasmine.createSpy().and.resolveTo({});
+    configure({
+      permissions: ['tickets.changestatus'],
+      changeStatus,
+      get: jasmine
+        .createSpy()
+        .and.resolveTo({ ...ticket, status: 'Resolved', allowedStatusTransitions: ['Closed'] }),
+    });
+    const fixture = await createComponent();
+
+    fixture.componentInstance.startStatusChange();
+    fixture.componentInstance.statusForm.setValue({ targetStatus: 'Closed', reason: '   ' });
+    fixture.componentInstance.onStatusSelected('Closed');
+    await fixture.componentInstance.submitStatusChange();
+
+    expect(changeStatus).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.statusErrorKey()).toBe('tickets.status.validation.reason');
+  });
+
+  it('surfaces the stale-version message when the status changed meanwhile', async () => {
+    configure({
+      permissions: ['tickets.changestatus'],
+      changeStatus: jasmine
+        .createSpy()
+        .and.rejectWith(new HttpErrorResponse({ status: 409, statusText: 'Conflict' })),
+    });
+    const fixture = await createComponent();
+
+    fixture.componentInstance.startStatusChange();
+    fixture.componentInstance.statusForm.setValue({ targetStatus: 'InProgress', reason: '' });
+    fixture.componentInstance.onStatusSelected('InProgress');
+    await fixture.componentInstance.submitStatusChange();
+
+    expect(fixture.componentInstance.statusErrorKey()).toBe('tickets.status.errors.staleVersion');
+    expect(fixture.componentInstance.changingStatus()).toBeTrue();
+  });
+
+  it('surfaces the invalid-transition message when the backend rejects the target status', async () => {
+    configure({
+      permissions: ['tickets.changestatus'],
+      changeStatus: jasmine
+        .createSpy()
+        .and.rejectWith(new HttpErrorResponse({ status: 422, statusText: 'Unprocessable' })),
+    });
+    const fixture = await createComponent();
+
+    fixture.componentInstance.startStatusChange();
+    fixture.componentInstance.statusForm.setValue({ targetStatus: 'InProgress', reason: '' });
+    fixture.componentInstance.onStatusSelected('InProgress');
+    await fixture.componentInstance.submitStatusChange();
+
+    expect(fixture.componentInstance.statusErrorKey()).toBe(
+      'tickets.status.errors.invalidTransition',
+    );
   });
 });

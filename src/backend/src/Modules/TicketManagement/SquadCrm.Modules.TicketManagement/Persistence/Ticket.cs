@@ -5,10 +5,28 @@ namespace SquadCrm.Modules.TicketManagement.Persistence;
 
 public enum TicketStatus
 {
-    /// <summary>The only status this story produces. Status lifecycle
-    /// transitions (assigned/in-progress/resolved/closed/reopened) are a
-    /// later story's scope, not built here.</summary>
+    /// <summary>Newly created, not yet worked (CRM-133).</summary>
     Open,
+
+    /// <summary>An agent is actively working the ticket.</summary>
+    InProgress,
+
+    /// <summary>Waiting on the customer. Resolution SLA pauses here by
+    /// default once an SLA model exists (CRM-149/150) — no SLA timer is
+    /// implemented yet, the status only carries the distinction.</summary>
+    PendingCustomer,
+
+    /// <summary>Waiting on another internal party. Resolution SLA keeps
+    /// running by default.</summary>
+    PendingInternal,
+
+    /// <summary>Work is done, awaiting confirmation/closure. Distinct from
+    /// <see cref="Closed"/>: resolution precedes final closure (BR).</summary>
+    Resolved,
+
+    /// <summary>Final state. Reopening is allowed and preserves history
+    /// (BR) — it never erases the prior outcome.</summary>
+    Closed,
 }
 
 /// <summary>
@@ -144,6 +162,31 @@ public sealed class Ticket : HasDomainEvents
 
         AddDomainEvent(new TicketAssignedDomainEvent(
             Id, TicketNumber, previousAgentId, targetAgentId, reason, source, changedAtUtc));
+    }
+
+    /// <summary>
+    /// Applies a lifecycle status transition (CRM-137). The single canonical
+    /// mutation for <see cref="Status"/>, so the version bump and
+    /// <see cref="TicketStatusChangedDomainEvent"/> can never be forgotten at a
+    /// second call site (the automation/escalation stories CRM-153/154 reuse
+    /// it). Transition validity and the reason policy are enforced by
+    /// <c>TicketService</c> before this is called — this method only applies an
+    /// already-validated change.
+    /// </summary>
+    public void ChangeStatus(TicketStatus targetStatus, string? reason, DateTimeOffset changedAtUtc)
+    {
+        TicketStatus previousStatus = Status;
+        Status = targetStatus;
+        UpdatedAtUtc = changedAtUtc;
+
+        // Same reasoning as Assign: EF writes the ORIGINAL Version into the
+        // UPDATE's WHERE clause because it is the configured concurrency token,
+        // so a concurrent writer loses the race with a
+        // DbUpdateConcurrencyException instead of silently overwriting.
+        Version++;
+
+        AddDomainEvent(new TicketStatusChangedDomainEvent(
+            Id, TicketNumber, previousStatus, targetStatus, reason, changedAtUtc));
     }
 
     private Ticket()

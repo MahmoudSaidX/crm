@@ -2,7 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-export type TicketStatus = 'Open';
+/**
+ * Ticket lifecycle statuses (CRM-137). Which transitions are available from a
+ * given status is decided by the backend and reported per ticket
+ * (`TicketDetail.allowedStatusTransitions`) — the client never hardcodes the
+ * matrix.
+ */
+export type TicketStatus =
+  'Open' | 'InProgress' | 'PendingCustomer' | 'PendingInternal' | 'Resolved' | 'Closed';
 
 export type TicketChannel =
   'Agent' | 'Portal' | 'Email' | 'WhatsApp' | 'LiveChat' | 'SMS' | 'WebForm';

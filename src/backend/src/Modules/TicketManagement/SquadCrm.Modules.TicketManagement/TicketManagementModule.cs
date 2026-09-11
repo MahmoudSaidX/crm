@@ -82,6 +82,9 @@ public sealed class TicketManagementModule : IModule
         tickets.MapGet("/{id:guid}", GetTicketAsync).RequireAuthorization(PermissionPolicies.TicketsView);
         tickets.MapPost("/{id:guid}/assign", AssignTicketAsync).ValidatesDataAnnotations<AssignTicketRequest>()
             .RequireAuthorization(PermissionPolicies.TicketsAssign);
+        tickets.MapPost("/{id:guid}/status", ChangeTicketStatusAsync)
+            .ValidatesDataAnnotations<ChangeTicketStatusRequest>()
+            .RequireAuthorization(PermissionPolicies.TicketsChangeStatus);
     }
 
     private static async Task<IResult> CreateAsync(
@@ -288,6 +291,33 @@ public sealed class TicketManagementModule : IModule
             TicketMutationFailure.ReasonRequired => Results.Problem(
                 statusCode: StatusCodes.Status422UnprocessableEntity,
                 title: "A reason is required when reassigning a ticket that already has an owner.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tickets.reason_required" }),
+            TicketMutationFailure.StaleVersion => Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "The ticket was changed by someone else. Reload it and try again.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tickets.stale_version" }),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> ChangeTicketStatusAsync(
+        Guid id,
+        ChangeTicketStatusRequest request,
+        TicketService ticketService,
+        CancellationToken cancellationToken)
+    {
+        TicketMutationResult result = await ticketService.ChangeStatusAsync(id, request, cancellationToken);
+        return result.Failure switch
+        {
+            TicketMutationFailure.None => Results.Ok(ToResponse(result.Ticket!)),
+            TicketMutationFailure.TicketNotFound => NotFoundTicketProblem(),
+            TicketMutationFailure.InvalidStatusTransition => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "The ticket cannot move to that status from its current status.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tickets.invalid_status_transition" }),
+            TicketMutationFailure.ReasonRequired => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "A reason is required when closing or reopening a ticket.",
                 extensions: new Dictionary<string, object?> { ["code"] = "tickets.reason_required" }),
             TicketMutationFailure.StaleVersion => Results.Problem(
                 statusCode: StatusCodes.Status409Conflict,

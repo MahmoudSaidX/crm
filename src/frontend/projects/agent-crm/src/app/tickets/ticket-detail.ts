@@ -9,6 +9,7 @@ import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { TicketDetail as TicketDetailModel, TicketsService } from './tickets.service';
+import { TicketStatus } from '../ticket-create/ticket-create.service';
 import { AuthorizationState } from '../auth/authorization.state';
 import { StaffUser, StaffUsersService } from '../staff-users/staff-users.service';
 import { CustomersService } from '../customers/customers.service';
@@ -33,10 +34,15 @@ import { AgentLanguageSwitcher } from '../i18n/agent-language-switcher';
  * `tickets.assign`. The gate is UX only — the backend authorizes every call
  * independently.
  *
+ * CRM-137 adds the status-transition action in the same inline-form shape,
+ * gated on `tickets.changestatus`. The offered statuses come from the ticket's
+ * own `allowedStatusTransitions` — the client never hardcodes the lifecycle
+ * matrix, and the backend re-validates the transition it receives.
+ *
  * Not built here, because the capabilities they belong to do not exist yet:
  * ticket history timeline (CRM-139), customer-facing conversation (CRM-164+),
  * internal notes (CRM-147), SLA/escalation state (CRM-149/150/153), and the
- * lifecycle/escalation actions (CRM-137/138). Each is a separate story that
+ * manual escalation action (CRM-138). Each is a separate story that
  * will add its own section and its own backend authorization.
  */
 @Component({
@@ -89,6 +95,22 @@ export class TicketDetail {
   readonly agentOptions = signal<{ readonly label: string; readonly value: string }[]>([]);
   readonly agentsUnavailable = signal(false);
 
+  readonly changingStatus = signal(false);
+  readonly submittingStatus = signal(false);
+  readonly statusErrorKey = signal<TranslationKey | null>(null);
+
+  /**
+   * Mirrors the status select's current value as a signal so the reason field's
+   * required-ness reacts to the selection (the form control itself is not a
+   * signal).
+   */
+  readonly selectedStatus = signal<TicketStatus | ''>('');
+
+  readonly statusForm = new FormGroup({
+    targetStatus: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    reason: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(500)] }),
+  });
+
   readonly assignForm = new FormGroup({
     targetAgentId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     reason: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(500)] }),
@@ -96,6 +118,27 @@ export class TicketDetail {
 
   /** A ticket that already has an owner needs a reason to change it (BR). */
   readonly reasonRequired = computed(() => this.ticket()?.assignedAgentId != null);
+
+  /**
+   * Options for the status select, straight from what the backend allows for
+   * the current status.
+   */
+  readonly statusOptions = computed(() =>
+    (this.ticket()?.allowedStatusTransitions ?? []).map((status) => ({
+      label: this.localization.translate(`tickets.statuses.${status}` as TranslationKey),
+      value: status,
+    })),
+  );
+
+  /**
+   * Closing and reopening must be justified — the same rule the backend
+   * enforces, mirrored here so the field is marked required before submitting.
+   */
+  readonly statusReasonRequired = computed(() => {
+    const current = this.ticket()?.status;
+    const target = this.selectedStatus();
+    return target === 'Closed' || current === 'Resolved' || current === 'Closed';
+  });
 
   readonly categoryName = computed(() =>
     this.localizedName(
@@ -116,6 +159,72 @@ export class TicketDetail {
     if (id) {
       void this.load(id);
     }
+  }
+
+  startStatusChange(): void {
+    this.statusErrorKey.set(null);
+    this.statusForm.reset({ targetStatus: '', reason: '' });
+    this.selectedStatus.set('');
+    this.changingStatus.set(true);
+  }
+
+  onStatusSelected(status: TicketStatus | ''): void {
+    this.selectedStatus.set(status);
+  }
+
+  cancelStatusChange(): void {
+    this.changingStatus.set(false);
+    this.statusErrorKey.set(null);
+  }
+
+  async submitStatusChange(): Promise<void> {
+    const ticket = this.ticket();
+    if (!ticket) {
+      return;
+    }
+
+    const targetStatus = this.statusForm.controls.targetStatus.value as TicketStatus | '';
+    const reason = this.statusForm.controls.reason.value.trim();
+    if (this.statusForm.invalid || targetStatus === '') {
+      this.statusForm.markAllAsTouched();
+      this.statusErrorKey.set('tickets.status.validation.status');
+      return;
+    }
+    if (this.statusReasonRequired() && reason.length === 0) {
+      this.statusForm.markAllAsTouched();
+      this.statusErrorKey.set('tickets.status.validation.reason');
+      return;
+    }
+
+    this.submittingStatus.set(true);
+    this.statusErrorKey.set(null);
+    try {
+      await this.ticketsService.changeStatus(ticket.id, {
+        targetStatus,
+        reason: reason.length > 0 ? reason : null,
+        version: ticket.version,
+      });
+    } catch (error) {
+      // 409: someone else changed the ticket first — reload rather than retry
+      // with a version already known to be stale. 422: the transition is no
+      // longer valid from the current status.
+      const status = error instanceof HttpErrorResponse ? error.status : 0;
+      this.statusErrorKey.set(
+        status === 409
+          ? 'tickets.status.errors.staleVersion'
+          : status === 422
+            ? 'tickets.status.errors.invalidTransition'
+            : 'tickets.status.errors.failed',
+      );
+      this.submittingStatus.set(false);
+      return;
+    }
+
+    this.submittingStatus.set(false);
+    this.changingStatus.set(false);
+    // Reload: the new status, version and allowed transitions are all
+    // server-decided.
+    await this.load(ticket.id);
   }
 
   async startAssignment(): Promise<void> {
@@ -236,6 +345,10 @@ export class TicketDetail {
     } catch {
       target.set(null);
     }
+  }
+
+  protected statusLabel(status: TicketStatus): string {
+    return this.localization.translate(`tickets.statuses.${status}` as TranslationKey);
   }
 
   private localizedName(arabicName: string | null, englishName: string | null): string | null {

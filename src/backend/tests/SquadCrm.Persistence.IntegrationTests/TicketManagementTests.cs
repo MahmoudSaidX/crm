@@ -161,12 +161,17 @@ public sealed class TicketManagementTests
         await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
         (Guid categoryId, Guid priorityId) = await SeedCategoryAndPriorityAsync(context);
         TicketService service = CreateService(context, new RecordingAuditRecorder(), "agent@example.test");
-        TicketMutationResult created = await service.CreateAsync(ValidRequest(categoryId, priorityId), CancellationToken.None);
+        // Unique subject: the shared "Cannot log in" fixture subject matches
+        // every ticket other tests seed, so a single page of results is not
+        // guaranteed to contain this one.
+        string subject = $"Cannot log in {Guid.NewGuid():N}";
+        TicketMutationResult created = await service.CreateAsync(
+            ValidRequest(categoryId, priorityId, subject: subject), CancellationToken.None);
 
         PagedResult<Ticket> byNumber = await service.ListAsync(
             new TicketListQuery(Search: created.Ticket!.TicketNumber), new PaginationRequest(1, 20), CancellationToken.None);
         PagedResult<Ticket> bySubject = await service.ListAsync(
-            new TicketListQuery(Search: "Cannot log in"), new PaginationRequest(1, 20), CancellationToken.None);
+            new TicketListQuery(Search: subject), new PaginationRequest(1, 20), CancellationToken.None);
 
         Assert.Contains(byNumber.Items, t => t.Id == created.Ticket.Id);
         Assert.Contains(bySubject.Items, t => t.Id == created.Ticket.Id);
@@ -317,9 +322,10 @@ public sealed class TicketManagementTests
         return (category.Id, priority.Id);
     }
 
-    private static CreateTicketRequest ValidRequest(Guid categoryId, Guid priorityId, Guid? customerId = null) => new(
+    private static CreateTicketRequest ValidRequest(
+        Guid categoryId, Guid priorityId, Guid? customerId = null, string? subject = null) => new(
         customerId ?? Guid.NewGuid(),
-        "Cannot log in",
+        subject ?? "Cannot log in",
         "The customer cannot log in to the portal.",
         categoryId,
         null,
@@ -500,6 +506,177 @@ public sealed class TicketManagementTests
             CancellationToken.None);
 
         Assert.Equal(TicketMutationFailure.TicketNotFound, result.Failure);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_ValidTransition_WritesHistory_BumpsVersion_AndWritesOutboxMessage()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        TicketService service = CreateService(context, auditRecorder, "lead@example.test");
+
+        TicketMutationResult result = await service.ChangeStatusAsync(
+            ticketId,
+            new ChangeTicketStatusRequest(TicketStatus.InProgress, null, 1),
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.None, result.Failure);
+        Assert.Equal(TicketStatus.InProgress, result.Ticket!.Status);
+        Assert.Equal(2, result.Ticket.Version);
+        Assert.NotNull(result.Ticket.UpdatedAtUtc);
+
+        TicketStatusHistory history = await context.TicketStatusHistory
+            .AsNoTracking()
+            .SingleAsync(entry => entry.TicketId == ticketId);
+        Assert.Equal(TicketStatus.Open, history.PreviousStatus);
+        Assert.Equal(TicketStatus.InProgress, history.NewStatus);
+        Assert.Null(history.Reason);
+        Assert.Equal("lead@example.test", history.ChangedBy);
+
+        OutboxMessage outboxMessage = await context.OutboxMessages
+            .AsNoTracking()
+            .SingleAsync(message => message.Type == "ticket-management.ticket-status-changed.v1"
+                && message.Payload.Contains(ticketId.ToString()));
+        Assert.Contains("InProgress", outboxMessage.Payload, StringComparison.Ordinal);
+        Assert.Single(auditRecorder.Requests, request =>
+            request.Action == "status-changed" && request.EntityId == ticketId.ToString());
+    }
+
+    [Fact]
+    public async Task ChangeStatus_InvalidTransition_Fails_AndLeavesTicketUnchanged()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        TicketService service = CreateService(context, auditRecorder, "lead@example.test");
+
+        // Open -> Closed is not in the matrix: closure follows resolution.
+        TicketMutationResult result = await service.ChangeStatusAsync(
+            ticketId,
+            new ChangeTicketStatusRequest(TicketStatus.Closed, "Duplicate request.", 1),
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.InvalidStatusTransition, result.Failure);
+        Ticket stored = await context.Tickets.AsNoTracking().SingleAsync(ticket => ticket.Id == ticketId);
+        Assert.Equal(TicketStatus.Open, stored.Status);
+        Assert.Equal(1, stored.Version);
+        Assert.Empty(context.TicketStatusHistory.Where(entry => entry.TicketId == ticketId));
+    }
+
+    [Fact]
+    public async Task ChangeStatus_SameStatus_IsRejectedAsInvalidTransition()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        TicketService service = CreateService(context, auditRecorder, "lead@example.test");
+
+        TicketMutationResult result = await service.ChangeStatusAsync(
+            ticketId, new ChangeTicketStatusRequest(TicketStatus.Open, null, 1), CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.InvalidStatusTransition, result.Failure);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_CloseWithoutReason_Fails()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        TicketService service = CreateService(context, auditRecorder, "lead@example.test");
+        await service.ChangeStatusAsync(
+            ticketId, new ChangeTicketStatusRequest(TicketStatus.Resolved, null, 1), CancellationToken.None);
+
+        TicketMutationResult result = await service.ChangeStatusAsync(
+            ticketId, new ChangeTicketStatusRequest(TicketStatus.Closed, "   ", 2), CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.ReasonRequired, result.Failure);
+        Ticket stored = await context.Tickets.AsNoTracking().SingleAsync(ticket => ticket.Id == ticketId);
+        Assert.Equal(TicketStatus.Resolved, stored.Status);
+    }
+
+    [Fact]
+    public async Task Reopen_WithReason_Succeeds_AndPreservesEarlierHistory()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        TicketService service = CreateService(context, auditRecorder, "lead@example.test");
+        await service.ChangeStatusAsync(
+            ticketId, new ChangeTicketStatusRequest(TicketStatus.Resolved, null, 1), CancellationToken.None);
+        await service.ChangeStatusAsync(
+            ticketId, new ChangeTicketStatusRequest(TicketStatus.Closed, "Customer confirmed.", 2), CancellationToken.None);
+
+        TicketMutationResult result = await service.ChangeStatusAsync(
+            ticketId,
+            new ChangeTicketStatusRequest(TicketStatus.InProgress, "Customer reported it again.", 3),
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.None, result.Failure);
+        Assert.Equal(TicketStatus.InProgress, result.Ticket!.Status);
+        Assert.Equal(4, result.Ticket.Version);
+
+        List<TicketStatusHistory> history = await context.TicketStatusHistory
+            .AsNoTracking()
+            .Where(entry => entry.TicketId == ticketId)
+            .OrderBy(entry => entry.ChangedAtUtc)
+            .ToListAsync();
+        Assert.Equal(3, history.Count);
+        Assert.Equal(TicketStatus.Resolved, history[0].NewStatus);
+        Assert.Equal(TicketStatus.Closed, history[1].NewStatus);
+        Assert.Equal(TicketStatus.Closed, history[2].PreviousStatus);
+        Assert.Equal("Customer reported it again.", history[2].Reason);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_StaleVersion_Fails_AndLeavesStatusUnchanged()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+        TicketService service = CreateService(context, auditRecorder, "lead@example.test");
+        await service.ChangeStatusAsync(
+            ticketId, new ChangeTicketStatusRequest(TicketStatus.InProgress, null, 1), CancellationToken.None);
+
+        // Version 1 is what a caller that read the ticket BEFORE the first
+        // transition would send.
+        TicketMutationResult result = await service.ChangeStatusAsync(
+            ticketId, new ChangeTicketStatusRequest(TicketStatus.Resolved, null, 1), CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.StaleVersion, result.Failure);
+        Ticket stored = await context.Tickets.AsNoTracking().SingleAsync(ticket => ticket.Id == ticketId);
+        Assert.Equal(TicketStatus.InProgress, stored.Status);
+    }
+
+    [Fact]
+    public async Task ChangeStatus_UnknownTicket_Fails()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        TicketService service = CreateService(context, new RecordingAuditRecorder(), "lead@example.test");
+
+        TicketMutationResult result = await service.ChangeStatusAsync(
+            Guid.NewGuid(),
+            new ChangeTicketStatusRequest(TicketStatus.InProgress, null, 1),
+            CancellationToken.None);
+
+        Assert.Equal(TicketMutationFailure.TicketNotFound, result.Failure);
+    }
+
+    [Fact]
+    public async Task GetDetail_ReportsAllowedStatusTransitionsForCurrentStatus()
+    {
+        await using TicketManagementDbContext context = PostgresTestDatabase.CreateTicketManagementContext();
+        RecordingAuditRecorder auditRecorder = new();
+        Guid ticketId = await SeedTicketAsync(context, auditRecorder);
+
+        TicketDetailResponse? detail = await CreateService(context, auditRecorder, "agent@example.test")
+            .GetDetailAsync(ticketId, CancellationToken.None);
+
+        Assert.NotNull(detail);
+        Assert.Equal(
+            ["InProgress", "PendingCustomer", "PendingInternal", "Resolved"],
+            detail!.AllowedStatusTransitions);
     }
 
     /// <summary>Creates one persisted open, unassigned ticket and returns its id.</summary>
