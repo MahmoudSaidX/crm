@@ -57,6 +57,26 @@ public sealed class Ticket : HasDomainEvents
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
     /// <summary>
+    /// Null until a story that mutates a ticket writes it — no update path
+    /// exists yet (assignment is CRM-136, status lifecycle CRM-137). Present
+    /// because CRM-135's Fields Dictionary requires the detail view to carry
+    /// it; null reads as "never updated" rather than as a fabricated value.
+    /// </summary>
+    public DateTimeOffset? UpdatedAtUtc { get; set; }
+
+    /// <summary>
+    /// Optimistic-concurrency token, starting at 1 and configured as a
+    /// concurrency token in the model. CRM-135 only reads and exposes it —
+    /// the stories that introduce edit actions (CRM-136 assignment, CRM-137
+    /// status lifecycle) are the ones that increment and enforce it. An
+    /// explicit column is used rather than the Postgres <c>xmin</c> system
+    /// column: Npgsql no longer exposes a first-class mapping for <c>xmin</c>,
+    /// and hand-mapping a system column produces a migration that tries to
+    /// create it.
+    /// </summary>
+    public int Version { get; private set; } = 1;
+
+    /// <summary>
     /// The only way to construct a ticket outside EF materialization — ensures
     /// <see cref="TicketCreatedDomainEvent"/> is always raised alongside a new
     /// ticket, never forgotten at a second call site.

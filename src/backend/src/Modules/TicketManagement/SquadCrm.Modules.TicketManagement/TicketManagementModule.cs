@@ -79,6 +79,7 @@ public sealed class TicketManagementModule : IModule
         tickets.MapPost("", CreateTicketAsync).ValidatesDataAnnotations<CreateTicketRequest>()
             .RequireAuthorization(PermissionPolicies.TicketsCreate);
         tickets.MapGet("", ListTicketsAsync).RequireAuthorization(PermissionPolicies.TicketsView);
+        tickets.MapGet("/{id:guid}", GetTicketAsync).RequireAuthorization(PermissionPolicies.TicketsView);
     }
 
     private static async Task<IResult> CreateAsync(
@@ -255,6 +256,18 @@ public sealed class TicketManagementModule : IModule
         return Results.Ok(new PagedResult<TicketResponse>(
             page.Items.Select(ToResponse).ToList(), page.Page, page.PageSize, page.TotalCount));
     }
+
+    private static async Task<IResult> GetTicketAsync(
+        Guid id, TicketService ticketService, CancellationToken cancellationToken)
+    {
+        TicketDetailResponse? detail = await ticketService.GetDetailAsync(id, cancellationToken);
+        return detail is null ? NotFoundTicketProblem() : Results.Ok(detail);
+    }
+
+    private static IResult NotFoundTicketProblem() => Results.Problem(
+        statusCode: StatusCodes.Status404NotFound,
+        title: "Ticket not found.",
+        extensions: new Dictionary<string, object?> { ["code"] = "tickets.not_found" });
 
     private static TicketResponse ToResponse(Persistence.Ticket ticket) => new(
         ticket.Id,

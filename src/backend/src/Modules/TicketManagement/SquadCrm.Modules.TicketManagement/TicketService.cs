@@ -183,6 +183,48 @@ internal sealed class TicketService(
         return new PagedResult<Ticket>(items, pagination.Page, pagination.PageSize, totalCount);
     }
 
+    /// <summary>
+    /// Single-query ticket detail read (CRM-135). The category/priority joins
+    /// intentionally do NOT filter on <c>IsActive</c>: a ticket created against
+    /// a reference value that was later deactivated must still display that
+    /// value's label (BR). Left joins, so a reference row deleted outright
+    /// yields null names instead of hiding the ticket.
+    /// </summary>
+    public async Task<TicketDetailResponse?> GetDetailAsync(Guid id, CancellationToken cancellationToken) =>
+        await (from ticket in dbContext.Tickets.AsNoTracking()
+               where ticket.Id == id
+               join category in dbContext.TicketCategories.AsNoTracking()
+                   on ticket.CategoryId equals category.Id into categories
+               from category in categories.DefaultIfEmpty()
+               join priority in dbContext.TicketPriorities.AsNoTracking()
+                   on ticket.PriorityId equals priority.Id into priorities
+               from priority in priorities.DefaultIfEmpty()
+               select new TicketDetailResponse(
+                   ticket.Id,
+                   ticket.TicketNumber,
+                   ticket.CustomerId,
+                   ticket.Subject,
+                   ticket.Description,
+                   ticket.CategoryId,
+                   category != null ? category.ArabicName : null,
+                   category != null ? category.EnglishName : null,
+                   category != null ? category.IsActive : (bool?)null,
+                   ticket.SubcategoryId,
+                   ticket.PriorityId,
+                   priority != null ? priority.ArabicName : null,
+                   priority != null ? priority.EnglishName : null,
+                   priority != null ? priority.IsActive : (bool?)null,
+                   priority != null ? priority.Rank : (int?)null,
+                   ticket.DepartmentId,
+                   ticket.BranchId,
+                   ticket.Status,
+                   ticket.Channel,
+                   ticket.AssignedAgentId,
+                   ticket.CreatedAtUtc,
+                   ticket.UpdatedAtUtc,
+                   ticket.Version))
+            .SingleOrDefaultAsync(cancellationToken);
+
     private Task RecordAuditAsync(Guid ticketId, string action, CancellationToken cancellationToken) =>
         auditRecorder.RecordAsync(
             new AuditRecordRequest(

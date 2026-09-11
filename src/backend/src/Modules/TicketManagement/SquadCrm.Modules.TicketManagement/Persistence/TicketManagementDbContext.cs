@@ -69,6 +69,8 @@ public sealed class TicketManagementDbContext(DbContextOptions<TicketManagementD
             entity.Property(ticket => ticket.Channel).HasColumnName("channel").HasConversion<string>().HasMaxLength(32);
             entity.Property(ticket => ticket.AssignedAgentId).HasColumnName("assigned_agent_id");
             entity.Property(ticket => ticket.CreatedAtUtc).HasColumnName("created_at_utc");
+            entity.Property(ticket => ticket.UpdatedAtUtc).HasColumnName("updated_at_utc");
+            entity.Property(ticket => ticket.Version).HasColumnName("version").IsConcurrencyToken();
 
             // Domain events are a runtime-only concern, never persisted.
             entity.Ignore(ticket => ticket.DomainEvents);
