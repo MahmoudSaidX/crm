@@ -2,6 +2,7 @@ using Hangfire;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using SquadCrm.Modules.AgentTaskManagement.BackgroundProcessing;
 using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
 
 namespace SquadCrm.Api.Tests;
@@ -18,6 +19,10 @@ public sealed class BackgroundProcessingRegistrationTests
 
         using IServiceScope scope = factory.Services.CreateScope();
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<ArchitectureFixtureOutboxJob>());
+
+        // The CRM-144 due-reminder sweep must be resolvable in the same
+        // per-execution scope Hangfire creates for it.
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<AgentTaskReminderJob>());
 
         OutboxProcessingOptions options = scope.ServiceProvider
             .GetRequiredService<IOptions<OutboxProcessingOptions>>()

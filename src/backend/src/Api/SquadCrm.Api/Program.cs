@@ -148,6 +148,7 @@ if (backgroundProcessingEnabled)
 {
     builder.Services.AddHangfireServer();
     builder.Services.AddHostedService<ArchitectureFixtureRecurringJobRegistration>();
+    builder.Services.AddHostedService<AgentTaskReminderRecurringJobRegistration>();
 }
 
 // Registrations contributed by infrastructure/modules are tagged "ready".

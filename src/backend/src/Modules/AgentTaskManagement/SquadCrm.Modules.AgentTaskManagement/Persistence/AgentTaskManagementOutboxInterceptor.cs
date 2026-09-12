@@ -89,6 +89,11 @@ internal sealed class AgentTaskManagementOutboxInterceptor(ICorrelationIdAccesso
             Guid.NewGuid(), created.TaskId, created.Title, created.OwnerUserId, created.DueAtUtc, created.OccurredAtUtc),
         AgentTaskCompletedDomainEvent completed => new AgentTaskCompletedIntegrationEvent(
             Guid.NewGuid(), completed.TaskId, completed.Title, completed.OwnerUserId, completed.CompletedAtUtc, completed.OccurredAtUtc),
+        // The reminder occurrence id is passed through, NOT regenerated: it
+        // becomes the outbox row's primary key below, which is what makes a
+        // retried reminder sweep idempotent (CRM-144 BR).
+        AgentTaskReminderDueDomainEvent reminderDue => new AgentTaskReminderDueIntegrationEvent(
+            reminderDue.ReminderEventId, reminderDue.TaskId, reminderDue.Title, reminderDue.OwnerUserId, reminderDue.ReminderAtUtc, reminderDue.OccurredAtUtc),
         AgentTaskReopenedDomainEvent reopened => new AgentTaskReopenedIntegrationEvent(
             Guid.NewGuid(), reopened.TaskId, reopened.Title, reopened.OwnerUserId, reopened.OccurredAtUtc),
         _ => throw new InvalidOperationException(

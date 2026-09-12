@@ -9,6 +9,7 @@ using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Validation;
 using SquadCrm.Infrastructure.Postgres;
+using SquadCrm.Modules.AgentTaskManagement.BackgroundProcessing;
 using SquadCrm.Modules.AgentTaskManagement.Persistence;
 
 namespace SquadCrm.Modules.AgentTaskManagement;
@@ -34,6 +35,11 @@ public sealed class AgentTaskManagementModule : IModule
                     serviceProvider.GetRequiredService<ICorrelationIdAccessor>())));
         services.AddScoped<AgentTaskService>();
 
+        // The due-reminder sweep (CRM-144). Scoped like every other service
+        // here: Hangfire resolves the job inside its own per-execution scope.
+        services.AddScoped<AgentTaskReminderService>();
+        services.AddScoped<AgentTaskReminderJob>();
+
         // ICurrentUserAccessor is already registered by StaffIdentityModule;
         // ICustomerExistsLookup by CustomerManagementModule; ITicketExistsLookup
         // by TicketManagementModule; IStaffSubjectReferenceReader by
@@ -58,6 +64,20 @@ public sealed class AgentTaskManagementModule : IModule
         tasks.MapPost("/{id:guid}/reopen", ReopenAsync)
             .ValidatesDataAnnotations<AgentTaskVersionedActionRequest>()
             .RequireAuthorization(PermissionPolicies.TasksComplete);
+
+        // Setting a reminder is an edit of a task the caller owns, so it
+        // reuses "tasks.edit" rather than minting a permission that would add
+        // a RoleManagement migration for no authorization gain — ownership is
+        // what actually gates the action (enforced in AgentTaskService).
+        tasks.MapPut("/{id:guid}/reminder", SetReminderAsync)
+            .ValidatesDataAnnotations<SetAgentTaskReminderRequest>()
+            .RequireAuthorization(PermissionPolicies.TasksEdit);
+        // Clearing takes its version as a QUERY parameter, not a body: a
+        // DELETE body is not bound by minimal APIs without an explicit
+        // [FromBody] and is dropped outright by some proxies, so the
+        // concurrency check would be the thing silently lost.
+        tasks.MapDelete("/{id:guid}/reminder", ClearReminderAsync)
+            .RequireAuthorization(PermissionPolicies.TasksEdit);
     }
 
     private static async Task<IResult> CreateAsync(
@@ -178,6 +198,44 @@ public sealed class AgentTaskManagementModule : IModule
         };
     }
 
+    private static async Task<IResult> SetReminderAsync(
+        Guid id,
+        SetAgentTaskReminderRequest request,
+        AgentTaskService agentTaskService,
+        CancellationToken cancellationToken)
+    {
+        AgentTaskMutationResult result = await agentTaskService.SetReminderAsync(id, request, cancellationToken);
+        return ReminderResult(result);
+    }
+
+    private static async Task<IResult> ClearReminderAsync(
+        Guid id,
+        int version,
+        AgentTaskService agentTaskService,
+        CancellationToken cancellationToken)
+    {
+        AgentTaskMutationResult result = await agentTaskService.ClearReminderAsync(
+            id, new AgentTaskVersionedActionRequest(version), cancellationToken);
+        return ReminderResult(result);
+    }
+
+    private static IResult ReminderResult(AgentTaskMutationResult result) => result.Failure switch
+    {
+        AgentTaskMutationFailure.None => Results.Ok(ToResponse(result.AgentTask!)),
+        AgentTaskMutationFailure.TaskNotFound => NotFoundProblem(),
+        AgentTaskMutationFailure.NotOwner => ForbiddenProblem(),
+        AgentTaskMutationFailure.StaleVersion => StaleVersionProblem(),
+        AgentTaskMutationFailure.ReminderTaskNotOpen => Results.Problem(
+            statusCode: StatusCodes.Status422UnprocessableEntity,
+            title: "A reminder can only be set on an open task.",
+            extensions: new Dictionary<string, object?> { ["code"] = "tasks.reminder_task_not_open" }),
+        AgentTaskMutationFailure.ReminderInPast => Results.Problem(
+            statusCode: StatusCodes.Status422UnprocessableEntity,
+            title: "The reminder time must be in the future.",
+            extensions: new Dictionary<string, object?> { ["code"] = "tasks.reminder_in_past" }),
+        _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+    };
+
     private static IResult NotFoundProblem() => Results.Problem(
         statusCode: StatusCodes.Status404NotFound,
         title: "Task not found.",
@@ -210,5 +268,8 @@ public sealed class AgentTaskManagementModule : IModule
         task.CompletedAtUtc,
         task.CreatedAtUtc,
         task.UpdatedAtUtc,
-        task.Version);
+        task.Version,
+        task.ReminderAtUtc,
+        task.ReminderStatus,
+        task.ReminderTriggeredAtUtc);
 }

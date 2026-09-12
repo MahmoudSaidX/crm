@@ -30,11 +30,25 @@ public sealed class AgentTaskManagementDbContext(DbContextOptions<AgentTaskManag
             entity.Property(task => task.CreatedAtUtc).HasColumnName("created_at_utc");
             entity.Property(task => task.UpdatedAtUtc).HasColumnName("updated_at_utc");
             entity.Property(task => task.Version).HasColumnName("version").IsConcurrencyToken();
+            entity.Property(task => task.ReminderAtUtc).HasColumnName("reminder_at_utc");
+            entity.Property(task => task.ReminderStatus)
+                .HasColumnName("reminder_status").HasConversion<string>().HasMaxLength(32);
+            entity.Property(task => task.ReminderEventId).HasColumnName("reminder_event_id");
+            entity.Property(task => task.ReminderTriggeredAtUtc).HasColumnName("reminder_triggered_at_utc");
 
             // "My Tasks" and general list filtering both read by owner and by
             // status/due date (CRM-143 AC).
             entity.HasIndex(task => task.OwnerUserId);
             entity.HasIndex(task => task.DueAtUtc);
+
+            // The due-reminder sweep (CRM-144) runs every minute and asks
+            // exactly one question: which reminders are scheduled at or before
+            // now? A filtered index keeps that a small scan even once most
+            // tasks are triggered/cleared, since only Scheduled rows are
+            // indexed at all.
+            entity.HasIndex(task => task.ReminderAtUtc)
+                .HasDatabaseName("ix_agent_task_scheduled_reminder_at_utc")
+                .HasFilter("reminder_status = 'Scheduled'");
 
             // Domain events are a runtime-only concern, never persisted.
             entity.Ignore(task => task.DomainEvents);

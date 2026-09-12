@@ -40,6 +40,18 @@ export interface AgentTaskVersionedActionRequest {
 }
 
 /**
+ * Sets or reschedules the task's single reminder (CRM-144). `reminderAtUtc`
+ * is a UTC ISO instant: the picker collects a local wall-clock time and
+ * `Date.toISOString()` converts it, so the server never has to guess a
+ * timezone. Clearing is the separate `clearReminder` call rather than a null
+ * here, so "clear" can never be an accidental omission.
+ */
+export interface SetAgentTaskReminderRequest {
+  readonly reminderAtUtc: string;
+  readonly version: number;
+}
+
+/**
  * Agent task browse/search/list, "My Tasks" and detail (CRM-143).
  */
 @Injectable({ providedIn: 'root' })
@@ -85,5 +97,22 @@ export class TasksService {
 
   reopen(id: string, request: AgentTaskVersionedActionRequest): Promise<AgentTask> {
     return firstValueFrom(this.http.post<AgentTask>(`/api/v1/tasks/${id}/reopen`, request));
+  }
+
+  setReminder(id: string, request: SetAgentTaskReminderRequest): Promise<AgentTask> {
+    return firstValueFrom(this.http.put<AgentTask>(`/api/v1/tasks/${id}/reminder`, request));
+  }
+
+  /**
+   * The version travels as a query parameter rather than a DELETE body: a
+   * DELETE body is dropped by some proxies, and the concurrency check is
+   * exactly the thing that must not be silently lost.
+   */
+  clearReminder(id: string, request: AgentTaskVersionedActionRequest): Promise<AgentTask> {
+    return firstValueFrom(
+      this.http.delete<AgentTask>(`/api/v1/tasks/${id}/reminder`, {
+        params: { version: String(request.version) },
+      }),
+    );
   }
 }
