@@ -98,6 +98,15 @@ export class AgentShell {
                 },
               ]
             : []),
+          ...(has('quickreplies.view')
+            ? [
+                {
+                  label: t('agent.navigation.quickReplies'),
+                  icon: 'pi pi-comments',
+                  routerLink: '/quick-replies',
+                },
+              ]
+            : []),
         ],
       },
       {

@@ -37,6 +37,7 @@
     <ProjectReference Include="../../Modules/AgentTaskManagement/SquadCrm.Modules.AgentTaskManagement/SquadCrm.Modules.AgentTaskManagement.csproj" />
     <ProjectReference Include="../../Modules/SystemConfiguration/SquadCrm.Modules.SystemConfiguration/SquadCrm.Modules.SystemConfiguration.csproj" />
     <ProjectReference Include="../../Modules/BrandingManagement/SquadCrm.Modules.BrandingManagement/SquadCrm.Modules.BrandingManagement.csproj" />
+    <ProjectReference Include="..\..\Modules\QuickReplyManagement\SquadCrm.Modules.QuickReplyManagement\SquadCrm.Modules.QuickReplyManagement.csproj" />
   </ItemGroup>
 
 </Project>

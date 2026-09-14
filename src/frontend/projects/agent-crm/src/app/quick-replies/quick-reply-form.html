@@ -1,0 +1,72 @@
+<sc-page-container>
+  <sc-page-header
+    [title]="localization.translate(isEdit() ? 'quickReplies.edit' : 'quickReplies.new')"
+  >
+  </sc-page-header>
+
+  @if (errorKey(); as key) {
+    <p-message severity="error">{{ localization.translate(key) }}</p-message>
+  }
+
+  <p-card styleClass="sc-form-card">
+    <form class="sc-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <label for="name">{{ localization.translate('quickReplies.fields.name') }}</label>
+      <input pInputText id="name" type="text" formControlName="name" />
+      @if (form.controls.name.touched && form.controls.name.invalid) {
+        <small class="field-error">{{
+          localization.translate('quickReplies.validation.name')
+        }}</small>
+      }
+
+      <label for="scope">{{ localization.translate('quickReplies.fields.scope') }}</label>
+      <p-select
+        id="scope"
+        formControlName="scope"
+        [options]="scopeOptions()"
+        optionLabel="label"
+        optionValue="value"
+      />
+      <small class="field-hint">{{ localization.translate('quickReplies.scope.hint') }}</small>
+
+      <label for="arabicContent">{{
+        localization.translate('quickReplies.fields.arabicContent')
+      }}</label>
+      <textarea
+        pTextarea
+        id="arabicContent"
+        formControlName="arabicContent"
+        rows="4"
+        dir="rtl"
+      ></textarea>
+
+      <label for="englishContent">{{
+        localization.translate('quickReplies.fields.englishContent')
+      }}</label>
+      <textarea
+        pTextarea
+        id="englishContent"
+        formControlName="englishContent"
+        rows="4"
+        dir="ltr"
+      ></textarea>
+      @if (
+        (form.controls.arabicContent.touched || form.controls.englishContent.touched) &&
+        (form.hasError('contentRequired') ||
+          form.controls.arabicContent.invalid ||
+          form.controls.englishContent.invalid)
+      ) {
+        <small class="field-error">{{
+          localization.translate('quickReplies.validation.content')
+        }}</small>
+      }
+
+      <p-button
+        type="submit"
+        [label]="localization.translate('common.actions.save')"
+        icon="pi pi-check"
+        [loading]="submitting()"
+        [disabled]="form.invalid"
+      />
+    </form>
+  </p-card>
+</sc-page-container>

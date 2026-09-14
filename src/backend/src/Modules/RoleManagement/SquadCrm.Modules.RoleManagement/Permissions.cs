@@ -31,6 +31,9 @@ public static class Permissions
     public const string TasksCreate = "tasks.create";
     public const string TasksEdit = "tasks.edit";
     public const string TasksComplete = "tasks.complete";
+    public const string QuickRepliesView = "quickreplies.view";
+    public const string QuickRepliesManage = "quickreplies.manage";
+    public const string QuickRepliesManageGlobal = "quickreplies.manageglobal";
 }
 
 internal static class PermissionPolicies
@@ -64,4 +67,7 @@ internal static class PermissionPolicies
     public const string TasksCreate = "permission:tasks.create";
     public const string TasksEdit = "permission:tasks.edit";
     public const string TasksComplete = "permission:tasks.complete";
+    public const string QuickRepliesView = "permission:quickreplies.view";
+    public const string QuickRepliesManage = "permission:quickreplies.manage";
+    public const string QuickRepliesManageGlobal = "permission:quickreplies.manageglobal";
 }

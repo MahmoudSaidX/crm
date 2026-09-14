@@ -21,6 +21,7 @@ using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
 using SquadCrm.Modules.BranchManagement;
 using SquadCrm.Modules.CustomerManagement;
 using SquadCrm.Modules.DepartmentManagement;
+using SquadCrm.Modules.QuickReplyManagement;
 using SquadCrm.Modules.TicketManagement;
 using SquadCrm.Modules.SystemConfiguration;
 using SquadCrm.Modules.BrandingManagement;
@@ -167,6 +168,7 @@ IModule[] modules =
     new CustomerManagementModule(),
     new TicketManagementModule(),
     new AgentTaskManagementModule(),
+    new QuickReplyManagementModule(),
     new SystemConfigurationModule(),
     new BrandingManagementModule(),
     new SquadCrm.Modules.ArchitectureFixture.ArchitectureFixtureModule(),

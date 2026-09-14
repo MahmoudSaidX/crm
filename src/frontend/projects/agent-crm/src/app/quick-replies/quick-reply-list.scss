@@ -1,0 +1,12 @@
+:host {
+  display: block;
+}
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.language-tags {
+  display: flex;
+  gap: 0.25rem;
+}
