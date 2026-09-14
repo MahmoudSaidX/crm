@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Security;
-using SquadCrm.Modules.RoleManagement;
-using SquadCrm.Modules.RoleManagement.Persistence;
+using SquadCrm.Modules.RoleManagement.Application.Services;
+using SquadCrm.Modules.RoleManagement.Domain.Entities;
+using SquadCrm.Modules.RoleManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.RoleManagement.Presentation.Requests;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

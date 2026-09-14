@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using SquadCrm.Modules.StaffIdentity;
-using SquadCrm.Modules.StaffIdentity.Persistence;
+using SquadCrm.Modules.StaffIdentity.Application.Services;
+using SquadCrm.Modules.StaffIdentity.Domain.Entities;
+using SquadCrm.Modules.StaffIdentity.Infrastructure.Authentication;
+using SquadCrm.Modules.StaffIdentity.Infrastructure.Persistence;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

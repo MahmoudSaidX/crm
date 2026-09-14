@@ -1,7 +1,9 @@
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
-using SquadCrm.Modules.TicketManagement;
-using SquadCrm.Modules.TicketManagement.Persistence;
+using SquadCrm.Modules.TicketManagement.Application.Services;
+using SquadCrm.Modules.TicketManagement.Domain.Entities;
+using SquadCrm.Modules.TicketManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.TicketManagement.Presentation.Requests;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

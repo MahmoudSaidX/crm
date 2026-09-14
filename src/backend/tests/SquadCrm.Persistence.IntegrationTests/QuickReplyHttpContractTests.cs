@@ -2,17 +2,20 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using SquadCrm.Modules.RoleManagement.Persistence;
-using SquadCrm.Modules.StaffIdentity;
-using SquadCrm.Modules.StaffIdentity.Persistence;
+using SquadCrm.Modules.RoleManagement.Domain.Entities;
+using SquadCrm.Modules.RoleManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.StaffIdentity.Application.Services;
+using SquadCrm.Modules.StaffIdentity.Domain.Entities;
+using SquadCrm.Modules.StaffIdentity.Infrastructure.Authentication;
+using SquadCrm.Modules.StaffIdentity.Infrastructure.Persistence;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

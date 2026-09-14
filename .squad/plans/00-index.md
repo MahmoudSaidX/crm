@@ -26,6 +26,7 @@ One row per feature folder under `.squad/plans/`. `NN` continues as a global exe
 | dockerize-full-local-application-stack | [`dockerize-full-local-application-stack/00-overview.md`](dockerize-full-local-application-stack/00-overview.md) | 21 |
 | first-admin-bootstrap | [`first-admin-bootstrap/00-overview.md`](first-admin-bootstrap/00-overview.md) | 22 |
 | cover-migrate-all-modules | [`cover-migrate-all-modules/00-overview.md`](cover-migrate-all-modules/00-overview.md) | 23 |
+| backend-internal-module-architecture | [`backend-internal-module-architecture/24-story-backend-internal-module-architecture.md`](backend-internal-module-architecture/24-story-backend-internal-module-architecture.md) | 24 |
 | customer-interaction-history-timeline | [`customer-interaction-history-timeline/129-story-crm-129-customer-interaction-history-timeline.md`](customer-interaction-history-timeline/129-story-crm-129-customer-interaction-history-timeline.md) | 129 |
 | configure-ticket-categories | [`configure-ticket-categories/131-story-crm-131-configure-ticket-categories.md`](configure-ticket-categories/131-story-crm-131-configure-ticket-categories.md) | 131 |
 | sakai-ui-redesign | [`sakai-ui-redesign/00-overview.md`](sakai-ui-redesign/00-overview.md) | 142 |

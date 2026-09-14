@@ -2,14 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SquadCrm.Infrastructure.Postgres;
-using SquadCrm.Modules.Audit;
+using SquadCrm.Modules.Audit.Application.Services;
 using SquadCrm.Modules.Audit.Contracts;
-using SquadCrm.Modules.Audit.Persistence;
-using SquadCrm.Modules.RoleManagement;
-using SquadCrm.Modules.RoleManagement.Persistence;
-using SquadCrm.Modules.StaffIdentity;
+using SquadCrm.Modules.Audit.Infrastructure.Persistence;
+using SquadCrm.Modules.RoleManagement.Application.Services;
+using SquadCrm.Modules.RoleManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.StaffIdentity.Application.Services;
 using SquadCrm.Modules.StaffIdentity.Contracts;
-using SquadCrm.Modules.StaffIdentity.Persistence;
+using SquadCrm.Modules.StaffIdentity.Infrastructure.Persistence;
 
 namespace SquadCrm.Tools.RoleManagementBootstrap;
 

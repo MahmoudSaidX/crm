@@ -1,8 +1,8 @@
 using System.Text.Json;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Npgsql;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
@@ -13,18 +13,18 @@ using SquadCrm.BuildingBlocks.Correlation;
 using SquadCrm.BuildingBlocks.Errors;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Security;
-using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Infrastructure.FileStorage;
-using SquadCrm.Modules.Audit;
+using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Modules.AgentTaskManagement;
-using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
+using SquadCrm.Modules.ArchitectureFixture.Infrastructure.BackgroundProcessing;
+using SquadCrm.Modules.Audit;
 using SquadCrm.Modules.BranchManagement;
+using SquadCrm.Modules.BrandingManagement;
 using SquadCrm.Modules.CustomerManagement;
 using SquadCrm.Modules.DepartmentManagement;
 using SquadCrm.Modules.QuickReplyManagement;
-using SquadCrm.Modules.TicketManagement;
 using SquadCrm.Modules.SystemConfiguration;
-using SquadCrm.Modules.BrandingManagement;
+using SquadCrm.Modules.TicketManagement;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 

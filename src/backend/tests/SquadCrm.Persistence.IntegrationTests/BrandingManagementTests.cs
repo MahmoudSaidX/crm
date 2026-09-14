@@ -1,9 +1,11 @@
-using Microsoft.EntityFrameworkCore;
 using SquadCrm.BuildingBlocks.Abstractions.Files;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
-using SquadCrm.Modules.BrandingManagement;
-using SquadCrm.Modules.BrandingManagement.Persistence;
+using SquadCrm.Modules.BrandingManagement.Application.Services;
+using SquadCrm.Modules.BrandingManagement.Domain.Entities;
+using SquadCrm.Modules.BrandingManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.BrandingManagement.Presentation.Requests;
+using SquadCrm.Modules.BrandingManagement.Presentation.Responses;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

@@ -28,6 +28,35 @@ requirements.
 -   Core CRM workflows must work when optional AI/providers are
     unavailable.
 
+## Backend Module Internal Architecture
+
+See `docs/adr/ADR-012-internal-module-layering.md`. Rules for all future
+backend work:
+
+1.  The backend remains a Modular Monolith.
+2.  Business modules are the primary architecture boundary.
+3.  Place new module code by responsibility: `Domain`, `Application`,
+    `Presentation`, `Infrastructure`.
+4.  HTTP endpoints, requests and responses belong to `Presentation`.
+5.  Business entities and domain behavior belong to `Domain`.
+6.  Use-case orchestration belongs to `Application`.
+7.  EF Core, migrations, Outbox technical implementation, Hangfire jobs
+    and technical adapters belong to `Infrastructure`.
+8.  `<ModuleName>Module.cs` is a composition entry point and must not
+    become a large endpoint/business-logic file.
+9.  `Presentation` must never directly access a module `DbContext`.
+10. A module must never access another module's private
+    persistence/entities.
+11. Cross-module communication must use established Contracts/events.
+12. Do not introduce repositories, MediatR, CQRS, generic `UnitOfWork`
+    or similar abstractions unless an actual requirement/ADR justifies
+    them.
+13. Do not create empty architecture folders/classes for symmetry.
+14. When modifying an older module that does not yet conform, do not
+    silently perform a large unrelated refactor inside a product story.
+    Follow the established architecture where practical and keep scope
+    controlled.
+
 ## Frontend
 
 -   Angular + TypeScript.

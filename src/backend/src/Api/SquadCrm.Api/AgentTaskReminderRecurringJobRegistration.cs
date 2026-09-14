@@ -1,5 +1,5 @@
 using Hangfire;
-using SquadCrm.Modules.AgentTaskManagement.BackgroundProcessing;
+using SquadCrm.Modules.AgentTaskManagement.Infrastructure.BackgroundProcessing;
 
 namespace SquadCrm.Api;
 

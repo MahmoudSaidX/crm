@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using SquadCrm.Modules.ArchitectureFixture.Contracts;
-using SquadCrm.Modules.ArchitectureFixture.Persistence;
+using SquadCrm.Modules.ArchitectureFixture.Infrastructure.Persistence;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

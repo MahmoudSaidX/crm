@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using SquadCrm.Modules.ArchitectureFixture.Persistence;
-using SquadCrm.Modules.RoleManagement.Persistence;
+using SquadCrm.Modules.ArchitectureFixture.Infrastructure.Persistence;
+using SquadCrm.Modules.RoleManagement.Infrastructure.Persistence;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

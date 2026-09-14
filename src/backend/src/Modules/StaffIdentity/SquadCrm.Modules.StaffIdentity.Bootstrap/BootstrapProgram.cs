@@ -2,7 +2,8 @@ using System.ComponentModel.DataAnnotations;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using SquadCrm.Modules.StaffIdentity.Persistence;
+using SquadCrm.Modules.StaffIdentity.Domain.Entities;
+using SquadCrm.Modules.StaffIdentity.Infrastructure.Persistence;
 
 namespace SquadCrm.Modules.StaffIdentity.Bootstrap;
 

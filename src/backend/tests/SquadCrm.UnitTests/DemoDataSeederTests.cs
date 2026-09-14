@@ -1,7 +1,8 @@
 using SquadCrm.BuildingBlocks.Abstractions.DemoData;
-using SquadCrm.Modules.CustomerManagement.DemoData;
-using SquadCrm.Modules.TicketManagement.DemoData;
-using SquadCrm.Modules.TicketManagement.Persistence;
+using SquadCrm.Modules.CustomerManagement.Infrastructure.DemoData;
+using SquadCrm.Modules.TicketManagement.Domain.Entities;
+using SquadCrm.Modules.TicketManagement.Domain.Policies;
+using SquadCrm.Modules.TicketManagement.Infrastructure.DemoData;
 using SquadCrm.Tools.DemoDataSeeder;
 
 namespace SquadCrm.UnitTests;

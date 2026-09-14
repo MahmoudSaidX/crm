@@ -38,7 +38,7 @@ Run from `src/backend/`:
 | `dotnet test tests/SquadCrm.UnitTests` | Deterministic backend unit tests. **No database needed** |
 | `dotnet test tests/SquadCrm.ArchitectureTests` | Static architecture rules. **No database needed** |
 | `dotnet test tests/SquadCrm.Api.Tests` | API host tests. **No database needed** |
-| `dotnet ef migrations add <Name> --project <module> --startup-project <module> --context <ModuleDbContext> --output-dir Persistence/Migrations` | Scaffold a migration into the owning module. Requires the env values (below); PostgreSQL need not be running |
+| `dotnet ef migrations add <Name> --project <module> --startup-project <module> --context <ModuleDbContext> --output-dir Infrastructure/Persistence/Migrations` | Scaffold a migration into the owning module. Requires the env values (below); PostgreSQL need not be running |
 | `dotnet ef database update --project <module> --startup-project <module> --context <ModuleDbContext>` | Apply that module's migrations. Requires the env values **and** a running server |
 
 **Every `dotnet ef` command has one prerequisite:** the `POSTGRES_*` values must
@@ -99,8 +99,14 @@ src/backend/
 │       └── ArchitectureFixture/
 │           ├── SquadCrm.Modules.ArchitectureFixture.Contracts/     (public contract surface)
 │           └── SquadCrm.Modules.ArchitectureFixture/               (implementation)
-│               └── Persistence/                                    (module-owned DbContext, entity, mapping)
-│                   └── Migrations/                                 (this module's migrations only)
+│               ├── Domain/                                        (entities, domain + integration events, policies)
+│               ├── Application/                                    (application services, use-case orchestration)
+│               ├── Presentation/                                   (endpoints, request/response DTOs, status mapping)
+│               └── Infrastructure/                                 (technical implementations)
+│                   ├── Persistence/                                (module-owned DbContext, EF mapping)
+│                   │   └── Migrations/                             (this module's migrations only)
+│                   ├── Outbox/                                     (outbox table + interceptor, where the module has one)
+│                   └── BackgroundProcessing/                       (Hangfire jobs, where the module has one)
 └── tests/
     ├── SquadCrm.ArchitectureTests/                      (xUnit + NetArchTest.Rules; static only)
     ├── SquadCrm.Api.Tests/                              (xUnit + WebApplicationFactory; no database)
@@ -184,7 +190,7 @@ is not used.
 ### One `DbContext` per module
 
 Each module owns **its own** `DbContext`, inside its own implementation project,
-under a `Persistence/` folder. There is deliberately **no** shared
+under an `Infrastructure/Persistence/` folder (ADR-012). There is deliberately **no** shared
 `SquadCrmDbContext`: a shared context would make every module's model a shared
 compile-time and migration-time dependency, which is exactly the coupling the
 modular monolith exists to prevent. The architecture rule
@@ -322,7 +328,7 @@ Inside that module's implementation project, and nowhere else:
 6. `services.AddDbContext<TContext>(...)` in that module's `RegisterServices`,
    using `configuration.GetSquadCrmPostgresConnectionString()`. The host does not
    register it.
-7. `dotnet ef migrations add … --output-dir Persistence/Migrations` against that
+7. `dotnet ef migrations add … --output-dir Infrastructure/Persistence/Migrations` against that
    module, and commit the migration **and** the `*ModelSnapshot.cs`.
 
 Do **not** touch `BuildingBlocks`, do not add an EF Core package to the host or
@@ -678,7 +684,8 @@ record it here.
 
 **Suppressions currently in place — one.** `.editorconfig` relaxes exactly one
 style rule, `csharp_style_namespace_declarations`, for generated migration files
-only (`[**/Persistence/Migrations/*.cs]`). EF Core emits block-scoped namespaces
+only (`[**/Persistence/Migrations/*.cs]`, which matches the layered
+`Infrastructure/Persistence/Migrations/` path). EF Core emits block-scoped namespaces
 and regenerates those files wholesale on every `dotnet ef migrations add`, so
 hand-reformatting them would be undone by the next scaffold. No analyser is
 disabled, no other rule is relaxed, and no other path is covered. Every

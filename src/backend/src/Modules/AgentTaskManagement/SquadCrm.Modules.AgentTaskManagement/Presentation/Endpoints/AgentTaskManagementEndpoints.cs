@@ -1,0 +1,244 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using SquadCrm.BuildingBlocks.Http;
+using SquadCrm.BuildingBlocks.Validation;
+using SquadCrm.Modules.AgentTaskManagement.Application.Services;
+using SquadCrm.Modules.AgentTaskManagement.Domain.Entities;
+using SquadCrm.Modules.AgentTaskManagement.Presentation.Requests;
+using SquadCrm.Modules.AgentTaskManagement.Presentation.Responses;
+
+namespace SquadCrm.Modules.AgentTaskManagement.Presentation.Endpoints;
+
+/// <summary>
+/// HTTP surface of the AgentTaskManagement module: route definitions, model binding,
+/// status mapping and response projection. Composed by
+/// <see cref="AgentTaskManagementModule"/>, which owns registration only.
+/// </summary>
+internal static class AgentTaskManagementEndpoints
+{
+    public static void Map(IEndpointRouteBuilder endpoints)
+    {
+        RouteGroupBuilder tasks = endpoints.MapGroup("/api/v1/tasks").WithTags("AgentTasks");
+
+        tasks.MapPost("", CreateAsync).ValidatesDataAnnotations<CreateAgentTaskRequest>()
+            .RequireAuthorization(PermissionPolicies.TasksCreate);
+        tasks.MapGet("", ListAsync).RequireAuthorization(PermissionPolicies.TasksView);
+        tasks.MapGet("/{id:guid}", GetAsync).RequireAuthorization(PermissionPolicies.TasksView);
+        tasks.MapPut("/{id:guid}", UpdateAsync).ValidatesDataAnnotations<UpdateAgentTaskRequest>()
+            .RequireAuthorization(PermissionPolicies.TasksEdit);
+        tasks.MapPost("/{id:guid}/complete", CompleteAsync)
+            .ValidatesDataAnnotations<AgentTaskVersionedActionRequest>()
+            .RequireAuthorization(PermissionPolicies.TasksComplete);
+        tasks.MapPost("/{id:guid}/reopen", ReopenAsync)
+            .ValidatesDataAnnotations<AgentTaskVersionedActionRequest>()
+            .RequireAuthorization(PermissionPolicies.TasksComplete);
+
+        // Setting a reminder is an edit of a task the caller owns, so it
+        // reuses "tasks.edit" rather than minting a permission that would add
+        // a RoleManagement migration for no authorization gain — ownership is
+        // what actually gates the action (enforced in AgentTaskService).
+        tasks.MapPut("/{id:guid}/reminder", SetReminderAsync)
+            .ValidatesDataAnnotations<SetAgentTaskReminderRequest>()
+            .RequireAuthorization(PermissionPolicies.TasksEdit);
+        // Clearing takes its version as a QUERY parameter, not a body: a
+        // DELETE body is not bound by minimal APIs without an explicit
+        // [FromBody] and is dropped outright by some proxies, so the
+        // concurrency check would be the thing silently lost.
+        tasks.MapDelete("/{id:guid}/reminder", ClearReminderAsync)
+            .RequireAuthorization(PermissionPolicies.TasksEdit);
+    }
+
+    private static async Task<IResult> CreateAsync(
+        CreateAgentTaskRequest request,
+        AgentTaskService agentTaskService,
+        CancellationToken cancellationToken)
+    {
+        AgentTaskMutationResult result = await agentTaskService.CreateAsync(request, cancellationToken);
+        return result.Failure switch
+        {
+            AgentTaskMutationFailure.None => Results.Created(
+                $"/api/v1/tasks/{result.AgentTask!.Id}", ToResponse(result.AgentTask)),
+            AgentTaskMutationFailure.OwnerUnresolved => OwnerUnresolvedProblem(),
+            AgentTaskMutationFailure.IneligibleOwner => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "The selected owner is not an active user.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tasks.ineligible_owner" }),
+            AgentTaskMutationFailure.InvalidTicket => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "The selected ticket does not exist.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tasks.invalid_ticket" }),
+            AgentTaskMutationFailure.InvalidCustomer => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "The selected customer does not exist.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tasks.invalid_customer" }),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> ListAsync(
+        [AsParameters] AgentTaskListQuery query,
+        [AsParameters] PaginationRequest pagination,
+        AgentTaskService agentTaskService,
+        CancellationToken cancellationToken)
+    {
+        PagedResult<AgentTask> page = await agentTaskService.ListAsync(query, pagination, cancellationToken);
+        return Results.Ok(new PagedResult<AgentTaskResponse>(
+            page.Items.Select(ToResponse).ToList(), page.Page, page.PageSize, page.TotalCount));
+    }
+
+    private static async Task<IResult> GetAsync(
+        Guid id, AgentTaskService agentTaskService, CancellationToken cancellationToken)
+    {
+        AgentTaskMutationResult result = await agentTaskService.GetAsync(id, cancellationToken);
+        return result.Failure switch
+        {
+            AgentTaskMutationFailure.None => Results.Ok(ToResponse(result.AgentTask!)),
+            AgentTaskMutationFailure.TaskNotFound => NotFoundProblem(),
+            AgentTaskMutationFailure.NotOwner => ForbiddenProblem(),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> UpdateAsync(
+        Guid id,
+        UpdateAgentTaskRequest request,
+        AgentTaskService agentTaskService,
+        CancellationToken cancellationToken)
+    {
+        AgentTaskMutationResult result = await agentTaskService.UpdateAsync(id, request, cancellationToken);
+        return result.Failure switch
+        {
+            AgentTaskMutationFailure.None => Results.Ok(ToResponse(result.AgentTask!)),
+            AgentTaskMutationFailure.TaskNotFound => NotFoundProblem(),
+            AgentTaskMutationFailure.NotOwner => ForbiddenProblem(),
+            AgentTaskMutationFailure.StaleVersion => StaleVersionProblem(),
+            AgentTaskMutationFailure.InvalidTicket => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "The selected ticket does not exist.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tasks.invalid_ticket" }),
+            AgentTaskMutationFailure.InvalidCustomer => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "The selected customer does not exist.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tasks.invalid_customer" }),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> CompleteAsync(
+        Guid id,
+        AgentTaskVersionedActionRequest request,
+        AgentTaskService agentTaskService,
+        CancellationToken cancellationToken)
+    {
+        AgentTaskMutationResult result = await agentTaskService.CompleteAsync(id, request, cancellationToken);
+        return result.Failure switch
+        {
+            AgentTaskMutationFailure.None => Results.Ok(ToResponse(result.AgentTask!)),
+            AgentTaskMutationFailure.TaskNotFound => NotFoundProblem(),
+            AgentTaskMutationFailure.NotOwner => ForbiddenProblem(),
+            AgentTaskMutationFailure.StaleVersion => StaleVersionProblem(),
+            AgentTaskMutationFailure.AlreadyCompleted => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "The task is already completed.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tasks.already_completed" }),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> ReopenAsync(
+        Guid id,
+        AgentTaskVersionedActionRequest request,
+        AgentTaskService agentTaskService,
+        CancellationToken cancellationToken)
+    {
+        AgentTaskMutationResult result = await agentTaskService.ReopenAsync(id, request, cancellationToken);
+        return result.Failure switch
+        {
+            AgentTaskMutationFailure.None => Results.Ok(ToResponse(result.AgentTask!)),
+            AgentTaskMutationFailure.TaskNotFound => NotFoundProblem(),
+            AgentTaskMutationFailure.NotOwner => ForbiddenProblem(),
+            AgentTaskMutationFailure.StaleVersion => StaleVersionProblem(),
+            AgentTaskMutationFailure.NotCompleted => Results.Problem(
+                statusCode: StatusCodes.Status422UnprocessableEntity,
+                title: "The task is not completed.",
+                extensions: new Dictionary<string, object?> { ["code"] = "tasks.not_completed" }),
+            _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+        };
+    }
+
+    private static async Task<IResult> SetReminderAsync(
+        Guid id,
+        SetAgentTaskReminderRequest request,
+        AgentTaskService agentTaskService,
+        CancellationToken cancellationToken)
+    {
+        AgentTaskMutationResult result = await agentTaskService.SetReminderAsync(id, request, cancellationToken);
+        return ReminderResult(result);
+    }
+
+    private static async Task<IResult> ClearReminderAsync(
+        Guid id,
+        int version,
+        AgentTaskService agentTaskService,
+        CancellationToken cancellationToken)
+    {
+        AgentTaskMutationResult result = await agentTaskService.ClearReminderAsync(
+            id, new AgentTaskVersionedActionRequest(version), cancellationToken);
+        return ReminderResult(result);
+    }
+
+    private static IResult ReminderResult(AgentTaskMutationResult result) => result.Failure switch
+    {
+        AgentTaskMutationFailure.None => Results.Ok(ToResponse(result.AgentTask!)),
+        AgentTaskMutationFailure.TaskNotFound => NotFoundProblem(),
+        AgentTaskMutationFailure.NotOwner => ForbiddenProblem(),
+        AgentTaskMutationFailure.StaleVersion => StaleVersionProblem(),
+        AgentTaskMutationFailure.ReminderTaskNotOpen => Results.Problem(
+            statusCode: StatusCodes.Status422UnprocessableEntity,
+            title: "A reminder can only be set on an open task.",
+            extensions: new Dictionary<string, object?> { ["code"] = "tasks.reminder_task_not_open" }),
+        AgentTaskMutationFailure.ReminderInPast => Results.Problem(
+            statusCode: StatusCodes.Status422UnprocessableEntity,
+            title: "The reminder time must be in the future.",
+            extensions: new Dictionary<string, object?> { ["code"] = "tasks.reminder_in_past" }),
+        _ => Results.Problem(statusCode: StatusCodes.Status500InternalServerError),
+    };
+
+    private static IResult NotFoundProblem() => Results.Problem(
+        statusCode: StatusCodes.Status404NotFound,
+        title: "Task not found.",
+        extensions: new Dictionary<string, object?> { ["code"] = "tasks.not_found" });
+
+    private static IResult ForbiddenProblem() => Results.Problem(
+        statusCode: StatusCodes.Status403Forbidden,
+        title: "You do not own this task.",
+        extensions: new Dictionary<string, object?> { ["code"] = "tasks.not_owner" });
+
+    private static IResult StaleVersionProblem() => Results.Problem(
+        statusCode: StatusCodes.Status409Conflict,
+        title: "The task was changed by someone else. Reload it and try again.",
+        extensions: new Dictionary<string, object?> { ["code"] = "tasks.stale_version" });
+
+    private static IResult OwnerUnresolvedProblem() => Results.Problem(
+        statusCode: StatusCodes.Status422UnprocessableEntity,
+        title: "The current user could not be resolved as a task owner.",
+        extensions: new Dictionary<string, object?> { ["code"] = "tasks.owner_unresolved" });
+
+    private static AgentTaskResponse ToResponse(AgentTask task) => new(
+        task.Id,
+        task.Title,
+        task.Details,
+        task.OwnerUserId,
+        task.TicketId,
+        task.CustomerId,
+        task.DueAtUtc,
+        task.Status,
+        task.CompletedAtUtc,
+        task.CreatedAtUtc,
+        task.UpdatedAtUtc,
+        task.Version,
+        task.ReminderAtUtc,
+        task.ReminderStatus,
+        task.ReminderTriggeredAtUtc);
+}

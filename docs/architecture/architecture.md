@@ -22,6 +22,7 @@ Local development should avoid paid dependencies where possible.
 - `SquadCrm.Api` is the composition root. It registers modules and cross-cutting infrastructure but does not access module persistence internals.
 - `SquadCrm.BuildingBlocks.Abstractions` contains dependency-free contracts; `SquadCrm.BuildingBlocks` contains provider-neutral technical concerns.
 - Each `SquadCrm.Modules.<Name>` implementation owns its domain and persistence. Other modules may reference only its `.Contracts` project.
+- Inside a module, code is organised by responsibility into `Domain`, `Application`, `Presentation` and `Infrastructure` (`docs/adr/ADR-012-internal-module-layering.md`). These are internal folders in one project, not separate deployables, and they do not change module boundaries.
 - `SquadCrm.Infrastructure.*` projects are provider adapters and do not contain business state.
 - ArchitectureFixture is removable scaffolding, not a CRM product module. Its development seed is synthetic and module-owned.
 
