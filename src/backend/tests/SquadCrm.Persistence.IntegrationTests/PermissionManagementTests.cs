@@ -2,7 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
 using SquadCrm.Modules.RoleManagement;
-using SquadCrm.Modules.RoleManagement.Persistence;
+using SquadCrm.Modules.RoleManagement.Application.Services;
+using SquadCrm.Modules.RoleManagement.Domain.Entities;
+using SquadCrm.Modules.RoleManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.RoleManagement.Presentation.Requests;
+using SquadCrm.Modules.RoleManagement.Presentation.Responses;
 using SquadCrm.Modules.StaffIdentity.Contracts;
 
 namespace SquadCrm.Persistence.IntegrationTests;

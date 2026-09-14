@@ -6,8 +6,12 @@ using SquadCrm.Modules.BranchManagement.Contracts;
 using SquadCrm.Modules.CustomerManagement.Contracts;
 using SquadCrm.Modules.DepartmentManagement.Contracts;
 using SquadCrm.Modules.StaffIdentity.Contracts;
-using SquadCrm.Modules.TicketManagement;
-using SquadCrm.Modules.TicketManagement.Persistence;
+using SquadCrm.Modules.TicketManagement.Application.Services;
+using SquadCrm.Modules.TicketManagement.Domain.Entities;
+using SquadCrm.Modules.TicketManagement.Infrastructure.Outbox;
+using SquadCrm.Modules.TicketManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.TicketManagement.Presentation.Requests;
+using SquadCrm.Modules.TicketManagement.Presentation.Responses;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

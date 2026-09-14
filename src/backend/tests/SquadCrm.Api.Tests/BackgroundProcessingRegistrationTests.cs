@@ -2,8 +2,8 @@ using Hangfire;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using SquadCrm.Modules.AgentTaskManagement.BackgroundProcessing;
-using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
+using SquadCrm.Modules.AgentTaskManagement.Infrastructure.BackgroundProcessing;
+using SquadCrm.Modules.ArchitectureFixture.Infrastructure.BackgroundProcessing;
 
 namespace SquadCrm.Api.Tests;
 

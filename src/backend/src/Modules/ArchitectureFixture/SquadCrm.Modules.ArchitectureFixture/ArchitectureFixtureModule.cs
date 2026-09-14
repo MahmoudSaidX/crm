@@ -3,15 +3,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using SquadCrm.BuildingBlocks.Correlation;
 using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Modules;
 using SquadCrm.BuildingBlocks.Validation;
 using SquadCrm.Infrastructure.Postgres;
 using SquadCrm.Modules.ArchitectureFixture.Contracts;
-using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
-using SquadCrm.Modules.ArchitectureFixture.Persistence;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
+using SquadCrm.Modules.ArchitectureFixture.Infrastructure.BackgroundProcessing;
+using SquadCrm.Modules.ArchitectureFixture.Infrastructure.Persistence;
 
 namespace SquadCrm.Modules.ArchitectureFixture;
 

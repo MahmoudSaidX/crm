@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using SquadCrm.Modules.Audit;
+using SquadCrm.Modules.Audit.Application.Services;
 using SquadCrm.Modules.Audit.Contracts;
-using SquadCrm.Modules.Audit.Persistence;
+using SquadCrm.Modules.Audit.Infrastructure.Persistence;
 
 namespace SquadCrm.UnitTests;
 

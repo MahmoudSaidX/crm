@@ -1,10 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
-using SquadCrm.Modules.Audit;
+using SquadCrm.Modules.Audit.Application.Services;
 using SquadCrm.Modules.Audit.Contracts;
-using SquadCrm.Modules.Audit.Persistence;
-using SquadCrm.Modules.RoleManagement;
-using SquadCrm.Modules.RoleManagement.Persistence;
+using SquadCrm.Modules.Audit.Domain.Entities;
+using SquadCrm.Modules.Audit.Infrastructure.Persistence;
+using SquadCrm.Modules.RoleManagement.Application.Services;
+using SquadCrm.Modules.RoleManagement.Domain.Entities;
+using SquadCrm.Modules.RoleManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.RoleManagement.Presentation.Requests;
 using SquadCrm.Modules.StaffIdentity.Contracts;
 
 namespace SquadCrm.Persistence.IntegrationTests;
@@ -115,7 +118,7 @@ public sealed class AuditTests
     /// dual-write to both mechanisms for the same operation.
     /// </summary>
     [Theory]
-    [InlineData(typeof(SquadCrm.Modules.StaffIdentity.StaffUserService))]
+    [InlineData(typeof(SquadCrm.Modules.StaffIdentity.Application.Services.StaffUserService))]
     [InlineData(typeof(PermissionService))]
     public void ExistingModuleLocalAuditServices_NeverDependOnIAuditRecorder(Type serviceType)
     {

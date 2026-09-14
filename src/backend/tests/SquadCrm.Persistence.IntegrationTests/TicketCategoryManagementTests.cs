@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
-using SquadCrm.Modules.DepartmentManagement;
+using SquadCrm.Modules.DepartmentManagement.Application.Services;
 using SquadCrm.Modules.DepartmentManagement.Contracts;
-using SquadCrm.Modules.DepartmentManagement.Persistence;
-using SquadCrm.Modules.TicketManagement;
-using SquadCrm.Modules.TicketManagement.Persistence;
+using SquadCrm.Modules.DepartmentManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.DepartmentManagement.Presentation.Requests;
+using SquadCrm.Modules.TicketManagement.Application.Services;
+using SquadCrm.Modules.TicketManagement.Domain.Entities;
+using SquadCrm.Modules.TicketManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.TicketManagement.Presentation.Requests;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

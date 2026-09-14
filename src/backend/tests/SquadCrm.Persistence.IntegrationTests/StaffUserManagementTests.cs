@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Security;
-using SquadCrm.Modules.StaffIdentity;
-using SquadCrm.Modules.StaffIdentity.Persistence;
+using SquadCrm.Modules.StaffIdentity.Application.Services;
+using SquadCrm.Modules.StaffIdentity.Domain.Entities;
+using SquadCrm.Modules.StaffIdentity.Infrastructure.Persistence;
+using SquadCrm.Modules.StaffIdentity.Presentation.Requests;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

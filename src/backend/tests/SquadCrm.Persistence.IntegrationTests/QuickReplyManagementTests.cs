@@ -2,8 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
-using SquadCrm.Modules.QuickReplyManagement;
-using SquadCrm.Modules.QuickReplyManagement.Persistence;
+using SquadCrm.Modules.QuickReplyManagement.Application.Services;
+using SquadCrm.Modules.QuickReplyManagement.Domain.Entities;
+using SquadCrm.Modules.QuickReplyManagement.Infrastructure.Authorization;
+using SquadCrm.Modules.QuickReplyManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.QuickReplyManagement.Presentation.Requests;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

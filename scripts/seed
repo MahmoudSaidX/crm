@@ -3,7 +3,7 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$script_dir/.." && pwd)"
-seed_file="$repo_root/src/backend/src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture/Persistence/DevelopmentSeed.sql"
+seed_file="$repo_root/src/backend/src/Modules/ArchitectureFixture/SquadCrm.Modules.ArchitectureFixture/Infrastructure/Persistence/DevelopmentSeed.sql"
 backend_env_file="${SQUADCRM_BACKEND_ENV_FILE:-$repo_root/env/backend.env}"
 
 if [[ -f "$backend_env_file" ]]; then

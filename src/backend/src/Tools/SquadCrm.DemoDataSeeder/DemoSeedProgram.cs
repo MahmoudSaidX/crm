@@ -1,10 +1,10 @@
 using SquadCrm.BuildingBlocks.Abstractions.DemoData;
-using SquadCrm.Modules.BranchManagement.DemoData;
-using SquadCrm.Modules.CustomerManagement.DemoData;
-using SquadCrm.Modules.DepartmentManagement.DemoData;
-using SquadCrm.Modules.RoleManagement.DemoData;
-using SquadCrm.Modules.StaffIdentity.DemoData;
-using SquadCrm.Modules.TicketManagement.DemoData;
+using SquadCrm.Modules.BranchManagement.Infrastructure.DemoData;
+using SquadCrm.Modules.CustomerManagement.Infrastructure.DemoData;
+using SquadCrm.Modules.DepartmentManagement.Infrastructure.DemoData;
+using SquadCrm.Modules.RoleManagement.Infrastructure.DemoData;
+using SquadCrm.Modules.StaffIdentity.Infrastructure.DemoData;
+using SquadCrm.Modules.TicketManagement.Infrastructure.DemoData;
 
 namespace SquadCrm.Tools.DemoDataSeeder;
 

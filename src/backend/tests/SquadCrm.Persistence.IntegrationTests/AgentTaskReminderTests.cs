@@ -1,8 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using SquadCrm.BuildingBlocks.Security;
-using SquadCrm.Modules.AgentTaskManagement;
-using SquadCrm.Modules.AgentTaskManagement.Persistence;
+using SquadCrm.Modules.AgentTaskManagement.Application.Services;
+using SquadCrm.Modules.AgentTaskManagement.Domain.Entities;
+using SquadCrm.Modules.AgentTaskManagement.Infrastructure.Outbox;
+using SquadCrm.Modules.AgentTaskManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.AgentTaskManagement.Presentation.Requests;
 using SquadCrm.Modules.Audit.Contracts;
 using SquadCrm.Modules.CustomerManagement.Contracts;
 using SquadCrm.Modules.StaffIdentity.Contracts;

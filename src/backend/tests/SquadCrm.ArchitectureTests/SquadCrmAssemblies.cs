@@ -8,9 +8,15 @@ using SquadCrm.Modules.ArchitectureFixture.Contracts;
 using SquadCrm.Modules.AgentTaskManagement;
 using SquadCrm.Modules.Audit;
 using SquadCrm.Modules.Audit.Contracts;
+using SquadCrm.Modules.BranchManagement;
+using SquadCrm.Modules.BrandingManagement;
+using SquadCrm.Modules.CustomerManagement;
+using SquadCrm.Modules.DepartmentManagement;
 using SquadCrm.Modules.QuickReplyManagement;
 using SquadCrm.Modules.RoleManagement;
 using SquadCrm.Modules.StaffIdentity;
+using SquadCrm.Modules.SystemConfiguration;
+using SquadCrm.Modules.TicketManagement;
 using SquadCrm.Modules.StaffIdentity.Bootstrap;
 using SquadCrm.Modules.StaffIdentity.Contracts;
 using RoleAuthorizationBootstrap = SquadCrm.Tools.RoleManagementBootstrap.BootstrapProgram;
@@ -38,8 +44,12 @@ internal static class SquadCrmAssemblies
         "Npgsql",
     ];
 
-    /// <summary>Namespace suffix every module's persistence internals live under.</summary>
-    public const string PersistenceNamespaceSuffix = ".Persistence";
+    /// <summary>
+    /// Namespace suffix every module's persistence internals live under, since
+    /// ADR-012 moved EF Core out of <c>&lt;Module&gt;.Persistence</c> and into the
+    /// module's Infrastructure layer.
+    /// </summary>
+    public const string PersistenceNamespaceSuffix = ".Infrastructure.Persistence";
 
     public static Assembly Api { get; } = typeof(Program).Assembly;
 
@@ -73,6 +83,18 @@ internal static class SquadCrmAssemblies
 
     public static Assembly QuickReplyManagement { get; } = typeof(QuickReplyManagementModule).Assembly;
 
+    public static Assembly BranchManagement { get; } = typeof(BranchManagementModule).Assembly;
+
+    public static Assembly BrandingManagement { get; } = typeof(BrandingManagementModule).Assembly;
+
+    public static Assembly CustomerManagement { get; } = typeof(CustomerManagementModule).Assembly;
+
+    public static Assembly DepartmentManagement { get; } = typeof(DepartmentManagementModule).Assembly;
+
+    public static Assembly SystemConfiguration { get; } = typeof(SystemConfigurationModule).Assembly;
+
+    public static Assembly TicketManagement { get; } = typeof(TicketManagementModule).Assembly;
+
     public static Assembly ApiTests { get; } = typeof(SquadCrm.Api.Tests.HealthEndpointTests).Assembly;
 
     public static Assembly UnitTests { get; } = typeof(SquadCrm.UnitTests.DomainEventTests).Assembly;
@@ -96,6 +118,12 @@ internal static class SquadCrmAssemblies
         AuditContracts,
         AgentTaskManagement,
         QuickReplyManagement,
+        BranchManagement,
+        BrandingManagement,
+        CustomerManagement,
+        DepartmentManagement,
+        SystemConfiguration,
+        TicketManagement,
         ApiTests,
         UnitTests,
         typeof(SquadCrmAssemblies).Assembly,

@@ -1,8 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
-using SquadCrm.Modules.BranchManagement;
-using SquadCrm.Modules.BranchManagement.Persistence;
+using SquadCrm.Modules.BranchManagement.Application.Services;
+using SquadCrm.Modules.BranchManagement.Domain.Entities;
+using SquadCrm.Modules.BranchManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.BranchManagement.Presentation.Requests;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

@@ -39,12 +39,12 @@ apply_module_migrations "ArchitectureFixture" \
 
 # Application modules: discovered from the repository structure so this list
 # cannot silently drift from the modules that actually own migrations — every
-# module directory with a Persistence/Migrations folder is applied. See
+# module directory with an Infrastructure/Persistence/Migrations folder is applied. See
 # src/backend/README.md ("Adding persistence to a new module") for the
 # convention this scan relies on.
 shopt -s nullglob
-for migrations_dir in src/Modules/*/SquadCrm.Modules.*/Persistence/Migrations; do
-  module_dir="${migrations_dir%/Persistence/Migrations}"
+for migrations_dir in src/Modules/*/SquadCrm.Modules.*/Infrastructure/Persistence/Migrations; do
+  module_dir="${migrations_dir%/Infrastructure/Persistence/Migrations}"
   module_name="$(basename "$module_dir")"
   module_name="${module_name#SquadCrm.Modules.}"
   [[ "$module_name" == "ArchitectureFixture" ]] && continue

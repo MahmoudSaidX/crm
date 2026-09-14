@@ -3,8 +3,10 @@ using SquadCrm.BuildingBlocks.Abstractions.Files;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
 using SquadCrm.Modules.BranchManagement.Contracts;
-using SquadCrm.Modules.CustomerManagement;
-using SquadCrm.Modules.CustomerManagement.Persistence;
+using SquadCrm.Modules.CustomerManagement.Application.Services;
+using SquadCrm.Modules.CustomerManagement.Domain.Entities;
+using SquadCrm.Modules.CustomerManagement.Infrastructure.Persistence;
+using SquadCrm.Modules.CustomerManagement.Presentation.Requests;
 using SquadCrm.Modules.DepartmentManagement.Contracts;
 
 namespace SquadCrm.Persistence.IntegrationTests;

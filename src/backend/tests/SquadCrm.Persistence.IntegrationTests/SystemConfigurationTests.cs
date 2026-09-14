@@ -1,7 +1,9 @@
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
-using SquadCrm.Modules.SystemConfiguration;
-using SquadCrm.Modules.SystemConfiguration.Persistence;
+using SquadCrm.Modules.SystemConfiguration.Application.Services;
+using SquadCrm.Modules.SystemConfiguration.Infrastructure.Persistence;
+using SquadCrm.Modules.SystemConfiguration.Presentation.Requests;
+using SquadCrm.Modules.SystemConfiguration.Presentation.Responses;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 

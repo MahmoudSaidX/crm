@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using SquadCrm.Modules.ArchitectureFixture.BackgroundProcessing;
-using SquadCrm.Modules.ArchitectureFixture.Persistence;
+using SquadCrm.Modules.ArchitectureFixture.Infrastructure.BackgroundProcessing;
+using SquadCrm.Modules.ArchitectureFixture.Infrastructure.Persistence;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 
