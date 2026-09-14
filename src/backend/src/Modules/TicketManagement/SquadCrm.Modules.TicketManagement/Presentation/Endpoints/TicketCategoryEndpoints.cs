@@ -21,7 +21,9 @@ internal static class TicketCategoryEndpoints
 
         ticketCategories.MapPost("", CreateAsync).ValidatesDataAnnotations<CreateTicketCategoryRequest>()
             .RequireAuthorization(PermissionPolicies.TicketCategoriesManage);
-        ticketCategories.MapGet("", ListAsync).RequireAuthorization(PermissionPolicies.TicketCategoriesView);
+        ticketCategories.MapGet("", ListAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .RequireAuthorization(PermissionPolicies.TicketCategoriesView);
         ticketCategories.MapGet("/{id:guid}", GetAsync).RequireAuthorization(PermissionPolicies.TicketCategoriesView);
         ticketCategories.MapPut("/{id:guid}", UpdateAsync).ValidatesDataAnnotations<UpdateTicketCategoryRequest>()
             .RequireAuthorization(PermissionPolicies.TicketCategoriesManage);

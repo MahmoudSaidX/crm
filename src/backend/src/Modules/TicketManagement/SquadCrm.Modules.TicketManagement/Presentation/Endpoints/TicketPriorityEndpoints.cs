@@ -21,7 +21,9 @@ internal static class TicketPriorityEndpoints
 
         ticketPriorities.MapPost("", CreatePriorityAsync).ValidatesDataAnnotations<CreateTicketPriorityRequest>()
             .RequireAuthorization(PermissionPolicies.TicketPrioritiesManage);
-        ticketPriorities.MapGet("", ListPrioritiesAsync).RequireAuthorization(PermissionPolicies.TicketPrioritiesView);
+        ticketPriorities.MapGet("", ListPrioritiesAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .RequireAuthorization(PermissionPolicies.TicketPrioritiesView);
         ticketPriorities.MapGet("/{id:guid}", GetPriorityAsync).RequireAuthorization(PermissionPolicies.TicketPrioritiesView);
         ticketPriorities.MapPut("/{id:guid}", UpdatePriorityAsync).ValidatesDataAnnotations<UpdateTicketPriorityRequest>()
             .RequireAuthorization(PermissionPolicies.TicketPrioritiesManage);

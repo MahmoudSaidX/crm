@@ -35,14 +35,14 @@ public enum SortDirection
 /// (documented scope gap, see plan).
 /// </summary>
 public sealed record TicketListQuery(
-    string? Search = null,
-    TicketStatus[]? Statuses = null,
-    Guid[]? CategoryIds = null,
-    Guid[]? PriorityIds = null,
-    Guid[]? AssigneeIds = null,
-    Guid[]? DepartmentIds = null,
-    Guid[]? BranchIds = null,
-    TicketChannel[]? Channels = null,
+    [property: MaxLength(200)] string? Search = null,
+    [property: MaxLength(TicketListQuery.MaxFilterValues)] TicketStatus[]? Statuses = null,
+    [property: MaxLength(TicketListQuery.MaxFilterValues)] Guid[]? CategoryIds = null,
+    [property: MaxLength(TicketListQuery.MaxFilterValues)] Guid[]? PriorityIds = null,
+    [property: MaxLength(TicketListQuery.MaxFilterValues)] Guid[]? AssigneeIds = null,
+    [property: MaxLength(TicketListQuery.MaxFilterValues)] Guid[]? DepartmentIds = null,
+    [property: MaxLength(TicketListQuery.MaxFilterValues)] Guid[]? BranchIds = null,
+    [property: MaxLength(TicketListQuery.MaxFilterValues)] TicketChannel[]? Channels = null,
 
     /// <summary>
     /// Restrict the result to tickets assigned to the CALLER (CRM-141). The
@@ -54,7 +54,16 @@ public sealed record TicketListQuery(
     /// </summary>
     bool AssignedToMe = false,
     TicketSortBy SortBy = TicketSortBy.TicketNumber,
-    SortDirection SortDirection = SortDirection.Asc);
+    SortDirection SortDirection = SortDirection.Asc)
+{
+    /// <summary>
+    /// Cardinality ceiling for every multi-value filter. Each value becomes a
+    /// term in a generated <c>IN</c> list, so an unbounded array lets one
+    /// request build an arbitrarily large query plan. Well above any real
+    /// selection the UI can produce.
+    /// </summary>
+    public const int MaxFilterValues = 50;
+}
 
 public sealed record CreateTicketRequest(
     [property: Required] Guid CustomerId,

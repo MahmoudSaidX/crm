@@ -102,21 +102,22 @@ public sealed class CustomerHttpContractTests
     }
 
     /// <summary>
-    /// Documents a real but SEPARATE, pre-existing, cross-cutting defect
-    /// discovered while verifying the CRM-125 enum-contract fix: an invalid
-    /// enum string throws <c>BadHttpRequestException</c> (a framework
-    /// exception that carries its own 400 status), but
-    /// <c>GlobalExceptionHandler</c> (shared <c>BuildingBlocks</c>) treats
-    /// every exception identically and always writes 500 — regardless of
-    /// enum converters, and regardless of which endpoint or module raises it.
-    /// Fixing that handler is a global exception-handling decision outside
-    /// "Customer contracts" scope, so this test intentionally asserts today's
-    /// actual behavior rather than silently patching a shared handler here.
-    /// See the CRM-125 Squad Kit plan deviation note and the publication
-    /// report for the follow-up recommendation.
+    /// The cross-cutting defect this test was written to document is now
+    /// fixed, so it asserts the corrected behavior.
+    /// <para>
+    /// <b>History.</b> CRM-125 discovered that an invalid enum string throws
+    /// <c>BadHttpRequestException</c> — a framework exception carrying its own
+    /// 400 — while <c>GlobalExceptionHandler</c> (shared
+    /// <c>BuildingBlocks</c>) rewrote every exception to 500. Fixing a shared
+    /// handler was out of scope for a customer-contracts story, so the test
+    /// pinned the wrong-but-real behavior and named the gap. The URL-query-state
+    /// story owns exactly this boundary — malformed client input must not
+    /// present as a server fault — and fixed the handler, which is why the
+    /// assertion flipped here rather than in a customer-specific change.
+    /// </para>
     /// </summary>
     [Fact]
-    public async Task UpdateCustomer_InvalidStatusEnumString_CurrentlyReturns500_PreExistingGlobalExceptionHandlingGap()
+    public async Task UpdateCustomer_InvalidStatusEnumString_Returns400_NotAServerError()
     {
         await using CustomerHttpFactory factory = new();
         using HttpClient client = await factory.CreateAuthenticatedClientAsync();
@@ -149,7 +150,7 @@ public sealed class CustomerHttpContractTests
             }),
             CancellationToken.None);
 
-        Assert.Equal(HttpStatusCode.InternalServerError, updateResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
     }
 
     [Fact]

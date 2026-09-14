@@ -1,3 +1,4 @@
+using SquadCrm.BuildingBlocks.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -19,7 +20,9 @@ internal static class CustomerNoteEndpoints
         RouteGroupBuilder notes = customers.MapGroup("/{customerId:guid}/notes").WithTags("CustomerNotes");
         notes.MapPost("", AddNoteAsync).ValidatesDataAnnotations<AddCustomerNoteRequest>()
             .RequireAuthorization(PermissionPolicies.CustomersManage);
-        notes.MapGet("", ListNotesAsync).RequireAuthorization(PermissionPolicies.CustomersView);
+        notes.MapGet("", ListNotesAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .RequireAuthorization(PermissionPolicies.CustomersView);
     }
 
     private static async Task<IResult> AddNoteAsync(

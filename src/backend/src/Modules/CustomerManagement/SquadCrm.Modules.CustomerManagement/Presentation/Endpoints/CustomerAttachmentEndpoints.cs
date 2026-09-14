@@ -1,3 +1,5 @@
+using SquadCrm.BuildingBlocks.Validation;
+using SquadCrm.BuildingBlocks.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -22,7 +24,9 @@ internal static class CustomerAttachmentEndpoints
         attachments.MapPost("", UploadAttachmentAsync)
             .RequireAuthorization(PermissionPolicies.CustomersManage)
             .DisableAntiforgery();
-        attachments.MapGet("", ListAttachmentsAsync).RequireAuthorization(PermissionPolicies.CustomersView);
+        attachments.MapGet("", ListAttachmentsAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .RequireAuthorization(PermissionPolicies.CustomersView);
         attachments.MapGet("/{attachmentId:guid}", DownloadAttachmentAsync)
             .RequireAuthorization(PermissionPolicies.CustomersView);
         attachments.MapDelete("/{attachmentId:guid}", RemoveAttachmentAsync)

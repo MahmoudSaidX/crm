@@ -32,12 +32,13 @@
       [value]="staffUsers()"
       [lazy]="true"
       [paginator]="true"
-      [rows]="pageSize"
+      [rows]="pageSize()"
+      [first]="first()"
       [totalRecords]="totalRecords()"
       [paginatorLocale]="localization.locale()"
       [loading]="loading()"
       [scrollable]="true"
-      (onLazyLoad)="onLazyLoad($event)"
+      (onPage)="onPage($event)"
       dataKey="id"
     >
       <ng-template #header>

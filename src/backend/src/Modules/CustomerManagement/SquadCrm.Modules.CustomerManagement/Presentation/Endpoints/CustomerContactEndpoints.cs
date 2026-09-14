@@ -1,3 +1,4 @@
+using SquadCrm.BuildingBlocks.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -19,7 +20,9 @@ internal static class CustomerContactEndpoints
         RouteGroupBuilder contacts = customers.MapGroup("/{customerId:guid}/contacts").WithTags("CustomerContacts");
         contacts.MapPost("", AddContactAsync).ValidatesDataAnnotations<AddCustomerContactRequest>()
             .RequireAuthorization(PermissionPolicies.CustomersManage);
-        contacts.MapGet("", ListContactsAsync).RequireAuthorization(PermissionPolicies.CustomersView);
+        contacts.MapGet("", ListContactsAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .RequireAuthorization(PermissionPolicies.CustomersView);
         contacts.MapPut("/{contactId:guid}", UpdateContactAsync).ValidatesDataAnnotations<UpdateCustomerContactRequest>()
             .RequireAuthorization(PermissionPolicies.CustomersManage);
         contacts.MapPost("/{contactId:guid}/deactivate", DeactivateContactAsync)

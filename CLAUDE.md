@@ -73,6 +73,40 @@ backend work:
     web.
 -   Frontend authorization is UX only; backend is authoritative.
 
+## List State, Query Parameters, and Input Security
+
+Rules for all future frontend/backend stories:
+
+1.  Server-backed list state must be URL-addressable where user-visible
+    state includes search/filter/pagination/sort.
+2.  Browser query parameters are the source of truth for list state.
+3.  Refresh, deep links and browser Back/Forward must preserve list
+    state.
+4.  API requests must derive query parameters from validated/normalized
+    URL state.
+5.  Search/filter changes reset pagination unless explicitly specified
+    otherwise.
+6.  Use Angular `HttpParams` or established typed query construction;
+    never unsafe query-string concatenation.
+7.  Treat URL params and all client input as untrusted.
+8.  Backend validation is authoritative.
+9.  Validate ranges, lengths, IDs, enums, filters and sortable fields.
+10. Do not globally strip special characters, apostrophes, Arabic,
+    Unicode or HTML-looking characters as a security mechanism.
+11. SQL injection protection relies on parameterized database access and
+    allow-listed dynamic query structure.
+12. Plain user text must be rendered through Angular's safe
+    text/interpolation path.
+13. Do not bypass Angular sanitization for untrusted content.
+14. Rich HTML, if intentionally supported, requires a dedicated
+    allow-list sanitizer.
+15. Frontend validation is UX defense, not the security boundary.
+
+Use `injectListUrlState` and the `list-query` readers in
+`@squad-crm/platform` rather than re-deriving list state per screen, and
+attach `ValidatesDataAnnotations<PaginationRequest>()` — plus the
+endpoint's own `[AsParameters]` query record — to every list route.
+
 ## Security/quality
 
 Authorization = Permission + Organizational Scope + Resource Ownership

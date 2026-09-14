@@ -23,7 +23,9 @@ internal static class RoleManagementEndpoints
 
         roles.MapPost("", CreateAsync).ValidatesDataAnnotations<CreateRoleRequest>()
             .RequireAuthorization(PermissionPolicies.RolesManage);
-        roles.MapGet("", ListAsync).RequireAuthorization(PermissionPolicies.RolesView);
+        roles.MapGet("", ListAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .RequireAuthorization(PermissionPolicies.RolesView);
         roles.MapGet("/{id:guid}", GetAsync).RequireAuthorization(PermissionPolicies.RolesView);
         roles.MapPut("/{id:guid}", UpdateAsync).ValidatesDataAnnotations<UpdateRoleRequest>()
             .RequireAuthorization(PermissionPolicies.RolesManage);
@@ -45,7 +47,9 @@ internal static class RoleManagementEndpoints
         RouteGroupBuilder staffRoles = endpoints
             .MapGroup("/api/v1/staff-users/{staffSubjectId:guid}/roles")
             .WithTags("StaffRoleAssignments");
-        staffRoles.MapGet("", GetStaffRolesAsync).RequireAuthorization(PermissionPolicies.RolesView);
+        staffRoles.MapGet("", GetStaffRolesAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .RequireAuthorization(PermissionPolicies.RolesView);
         staffRoles.MapPut("", ReplaceStaffRolesAsync)
             .ValidatesDataAnnotations<ReplaceStaffRolesRequest>()
             .RequireAuthorization(PermissionPolicies.RolesManage);

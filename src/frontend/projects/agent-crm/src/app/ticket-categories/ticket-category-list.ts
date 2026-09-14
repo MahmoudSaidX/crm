@@ -1,12 +1,25 @@
 import { CardModule } from 'primeng/card';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { TableLazyLoadEvent, TableModule } from 'primeng/table';
+import { TableModule, TablePageEvent } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TicketCategory, TicketCategoriesService } from './ticket-categories.service';
 import { Department, DepartmentsService } from '../departments/departments.service';
-import { LocalizationService } from '@squad-crm/platform';
+import {
+  LocalizationService,
+  PagedListState,
+  injectListUrlState,
+  paginationParams,
+  readPagination,
+} from '@squad-crm/platform';
 import { PageContainer, PageHeader } from '@squad-crm/shared-ui';
 import { AuthorizationState } from '../auth/authorization.state';
 
@@ -33,18 +46,30 @@ export class TicketCategoryList {
   readonly categories = signal<TicketCategory[]>([]);
   readonly totalRecords = signal(0);
   readonly loading = signal(false);
-  readonly pageSize = 20;
+  /** URL-owned page state; see the branches list for the shared rationale. */
+  private readonly urlState = injectListUrlState<PagedListState>(readPagination, paginationParams);
+
+  protected readonly page = computed(() => this.urlState.state().page);
+  protected readonly pageSize = computed(() => this.urlState.state().pageSize);
+  protected readonly first = computed(() => (this.page() - 1) * this.pageSize());
+
+  constructor() {
+    effect(() => {
+      const state = this.urlState.state();
+      void this.load(state.page, state.pageSize);
+    });
+  }
 
   private readonly departments = signal<Department[]>([]);
   protected readonly departmentNamesById = computed<ReadonlyMap<string, string>>(
     () => new Map(this.departments().map((department) => [department.id, department.englishName])),
   );
 
-  async load(page = 1): Promise<void> {
+  async load(page = this.page(), pageSize = this.pageSize()): Promise<void> {
     this.loading.set(true);
     try {
       const [result, departments] = await Promise.all([
-        this.ticketCategoriesService.list(page, this.pageSize),
+        this.ticketCategoriesService.list(page, pageSize),
         this.departments().length
           ? Promise.resolve({ items: this.departments() })
           : this.departmentsService.list(1, 200),
@@ -57,11 +82,12 @@ export class TicketCategoryList {
     }
   }
 
-  onLazyLoad(event: TableLazyLoadEvent): void {
-    const first = event.first ?? 0;
-    const rows = event.rows ?? this.pageSize;
-    const page = Math.floor(first / rows) + 1;
-    void this.load(page);
+  onPage(event: TablePageEvent): void {
+    const rows = event.rows ?? this.pageSize();
+    const page = Math.floor((event.first ?? 0) / rows) + 1;
+    if (page !== this.page()) {
+      this.urlState.setPage(page);
+    }
   }
 
   async toggleActive(category: TicketCategory): Promise<void> {

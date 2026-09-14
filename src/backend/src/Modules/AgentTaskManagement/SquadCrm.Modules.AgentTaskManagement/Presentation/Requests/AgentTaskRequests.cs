@@ -26,8 +26,8 @@ public enum SortDirection
 /// <c>TicketListQuery</c>).
 /// </summary>
 public sealed record AgentTaskListQuery(
-    string? Search = null,
-    AgentTaskStatus[]? Statuses = null,
+    [property: MaxLength(200)] string? Search = null,
+    [property: MaxLength(AgentTaskListQuery.MaxFilterValues)] AgentTaskStatus[]? Statuses = null,
     DateTimeOffset? DueBefore = null,
     DateTimeOffset? DueAfter = null,
 
@@ -39,7 +39,16 @@ public sealed record AgentTaskListQuery(
     /// </summary>
     bool MyTasksOnly = false,
     AgentTaskSortBy SortBy = AgentTaskSortBy.DueAtUtc,
-    SortDirection SortDirection = SortDirection.Asc);
+    SortDirection SortDirection = SortDirection.Asc)
+{
+    /// <summary>
+    /// Cardinality ceiling for every multi-value filter. Each value becomes a
+    /// term in a generated <c>IN</c> list, so an unbounded array lets one
+    /// request build an arbitrarily large query plan. Well above any real
+    /// selection the UI can produce.
+    /// </summary>
+    public const int MaxFilterValues = 50;
+}
 
 /// <summary>
 /// <paramref name="OwnerUserId"/> defaults to the caller when omitted

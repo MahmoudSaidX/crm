@@ -36,7 +36,10 @@ internal static class StaffIdentityEndpoints
         staffUsers.MapPost("", CreateStaffUserAsync)
             .ValidatesDataAnnotations<CreateStaffUserRequest>()
             .RequireAuthorization(UsersManagePolicy);
-        staffUsers.MapGet("", ListStaffUsersAsync).RequireAuthorization(UsersViewPolicy);
+        staffUsers.MapGet("", ListStaffUsersAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .ValidatesDataAnnotations<StaffUserListQuery>()
+            .RequireAuthorization(UsersViewPolicy);
         staffUsers.MapGet("/{id:guid}", GetStaffUserAsync).RequireAuthorization(UsersViewPolicy);
         staffUsers.MapPut("/{id:guid}", UpdateStaffUserAsync)
             .ValidatesDataAnnotations<UpdateStaffUserRequest>()
@@ -72,11 +75,11 @@ internal static class StaffIdentityEndpoints
 
     private static async Task<IResult> ListStaffUsersAsync(
         [AsParameters] PaginationRequest pagination,
-        string? search,
+        [AsParameters] StaffUserListQuery query,
         StaffUserService staffUserService,
         CancellationToken cancellationToken)
     {
-        PagedResult<StaffUser> page = await staffUserService.ListAsync(pagination, search, cancellationToken);
+        PagedResult<StaffUser> page = await staffUserService.ListAsync(pagination, query.Search, cancellationToken);
         return Results.Ok(new PagedResult<StaffUserResponse>(
             page.Items.Select(ToResponse).ToList(), page.Page, page.PageSize, page.TotalCount));
     }

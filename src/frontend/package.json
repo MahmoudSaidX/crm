@@ -11,7 +11,7 @@
     "lint": "ng lint",
     "format": "prettier --write \"projects/**/*.{ts,html,scss,json}\"",
     "format:check": "prettier --check \"projects/**/*.{ts,html,scss,json}\"",
-    "test": "ng test --watch=false --browsers=ChromeHeadless"
+    "test": "ng test agent-crm --watch=false --browsers=ChromeHeadless && ng test customer-portal --watch=false --browsers=ChromeHeadless && ng test @squad-crm/platform --watch=false --browsers=ChromeHeadless && ng test @squad-crm/shared-ui --watch=false --browsers=ChromeHeadless"
   },
   "private": true,
   "dependencies": {

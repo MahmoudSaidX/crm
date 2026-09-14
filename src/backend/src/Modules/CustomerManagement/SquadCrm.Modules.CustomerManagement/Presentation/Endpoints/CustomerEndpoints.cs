@@ -23,7 +23,10 @@ internal static class CustomerEndpoints
 
         customers.MapPost("", CreateAsync).ValidatesDataAnnotations<CreateCustomerRequest>()
             .RequireAuthorization(PermissionPolicies.CustomersManage);
-        customers.MapGet("", ListAsync).RequireAuthorization(PermissionPolicies.CustomersView);
+        customers.MapGet("", ListAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .ValidatesDataAnnotations<CustomerListQuery>()
+            .RequireAuthorization(PermissionPolicies.CustomersView);
         customers.MapGet("/{id:guid}", GetAsync).RequireAuthorization(PermissionPolicies.CustomersView);
         customers.MapPut("/{id:guid}", UpdateAsync).ValidatesDataAnnotations<UpdateCustomerRequest>()
             .RequireAuthorization(PermissionPolicies.CustomersManage);

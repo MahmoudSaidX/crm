@@ -29,7 +29,10 @@ internal static class QuickReplyManagementEndpoints
         // QuickReplyService applies it after the scope is known.
         quickReplies.MapPost("", CreateAsync).ValidatesDataAnnotations<CreateQuickReplyRequest>()
             .RequireAuthorization(PermissionPolicies.QuickRepliesManage);
-        quickReplies.MapGet("", ListAsync).RequireAuthorization(PermissionPolicies.QuickRepliesView);
+        quickReplies.MapGet("", ListAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .ValidatesDataAnnotations<QuickReplyListQuery>()
+            .RequireAuthorization(PermissionPolicies.QuickRepliesView);
         quickReplies.MapGet("/{id:guid}", GetAsync).RequireAuthorization(PermissionPolicies.QuickRepliesView);
         quickReplies.MapPut("/{id:guid}", UpdateAsync).ValidatesDataAnnotations<UpdateQuickReplyRequest>()
             .RequireAuthorization(PermissionPolicies.QuickRepliesManage);

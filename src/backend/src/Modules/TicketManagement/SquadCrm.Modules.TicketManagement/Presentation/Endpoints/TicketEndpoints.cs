@@ -22,7 +22,10 @@ internal static class TicketEndpoints
 
         tickets.MapPost("", CreateTicketAsync).ValidatesDataAnnotations<CreateTicketRequest>()
             .RequireAuthorization(PermissionPolicies.TicketsCreate);
-        tickets.MapGet("", ListTicketsAsync).RequireAuthorization(PermissionPolicies.TicketsView);
+        tickets.MapGet("", ListTicketsAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .ValidatesDataAnnotations<TicketListQuery>()
+            .RequireAuthorization(PermissionPolicies.TicketsView);
         tickets.MapGet("/{id:guid}", GetTicketAsync).RequireAuthorization(PermissionPolicies.TicketsView);
 
         // Read-only sub-resource of a ticket, so it reuses "tickets.view"
