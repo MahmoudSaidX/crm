@@ -23,7 +23,9 @@ internal static class BranchManagementEndpoints
 
         branches.MapPost("", CreateAsync).ValidatesDataAnnotations<CreateBranchRequest>()
             .RequireAuthorization(PermissionPolicies.BranchesManage);
-        branches.MapGet("", ListAsync).RequireAuthorization(PermissionPolicies.BranchesView);
+        branches.MapGet("", ListAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .RequireAuthorization(PermissionPolicies.BranchesView);
         branches.MapGet("/{id:guid}", GetAsync).RequireAuthorization(PermissionPolicies.BranchesView);
         branches.MapPut("/{id:guid}", UpdateAsync).ValidatesDataAnnotations<UpdateBranchRequest>()
             .RequireAuthorization(PermissionPolicies.BranchesManage);

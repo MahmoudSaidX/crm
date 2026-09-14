@@ -24,12 +24,21 @@ public enum SortDirection
 /// <see cref="SquadCrm.BuildingBlocks.Http.PaginationRequest"/>.
 /// </summary>
 public sealed record CustomerListQuery(
-    string? Search = null,
-    Guid[]? DepartmentIds = null,
-    Guid[]? BranchIds = null,
-    CustomerStatus[]? Status = null,
+    [property: MaxLength(200)] string? Search = null,
+    [property: MaxLength(CustomerListQuery.MaxFilterValues)] Guid[]? DepartmentIds = null,
+    [property: MaxLength(CustomerListQuery.MaxFilterValues)] Guid[]? BranchIds = null,
+    [property: MaxLength(CustomerListQuery.MaxFilterValues)] CustomerStatus[]? Status = null,
     CustomerSortBy SortBy = CustomerSortBy.CustomerNumber,
-    SortDirection SortDirection = SortDirection.Asc);
+    SortDirection SortDirection = SortDirection.Asc)
+{
+    /// <summary>
+    /// Cardinality ceiling for every multi-value filter. Each value becomes a
+    /// term in a generated <c>IN</c> list, so an unbounded array lets one
+    /// request build an arbitrarily large query plan. Well above any real
+    /// selection the UI can produce.
+    /// </summary>
+    public const int MaxFilterValues = 50;
+}
 
 public sealed record CreateCustomerRequest(
     [property: Required, MaxLength(200)] string FirstName,

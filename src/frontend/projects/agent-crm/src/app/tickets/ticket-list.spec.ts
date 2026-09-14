@@ -1,5 +1,7 @@
-import { provideRouter } from '@angular/router';
-import { TestBed } from '@angular/core/testing';
+import { Params, provideRouter, Router } from '@angular/router';
+import { Location } from '@angular/common';
+import { provideLocationMocks } from '@angular/common/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TicketList } from './ticket-list';
 import { TicketsService } from './tickets.service';
 import { TicketCategoriesService } from '../ticket-categories/ticket-categories.service';
@@ -16,6 +18,8 @@ import { COMMON_TRANSLATIONS } from '@squad-crm/shared-ui';
 import { TICKET_TRANSLATIONS } from './ticket-translations';
 
 describe('TicketList', () => {
+  const CATEGORY_ID = '2f1a4c9e-7b3d-4a6f-8e12-0b9d5c3a7e41';
+
   const ticketA = {
     id: 'ticket-a',
     ticketNumber: 'TKT-AAA111',
@@ -52,13 +56,37 @@ describe('TicketList', () => {
 
   let ticketsService: jasmine.SpyObj<TicketsService>;
 
+  let router: Router;
+  let location: Location;
+
+  const lastCall = () => ticketsService.list.calls.mostRecent().args;
+
+  async function openAt(queryParams: Params): Promise<ComponentFixture<TicketList>> {
+    await router.navigate([], { queryParams });
+    const fixture = TestBed.createComponent(TicketList);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    return fixture;
+  }
+
+  async function settle(fixture: ComponentFixture<TicketList>): Promise<void> {
+    await fixture.whenStable();
+    // A history navigation (Back/Forward) completes on a macrotask, which
+    // whenStable alone does not await.
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+    await fixture.whenStable();
+  }
+
   beforeEach(() => {
     ticketsService = jasmine.createSpyObj<TicketsService>('TicketsService', ['list']);
     ticketsService.list.and.resolveTo({
       items: [ticketA, ticketB],
       page: 1,
       pageSize: 20,
-      totalCount: 2,
+      // Spans several pages: a single-page total makes the paginator clamp an
+      // out-of-range page back to 1, which would mask the paging assertions.
+      totalCount: 42,
     });
     const ticketCategoriesService = jasmine.createSpyObj<TicketCategoriesService>(
       'TicketCategoriesService',
@@ -90,6 +118,7 @@ describe('TicketList', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        provideLocationMocks(),
         provideAppConfig(),
         provideTranslations(COMMON_TRANSLATIONS),
         provideTranslations(TICKET_TRANSLATIONS),
@@ -108,62 +137,102 @@ describe('TicketList', () => {
         appSurface: 'agent-crm',
       }),
     );
+    router = TestBed.inject(Router);
+    // No app bootstrap happens in a TestBed component test, so the router is
+    // not listening to history events by default — without this, Back/Forward
+    // would change the URL and navigate nothing.
+    router.setUpLocationChangeListener();
+    location = TestBed.inject(Location);
   });
 
   it('loads page 1 on init', async () => {
-    const fixture = TestBed.createComponent(TicketList);
-    await fixture.componentInstance.load();
-    fixture.detectChanges();
+    const fixture = await openAt({});
 
     expect(fixture.componentInstance.tickets().length).toBe(2);
-    expect(ticketsService.list).toHaveBeenCalledWith(
-      {
-        search: undefined,
-        categoryIds: undefined,
-        priorityIds: undefined,
-        departmentIds: undefined,
-        branchIds: undefined,
-        channels: undefined,
-      },
-      1,
-      20,
-    );
+    const [query, page, pageSize] = lastCall();
+    expect(page).toBe(1);
+    expect(pageSize).toBe(20);
+    expect(query.search).toBeUndefined();
   });
 
   it('resets to page 1 and reloads when a filter changes', async () => {
-    const fixture = TestBed.createComponent(TicketList);
+    const fixture = await openAt({ page: '3' });
     fixture.componentInstance.search.set('billing');
 
     fixture.componentInstance.onFilter();
-    await fixture.whenStable();
+    await settle(fixture);
 
-    expect(ticketsService.list).toHaveBeenCalledWith(
-      {
-        search: 'billing',
-        categoryIds: undefined,
-        priorityIds: undefined,
-        departmentIds: undefined,
-        branchIds: undefined,
-        channels: undefined,
-      },
-      1,
-      20,
-    );
+    expect(location.path()).toContain('search=billing');
+    const [query, page] = lastCall();
+    expect(query.search).toBe('billing');
+    expect(page).toBe(1);
+  });
+
+  it('keeps every filter in the URL and forwards them as the API arrays', async () => {
+    await openAt({ search: 'billing', channel: 'Email', categoryId: CATEGORY_ID });
+
+    const [query] = lastCall();
+    expect(query.search).toBe('billing');
+    expect(query.channels).toEqual(['Email']);
+    expect(query.categoryIds).toEqual([CATEGORY_ID]);
+  });
+
+  it('preserves filters when paging', async () => {
+    const fixture = await openAt({ search: 'billing', channel: 'Email' });
+
+    fixture.componentInstance.onPage({ first: 20, rows: 20 });
+    await settle(fixture);
+
+    const [query, page] = lastCall();
+    expect(page).toBe(2);
+    expect(query.search).toBe('billing');
+    expect(query.channels).toEqual(['Email']);
+  });
+
+  it('ignores an unknown channel and an unknown sort field from the URL', async () => {
+    await openAt({ channel: 'Telepathy', sort: 'ticket_number;--', dir: 'up' });
+
+    const [query] = lastCall();
+    expect(query.channels).toBeUndefined();
+    expect(query.sortBy).toBe('TicketNumber');
+    expect(query.sortDirection).toBe('Asc');
+  });
+
+  it('restores state on Back', async () => {
+    const fixture = await openAt({ search: 'billing' });
+    fixture.componentInstance.onPage({ first: 20, rows: 20 });
+    await settle(fixture);
+    expect(lastCall()[1]).toBe(2);
+
+    location.back();
+    await settle(fixture);
+
+    expect(lastCall()[1]).toBe(1);
+    expect(fixture.componentInstance.search()).toBe('billing');
   });
 
   it('renders zero results as an empty ticket list', async () => {
     ticketsService.list.and.resolveTo({ items: [], page: 1, pageSize: 20, totalCount: 0 });
-    const fixture = TestBed.createComponent(TicketList);
-    await fixture.componentInstance.load();
-    fixture.detectChanges();
+    const fixture = await openAt({});
 
     expect(fixture.componentInstance.tickets().length).toBe(0);
     expect(fixture.componentInstance.totalRecords()).toBe(0);
   });
 
   it('toggles loading around the service call', async () => {
-    const fixture = TestBed.createComponent(TicketList);
-    const loadPromise = fixture.componentInstance.load();
+    const fixture = await openAt({});
+    const loadPromise = fixture.componentInstance.load({
+      page: 1,
+      pageSize: 20,
+      search: '',
+      categoryId: null,
+      priorityId: null,
+      departmentId: null,
+      branchId: null,
+      channel: null,
+      sort: 'TicketNumber',
+      dir: 'Asc',
+    });
     expect(fixture.componentInstance.loading()).toBe(true);
 
     await loadPromise;

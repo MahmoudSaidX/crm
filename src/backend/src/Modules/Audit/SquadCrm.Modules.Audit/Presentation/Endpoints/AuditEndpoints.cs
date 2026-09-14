@@ -1,3 +1,4 @@
+using SquadCrm.BuildingBlocks.Validation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -5,6 +6,7 @@ using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.Modules.Audit.Application.Services;
 using SquadCrm.Modules.Audit.Domain.Entities;
 
+using SquadCrm.Modules.Audit.Presentation.Requests;
 using SquadCrm.Modules.Audit.Presentation.Responses;
 
 namespace SquadCrm.Modules.Audit.Presentation.Endpoints;
@@ -26,22 +28,21 @@ internal static class AuditEndpoints
     {
         RouteGroupBuilder auditRecords = endpoints.MapGroup("/api/v1/audit-records").WithTags("Audit");
 
-        auditRecords.MapGet("", ListAsync).RequireAuthorization(AuditViewPolicy);
+        auditRecords.MapGet("", ListAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .ValidatesDataAnnotations<AuditListQuery>()
+            .RequireAuthorization(AuditViewPolicy);
         auditRecords.MapGet("/{id:long}", GetAsync).RequireAuthorization(AuditViewPolicy);
     }
 
     private static async Task<IResult> ListAsync(
         [AsParameters] PaginationRequest pagination,
-        string? entityType,
-        string? action,
-        string? actorHandle,
-        DateTimeOffset? from,
-        DateTimeOffset? to,
+        [AsParameters] AuditListQuery query,
         AuditQueryService queryService,
         CancellationToken cancellationToken)
     {
         PagedResult<AuditRecord> page = await queryService.ListAsync(
-            pagination, entityType, action, actorHandle, from, to, cancellationToken);
+            pagination, query.EntityType, query.Action, query.ActorHandle, query.From, query.To, cancellationToken);
         return Results.Ok(new PagedResult<AuditRecordResponse>(
             page.Items.Select(ToResponse).ToList(), page.Page, page.PageSize, page.TotalCount));
     }

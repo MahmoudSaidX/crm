@@ -46,7 +46,7 @@ public sealed record UpdateQuickReplyRequest(
 /// </para>
 /// </summary>
 public sealed record QuickReplyListQuery(
-    string? Search = null,
+    [property: MaxLength(200)] string? Search = null,
     QuickReplyScope? Scope = null,
 
     /// <summary>

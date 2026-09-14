@@ -23,7 +23,9 @@ internal static class DepartmentManagementEndpoints
 
         departments.MapPost("", CreateAsync).ValidatesDataAnnotations<CreateDepartmentRequest>()
             .RequireAuthorization(PermissionPolicies.DepartmentsManage);
-        departments.MapGet("", ListAsync).RequireAuthorization(PermissionPolicies.DepartmentsView);
+        departments.MapGet("", ListAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .RequireAuthorization(PermissionPolicies.DepartmentsView);
         departments.MapGet("/{id:guid}", GetAsync).RequireAuthorization(PermissionPolicies.DepartmentsView);
         departments.MapPut("/{id:guid}", UpdateAsync).ValidatesDataAnnotations<UpdateDepartmentRequest>()
             .RequireAuthorization(PermissionPolicies.DepartmentsManage);

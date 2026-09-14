@@ -1,5 +1,6 @@
-import { provideRouter } from '@angular/router';
-import { TestBed } from '@angular/core/testing';
+import { Params, provideRouter, Router } from '@angular/router';
+import { provideLocationMocks } from '@angular/common/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TaskList } from './task-list';
 import { TasksService } from './tasks.service';
 import {
@@ -12,6 +13,8 @@ import { COMMON_TRANSLATIONS } from '@squad-crm/shared-ui';
 import { TASK_TRANSLATIONS } from './task-translations';
 
 describe('TaskList', () => {
+  let router: Router;
+
   const taskA = {
     id: 'task-a',
     title: 'Call customer back',
@@ -45,12 +48,15 @@ describe('TaskList', () => {
       items: [taskA, taskB],
       page: 1,
       pageSize: 20,
-      totalCount: 2,
+      // Spans several pages: a single-page total makes the paginator clamp an
+      // out-of-range page back to 1, which would mask the paging assertions.
+      totalCount: 42,
     });
 
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        provideLocationMocks(),
         provideAppConfig(),
         provideTranslations(COMMON_TRANSLATIONS),
         provideTranslations(TASK_TRANSLATIONS),
@@ -65,12 +71,32 @@ describe('TaskList', () => {
         appSurface: 'agent-crm',
       }),
     );
+    router = TestBed.inject(Router);
+    // No app bootstrap happens in a TestBed component test, so the router is
+    // not listening to history events by default — without this, Back/Forward
+    // would change the URL and navigate nothing.
+    router.setUpLocationChangeListener();
   });
 
-  it('loads page 1 on init', async () => {
+  async function openAt(queryParams: Params): Promise<ComponentFixture<TaskList>> {
+    await router.navigate([], { queryParams });
     const fixture = TestBed.createComponent(TaskList);
-    await fixture.componentInstance.load();
     fixture.detectChanges();
+    await fixture.whenStable();
+    return fixture;
+  }
+
+  async function settle(fixture: ComponentFixture<TaskList>): Promise<void> {
+    await fixture.whenStable();
+    // A history navigation (Back/Forward) completes on a macrotask, which
+    // whenStable alone does not await.
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+    await fixture.whenStable();
+  }
+
+  it('loads page 1 on init', async () => {
+    const fixture = await openAt({});
 
     expect(fixture.componentInstance.tasks().length).toBe(2);
     expect(tasksService.list).toHaveBeenCalledWith(
@@ -81,12 +107,12 @@ describe('TaskList', () => {
   });
 
   it('resets to page 1 and reloads when a filter changes', async () => {
-    const fixture = TestBed.createComponent(TaskList);
+    const fixture = await openAt({ page: '3' });
     fixture.componentInstance.search.set('invoice');
     fixture.componentInstance.status.set('Completed');
 
     fixture.componentInstance.onFilter();
-    await fixture.whenStable();
+    await settle(fixture);
 
     const [query, page] = tasksService.list.calls.mostRecent().args;
     expect(query.search).toBe('invoice');
@@ -94,28 +120,50 @@ describe('TaskList', () => {
     expect(page).toBe(1);
   });
 
-  it('requests the selected page on lazy load', async () => {
-    const fixture = TestBed.createComponent(TaskList);
+  it('requests the selected page when the paginator moves', async () => {
+    const fixture = await openAt({});
 
-    fixture.componentInstance.onLazyLoad({ first: 20, rows: 20 });
-    await fixture.whenStable();
+    fixture.componentInstance.onPage({ first: 20, rows: 20 });
+    await settle(fixture);
 
     expect(tasksService.list.calls.mostRecent().args[1]).toBe(2);
   });
 
+  it('carries the due preset by NAME so a shared link stays meaningful later', async () => {
+    const fixture = await openAt({ due: 'overdue' });
+
+    expect(fixture.componentInstance.dueFilter()).toBe('overdue');
+    const [query] = tasksService.list.calls.mostRecent().args;
+    expect(query.dueBefore).toBeDefined();
+    expect(query.dueAfter).toBeUndefined();
+  });
+
+  it('ignores an unknown status or due preset in the URL', async () => {
+    await openAt({ status: 'Deleted', due: 'someday' });
+
+    const [query] = tasksService.list.calls.mostRecent().args;
+    expect(query.statuses).toBeUndefined();
+    expect(query.dueBefore).toBeUndefined();
+    expect(query.dueAfter).toBeUndefined();
+  });
+
   it('renders zero results as an empty task list', async () => {
     tasksService.list.and.resolveTo({ items: [], page: 1, pageSize: 20, totalCount: 0 });
-    const fixture = TestBed.createComponent(TaskList);
-    await fixture.componentInstance.load();
-    fixture.detectChanges();
+    const fixture = await openAt({});
 
     expect(fixture.componentInstance.tasks().length).toBe(0);
     expect(fixture.componentInstance.totalRecords()).toBe(0);
   });
 
   it('toggles loading around the service call', async () => {
-    const fixture = TestBed.createComponent(TaskList);
-    const loadPromise = fixture.componentInstance.load();
+    const fixture = await openAt({});
+    const loadPromise = fixture.componentInstance.load({
+      page: 1,
+      pageSize: 20,
+      search: '',
+      status: null,
+      due: null,
+    });
     expect(fixture.componentInstance.loading()).toBe(true);
 
     await loadPromise;

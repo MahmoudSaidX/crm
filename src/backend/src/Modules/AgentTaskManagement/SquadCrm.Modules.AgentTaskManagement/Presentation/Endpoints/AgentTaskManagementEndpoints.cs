@@ -23,7 +23,10 @@ internal static class AgentTaskManagementEndpoints
 
         tasks.MapPost("", CreateAsync).ValidatesDataAnnotations<CreateAgentTaskRequest>()
             .RequireAuthorization(PermissionPolicies.TasksCreate);
-        tasks.MapGet("", ListAsync).RequireAuthorization(PermissionPolicies.TasksView);
+        tasks.MapGet("", ListAsync)
+            .ValidatesDataAnnotations<PaginationRequest>()
+            .ValidatesDataAnnotations<AgentTaskListQuery>()
+            .RequireAuthorization(PermissionPolicies.TasksView);
         tasks.MapGet("/{id:guid}", GetAsync).RequireAuthorization(PermissionPolicies.TasksView);
         tasks.MapPut("/{id:guid}", UpdateAsync).ValidatesDataAnnotations<UpdateAgentTaskRequest>()
             .RequireAuthorization(PermissionPolicies.TasksEdit);
