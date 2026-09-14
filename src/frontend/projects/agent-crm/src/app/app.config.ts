@@ -30,6 +30,7 @@ import { TICKET_CATEGORY_TRANSLATIONS } from './ticket-categories/ticket-categor
 import { TICKET_CREATE_TRANSLATIONS } from './ticket-create/ticket-create-translations';
 import { TICKET_PRIORITY_TRANSLATIONS } from './ticket-priorities/ticket-priority-translations';
 import { TICKET_TRANSLATIONS } from './tickets/ticket-translations';
+import { QUICK_REPLY_TRANSLATIONS } from './quick-replies/quick-reply-translations';
 import { TASK_TRANSLATIONS } from './tasks/task-translations';
 import { TASK_CREATE_TRANSLATIONS } from './task-create/task-create-translations';
 
@@ -57,6 +58,7 @@ export const appConfig: ApplicationConfig = {
     provideTranslations(TICKET_PRIORITY_TRANSLATIONS),
     provideTranslations(TICKET_CREATE_TRANSLATIONS),
     provideTranslations(TICKET_TRANSLATIONS),
+    provideTranslations(QUICK_REPLY_TRANSLATIONS),
     provideTranslations(TASK_TRANSLATIONS),
     provideTranslations(TASK_CREATE_TRANSLATIONS),
     providePrimeNgPlatform(),

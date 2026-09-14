@@ -8,6 +8,7 @@ using SquadCrm.Modules.ArchitectureFixture.Contracts;
 using SquadCrm.Modules.AgentTaskManagement;
 using SquadCrm.Modules.Audit;
 using SquadCrm.Modules.Audit.Contracts;
+using SquadCrm.Modules.QuickReplyManagement;
 using SquadCrm.Modules.RoleManagement;
 using SquadCrm.Modules.StaffIdentity;
 using SquadCrm.Modules.StaffIdentity.Bootstrap;
@@ -70,6 +71,8 @@ internal static class SquadCrmAssemblies
 
     public static Assembly AgentTaskManagement { get; } = typeof(AgentTaskManagementModule).Assembly;
 
+    public static Assembly QuickReplyManagement { get; } = typeof(QuickReplyManagementModule).Assembly;
+
     public static Assembly ApiTests { get; } = typeof(SquadCrm.Api.Tests.HealthEndpointTests).Assembly;
 
     public static Assembly UnitTests { get; } = typeof(SquadCrm.UnitTests.DomainEventTests).Assembly;
@@ -92,6 +95,7 @@ internal static class SquadCrmAssemblies
         Audit,
         AuditContracts,
         AgentTaskManagement,
+        QuickReplyManagement,
         ApiTests,
         UnitTests,
         typeof(SquadCrmAssemblies).Assembly,

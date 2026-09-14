@@ -36,6 +36,7 @@
     <ProjectReference Include="..\SquadCrm.UnitTests\SquadCrm.UnitTests.csproj" />
     <ProjectReference Include="..\..\src\BuildingBlocks\SquadCrm.BuildingBlocks.Abstractions\SquadCrm.BuildingBlocks.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Infrastructure\SquadCrm.Infrastructure.FileStorage\SquadCrm.Infrastructure.FileStorage.csproj" />
+    <ProjectReference Include="..\..\src\Modules\QuickReplyManagement\SquadCrm.Modules.QuickReplyManagement\SquadCrm.Modules.QuickReplyManagement.csproj" />
   </ItemGroup>
 
 </Project>

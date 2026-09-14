@@ -42,6 +42,7 @@
          wire representation through the ASP.NET pipeline — service-level
          assertions cannot catch a System.Text.Json enum contract defect. -->
     <ProjectReference Include="..\..\src\Api\SquadCrm.Api\SquadCrm.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\QuickReplyManagement\SquadCrm.Modules.QuickReplyManagement\SquadCrm.Modules.QuickReplyManagement.csproj" />
   </ItemGroup>
 
   <!-- Required only for the in-process API host in CustomerHttpContractTests.cs. -->

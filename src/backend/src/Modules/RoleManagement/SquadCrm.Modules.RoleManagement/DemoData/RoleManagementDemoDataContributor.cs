@@ -58,6 +58,11 @@ public sealed class RoleManagementDemoDataContributor : IDemoDataContributor
                 "tasks.create",
                 "tasks.edit",
                 "tasks.complete",
+                "quickreplies.view",
+                "quickreplies.manage",
+                // A support manager curates the shared template library;
+                // an agent (below) only keeps personal ones.
+                "quickreplies.manageglobal",
             ]),
         new(
             "support-agent",
@@ -83,6 +88,8 @@ public sealed class RoleManagementDemoDataContributor : IDemoDataContributor
                 "tasks.create",
                 "tasks.edit",
                 "tasks.complete",
+                "quickreplies.view",
+                "quickreplies.manage",
             ]),
         new(
             "read-only",
@@ -97,6 +104,7 @@ public sealed class RoleManagementDemoDataContributor : IDemoDataContributor
                 "departments.view",
                 "branches.view",
                 "tasks.view",
+                "quickreplies.view",
             ]),
     ];
 

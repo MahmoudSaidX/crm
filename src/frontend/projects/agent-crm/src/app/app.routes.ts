@@ -53,6 +53,24 @@ export const routes: Routes = [
         loadComponent: () => import('./departments/department-form').then((m) => m.DepartmentForm),
       },
       {
+        path: 'quick-replies',
+        canActivate: [requirePermission('quickreplies.view')],
+        loadComponent: () =>
+          import('./quick-replies/quick-reply-list').then((m) => m.QuickReplyList),
+      },
+      {
+        path: 'quick-replies/new',
+        canActivate: [requirePermission('quickreplies.manage')],
+        loadComponent: () =>
+          import('./quick-replies/quick-reply-form').then((m) => m.QuickReplyForm),
+      },
+      {
+        path: 'quick-replies/:id/edit',
+        canActivate: [requirePermission('quickreplies.manage')],
+        loadComponent: () =>
+          import('./quick-replies/quick-reply-form').then((m) => m.QuickReplyForm),
+      },
+      {
         path: 'ticket-categories',
         canActivate: [requirePermission('ticketcategories.view')],
         loadComponent: () =>

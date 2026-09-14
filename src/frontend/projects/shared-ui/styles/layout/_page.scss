@@ -90,6 +90,13 @@
     color: var(--text-color-secondary);
     font-weight: 400;
   }
+
+  // Explanatory text under a control (e.g. "scope cannot be changed later"),
+  // as opposed to .field-optional which annotates the label itself.
+  .field-hint {
+    color: var(--text-color-secondary);
+    font-weight: 400;
+  }
 }
 
 .sc-form-card {
