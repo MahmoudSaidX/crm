@@ -13,3 +13,15 @@ public sealed record QuickReplyResponse(
     bool IsActive,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset UpdatedAtUtc);
+
+/// <summary>
+/// The allow-listed variables (<c>{{CustomerName}}</c>, <c>{{TicketNumber}}</c>,
+/// <c>{{AgentName}}</c>) substituted where resolvable. A name in
+/// <paramref name="UnresolvedVariables"/> was left as its literal
+/// <c>{{Token}}</c> text in the content above — never blanked, never
+/// silently dropped (CRM-146 AC: "surfaced safely").
+/// </summary>
+public sealed record ResolvedQuickReplyResponse(
+    string? ArabicContent,
+    string? EnglishContent,
+    IReadOnlyList<string> UnresolvedVariables);

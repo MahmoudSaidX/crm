@@ -2,11 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
+using SquadCrm.Modules.CustomerManagement.Contracts;
 using SquadCrm.Modules.QuickReplyManagement.Application.Services;
 using SquadCrm.Modules.QuickReplyManagement.Domain.Entities;
 using SquadCrm.Modules.QuickReplyManagement.Infrastructure.Authorization;
 using SquadCrm.Modules.QuickReplyManagement.Infrastructure.Persistence;
 using SquadCrm.Modules.QuickReplyManagement.Presentation.Requests;
+using SquadCrm.Modules.StaffIdentity.Contracts;
+using SquadCrm.Modules.TicketManagement.Contracts;
 
 namespace SquadCrm.Persistence.IntegrationTests;
 
@@ -260,7 +263,14 @@ public sealed class QuickReplyManagementTests
 
         await using QuickReplyManagementDbContext context = CreateContext();
         QuickReplyService service = new(
-            context, new StubCurrentUserAccessor("not-a-guid"), new StubGlobalAuthorizer(false), new RecordingAuditRecorder());
+            context,
+            new StubCurrentUserAccessor("not-a-guid"),
+            new StubGlobalAuthorizer(false),
+            new RecordingAuditRecorder(),
+            new StubStaffSubjectReferenceReader(),
+            new StubTicketAccessAuthorizer(false),
+            new StubTicketReferenceReader(),
+            new StubCustomerNameReader());
 
         PagedResult<QuickReply> page = await service.ListAsync(
             new QuickReplyListQuery(), new PaginationRequest(1, 50), CancellationToken.None);
@@ -312,6 +322,115 @@ public sealed class QuickReplyManagementTests
         Assert.Equal(QuickReplyMutationFailure.NotFound, (await service.DeactivateAsync(unknown, CancellationToken.None)).Failure);
     }
 
+    [Fact]
+    public async Task Resolve_WithTicketContext_SubstitutesAllThreeVariables()
+    {
+        await using QuickReplyManagementDbContext context = CreateContext();
+        Guid ticketId = Guid.NewGuid();
+        Guid customerId = Guid.NewGuid();
+        QuickReplyService createService = CreateService(context, new RecordingAuditRecorder(), OwnerId, false);
+        QuickReplyMutationResult created = await createService.CreateAsync(
+            new CreateQuickReplyRequest(
+                UniqueName(), null, "Hi {{CustomerName}}, ticket {{TicketNumber}} — {{AgentName}}",
+                QuickReplyScope.Personal),
+            CancellationToken.None);
+        Assert.Equal(QuickReplyMutationFailure.None, created.Failure);
+
+        QuickReplyService resolveService = CreateService(
+            context, new RecordingAuditRecorder(), OwnerId, false,
+            ticketAccessAuthorizer: new StubTicketAccessAuthorizer(true),
+            ticketReferenceReader: new StubTicketReferenceReader(new TicketReference("TCK-1001", customerId)),
+            customerNameReader: new StubCustomerNameReader(new CustomerName("Jane", "Doe")));
+
+        QuickReplyResolutionResult resolved =
+            await resolveService.ResolveAsync(created.QuickReply!.Id, ticketId, CancellationToken.None);
+
+        Assert.Equal(QuickReplyMutationFailure.None, resolved.Failure);
+        Assert.Equal("Hi Jane Doe, ticket TCK-1001 — Test Agent", resolved.Resolved!.EnglishContent);
+        Assert.Empty(resolved.Resolved.UnresolvedVariables);
+    }
+
+    [Fact]
+    public async Task Resolve_WithoutTicketId_LeavesTicketScopedTokensLiteral_AndReportsThemUnresolved()
+    {
+        await using QuickReplyManagementDbContext context = CreateContext();
+        QuickReplyService createService = CreateService(context, new RecordingAuditRecorder(), OwnerId, false);
+        QuickReplyMutationResult created = await createService.CreateAsync(
+            new CreateQuickReplyRequest(
+                UniqueName(), null, "Hi {{CustomerName}}, from {{AgentName}}", QuickReplyScope.Personal),
+            CancellationToken.None);
+
+        QuickReplyResolutionResult resolved = await CreateService(context, new RecordingAuditRecorder(), OwnerId, false)
+            .ResolveAsync(created.QuickReply!.Id, ticketId: null, CancellationToken.None);
+
+        Assert.Equal(QuickReplyMutationFailure.None, resolved.Failure);
+        Assert.Equal("Hi {{CustomerName}}, from Test Agent", resolved.Resolved!.EnglishContent);
+        Assert.Contains("CustomerName", resolved.Resolved.UnresolvedVariables);
+    }
+
+    [Fact]
+    public async Task Resolve_WhenCallerCannotViewTickets_LeavesTicketScopedTokensUnresolved_RatherThanForbidden()
+    {
+        await using QuickReplyManagementDbContext context = CreateContext();
+        QuickReplyService createService = CreateService(context, new RecordingAuditRecorder(), OwnerId, false);
+        QuickReplyMutationResult created = await createService.CreateAsync(
+            new CreateQuickReplyRequest(UniqueName(), null, "Ticket {{TicketNumber}}", QuickReplyScope.Personal),
+            CancellationToken.None);
+
+        QuickReplyResolutionResult resolved = await CreateService(
+                context, new RecordingAuditRecorder(), OwnerId, false,
+                ticketAccessAuthorizer: new StubTicketAccessAuthorizer(false))
+            .ResolveAsync(created.QuickReply!.Id, Guid.NewGuid(), CancellationToken.None);
+
+        Assert.Equal(QuickReplyMutationFailure.None, resolved.Failure);
+        Assert.Equal("Ticket {{TicketNumber}}", resolved.Resolved!.EnglishContent);
+        Assert.Contains("TicketNumber", resolved.Resolved.UnresolvedVariables);
+    }
+
+    [Fact]
+    public async Task Resolve_UnsupportedToken_PassesThroughLiteral_AndIsReportedUnresolved()
+    {
+        await using QuickReplyManagementDbContext context = CreateContext();
+        QuickReplyService createService = CreateService(context, new RecordingAuditRecorder(), OwnerId, false);
+        QuickReplyMutationResult created = await createService.CreateAsync(
+            new CreateQuickReplyRequest(UniqueName(), null, "{{SomethingElse}}", QuickReplyScope.Personal),
+            CancellationToken.None);
+
+        QuickReplyResolutionResult resolved = await CreateService(context, new RecordingAuditRecorder(), OwnerId, false)
+            .ResolveAsync(created.QuickReply!.Id, ticketId: null, CancellationToken.None);
+
+        Assert.Equal(QuickReplyMutationFailure.None, resolved.Failure);
+        Assert.Equal("{{SomethingElse}}", resolved.Resolved!.EnglishContent);
+        Assert.Contains("SomethingElse", resolved.Resolved.UnresolvedVariables);
+    }
+
+    [Fact]
+    public async Task Resolve_InactiveTemplate_ReturnsNotFound()
+    {
+        await using QuickReplyManagementDbContext context = CreateContext();
+        QuickReplyService service = CreateService(context, new RecordingAuditRecorder(), OwnerId, false);
+        QuickReplyMutationResult created = await service.CreateAsync(
+            new CreateQuickReplyRequest(UniqueName(), null, "Hi", QuickReplyScope.Personal), CancellationToken.None);
+        await service.DeactivateAsync(created.QuickReply!.Id, CancellationToken.None);
+
+        QuickReplyResolutionResult resolved =
+            await service.ResolveAsync(created.QuickReply.Id, null, CancellationToken.None);
+
+        Assert.Equal(QuickReplyMutationFailure.NotFound, resolved.Failure);
+    }
+
+    [Fact]
+    public async Task Resolve_AnotherUsersPersonalTemplate_ReturnsNotFound_NeverExposesContent()
+    {
+        await using QuickReplyManagementDbContext context = CreateContext();
+        QuickReply theirs = await CreatePersonalAsync(context, OwnerId);
+
+        QuickReplyResolutionResult resolved = await CreateService(context, new RecordingAuditRecorder(), OtherUserId, false)
+            .ResolveAsync(theirs.Id, null, CancellationToken.None);
+
+        Assert.Equal(QuickReplyMutationFailure.NotFound, resolved.Failure);
+    }
+
     private static async Task<QuickReply> CreatePersonalAsync(QuickReplyManagementDbContext context, Guid ownerId)
     {
         QuickReplyMutationResult result = await CreateService(context, new RecordingAuditRecorder(), ownerId, false)
@@ -329,11 +448,19 @@ public sealed class QuickReplyManagementTests
         QuickReplyManagementDbContext context,
         IAuditRecorder auditRecorder,
         Guid callerId,
-        bool canManageGlobal) =>
+        bool canManageGlobal,
+        IStaffSubjectReferenceReader? staffSubjectReferenceReader = null,
+        ITicketAccessAuthorizer? ticketAccessAuthorizer = null,
+        ITicketReferenceReader? ticketReferenceReader = null,
+        ICustomerNameReader? customerNameReader = null) =>
         new(context,
             new StubCurrentUserAccessor(callerId.ToString()),
             new StubGlobalAuthorizer(canManageGlobal),
-            auditRecorder);
+            auditRecorder,
+            staffSubjectReferenceReader ?? new StubStaffSubjectReferenceReader(),
+            ticketAccessAuthorizer ?? new StubTicketAccessAuthorizer(false),
+            ticketReferenceReader ?? new StubTicketReferenceReader(),
+            customerNameReader ?? new StubCustomerNameReader());
 
     private static string UniqueName() => $"QR {Guid.NewGuid():N}"[..20];
 
@@ -358,6 +485,35 @@ public sealed class QuickReplyManagementTests
             Requests.Add(request);
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class StubStaffSubjectReferenceReader(string? displayName = "Test Agent") : IStaffSubjectReferenceReader
+    {
+        public Task<StaffSubjectReference?> FindByNormalizedEmailAsync(
+            string normalizedEmail, CancellationToken cancellationToken) =>
+            Task.FromResult<StaffSubjectReference?>(
+                new StaffSubjectReference(Guid.NewGuid(), true, displayName, normalizedEmail));
+
+        public Task<StaffSubjectReference?> FindByIdAsync(Guid id, CancellationToken cancellationToken) =>
+            Task.FromResult<StaffSubjectReference?>(
+                new StaffSubjectReference(id, true, displayName, "agent@example.com"));
+    }
+
+    private sealed class StubTicketAccessAuthorizer(bool canViewTickets) : ITicketAccessAuthorizer
+    {
+        public Task<bool> CanViewTicketsAsync(CancellationToken cancellationToken) => Task.FromResult(canViewTickets);
+    }
+
+    private sealed class StubTicketReferenceReader(TicketReference? reference = null) : ITicketReferenceReader
+    {
+        public Task<TicketReference?> GetAsync(Guid ticketId, CancellationToken cancellationToken) =>
+            Task.FromResult(reference);
+    }
+
+    private sealed class StubCustomerNameReader(CustomerName? name = null) : ICustomerNameReader
+    {
+        public Task<CustomerName?> GetAsync(Guid customerId, CancellationToken cancellationToken) =>
+            Task.FromResult(name);
     }
 }
 

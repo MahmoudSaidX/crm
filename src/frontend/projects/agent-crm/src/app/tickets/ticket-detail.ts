@@ -1,7 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
@@ -27,6 +33,7 @@ import {
 } from '../customers/customers.service';
 import { DepartmentsService } from '../departments/departments.service';
 import { BranchesService } from '../branches/branches.service';
+import { QuickRepliesService } from '../quick-replies/quick-replies.service';
 import { LocalizationService, TranslationKey } from '@squad-crm/platform';
 import { DetailGrid, PageContainer, PageHeader, StatePanel } from '@squad-crm/shared-ui';
 import { CardModule } from 'primeng/card';
@@ -90,6 +97,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
     RouterLink,
     DatePipe,
     ReactiveFormsModule,
+    FormsModule,
     ButtonModule,
     MessageModule,
     SelectModule,
@@ -114,6 +122,7 @@ export class TicketDetail {
   private readonly departmentsService = inject(DepartmentsService);
   private readonly branchesService = inject(BranchesService);
   private readonly staffUsersService = inject(StaffUsersService);
+  private readonly quickRepliesService = inject(QuickRepliesService);
   private readonly route = inject(ActivatedRoute);
   protected readonly localization = inject(LocalizationService);
   protected readonly authorization = inject(AuthorizationState);
@@ -274,6 +283,17 @@ export class TicketDetail {
     }),
     mentionedUserIds: new FormControl<string[]>([], { nonNullable: true }),
   });
+
+  /**
+   * Quick-reply insertion (CRM-146): a transient picker over the note body,
+   * not part of `noteForm` — nothing here is submitted on its own, and
+   * "Add note" remains the only action that sends anything.
+   */
+  readonly quickReplyOptions = signal<{ readonly label: string; readonly value: string }[]>([]);
+  readonly quickReplyOptionsUnavailable = signal(false);
+  readonly selectedQuickReplyId = signal('');
+  readonly insertingQuickReply = signal(false);
+  readonly quickReplyWarningKey = signal<TranslationKey | null>(null);
 
   readonly watcherForm = new FormGroup({
     userId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
@@ -593,8 +613,10 @@ export class TicketDetail {
   async startAddNote(): Promise<void> {
     this.noteErrorKey.set(null);
     this.noteForm.reset({ body: '', mentionedUserIds: [] });
+    this.selectedQuickReplyId.set('');
+    this.quickReplyWarningKey.set(null);
     this.addingNote.set(true);
-    await this.loadAgentOptions();
+    await Promise.all([this.loadAgentOptions(), this.loadQuickReplyOptions()]);
   }
 
   onNoteDialogVisibleChange(visible: boolean): void {
@@ -606,6 +628,61 @@ export class TicketDetail {
   cancelAddNote(): void {
     this.addingNote.set(false);
     this.noteErrorKey.set(null);
+    this.selectedQuickReplyId.set('');
+    this.quickReplyWarningKey.set(null);
+  }
+
+  onQuickReplySelected(id: string): void {
+    this.selectedQuickReplyId.set(id);
+  }
+
+  /**
+   * Resolves the selected template and inserts it as editable text into the
+   * note body — never sends anything by itself (AC). A variable that could
+   * not be resolved is left as its literal `{{Token}}` text by the backend
+   * and surfaced here as a warning, so the agent notices before submitting.
+   */
+  async insertQuickReply(): Promise<void> {
+    const ticket = this.ticket();
+    const quickReplyId = this.selectedQuickReplyId();
+    if (!ticket || !quickReplyId) {
+      return;
+    }
+
+    this.insertingQuickReply.set(true);
+    this.quickReplyWarningKey.set(null);
+    try {
+      const resolved = await this.quickRepliesService.resolve(quickReplyId, ticket.id);
+      const content =
+        (this.localization.locale() === 'ar' ? resolved.arabicContent : resolved.englishContent) ??
+        resolved.englishContent ??
+        resolved.arabicContent ??
+        '';
+      const currentBody = this.noteForm.controls.body.value;
+      this.noteForm.controls.body.setValue(
+        currentBody.length > 0 ? `${currentBody}\n${content}` : content,
+      );
+      if (resolved.unresolvedVariables.length > 0) {
+        this.quickReplyWarningKey.set('tickets.notes.quickReply.unresolvedWarning');
+      }
+    } catch {
+      this.quickReplyWarningKey.set('tickets.notes.quickReply.errors.resolveFailed');
+    } finally {
+      this.insertingQuickReply.set(false);
+    }
+  }
+
+  private async loadQuickReplyOptions(): Promise<void> {
+    try {
+      const page = await this.quickRepliesService.list(1, 100, true);
+      this.quickReplyOptions.set(
+        page.items.map((quickReply) => ({ label: quickReply.name, value: quickReply.id })),
+      );
+      this.quickReplyOptionsUnavailable.set(false);
+    } catch {
+      this.quickReplyOptions.set([]);
+      this.quickReplyOptionsUnavailable.set(true);
+    }
   }
 
   async submitNote(): Promise<void> {

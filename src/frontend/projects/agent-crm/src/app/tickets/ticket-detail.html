@@ -592,6 +592,40 @@
       [header]="localization.translate('tickets.notes.dialogTitle')"
     >
       <form class="sc-form" [formGroup]="noteForm" (ngSubmit)="submitNote()">
+        <label for="noteQuickReply">
+          {{ localization.translate('tickets.notes.quickReply.label') }}
+        </label>
+        @if (quickReplyOptionsUnavailable()) {
+          <p-message
+            severity="warn"
+            [text]="localization.translate('tickets.notes.quickReply.unavailable')"
+          />
+        } @else {
+          <div class="ticket-quick-reply-picker">
+            <p-select
+              id="noteQuickReply"
+              [options]="quickReplyOptions()"
+              [ngModel]="selectedQuickReplyId()"
+              (ngModelChange)="onQuickReplySelected($event)"
+              [ngModelOptions]="{ standalone: true }"
+              optionLabel="label"
+              optionValue="value"
+              [filter]="true"
+              [placeholder]="localization.translate('tickets.notes.quickReply.placeholder')"
+            />
+            <p-button
+              type="button"
+              [label]="localization.translate('tickets.notes.quickReply.insert')"
+              severity="secondary"
+              [disabled]="!selectedQuickReplyId() || insertingQuickReply()"
+              (onClick)="insertQuickReply()"
+            />
+          </div>
+        }
+        @if (quickReplyWarningKey(); as warningKey) {
+          <p-message severity="warn" [text]="localization.translate(warningKey)" />
+        }
+
         <label for="noteBody">{{ localization.translate('tickets.notes.fields.body') }}</label>
         <textarea pTextarea id="noteBody" formControlName="body" rows="5"></textarea>
 

@@ -55,3 +55,11 @@ public sealed record QuickReplyListQuery(
     /// remaining readable here for management and history.
     /// </summary>
     bool ActiveOnly = false);
+
+/// <summary>
+/// <paramref name="TicketId"/> is optional: omitting it (or the caller
+/// lacking <c>tickets.view</c>) simply leaves the ticket-scoped variables
+/// (<c>TicketNumber</c>, <c>CustomerName</c>) unresolved rather than failing
+/// the whole call (CRM-146).
+/// </summary>
+public sealed record ResolveQuickReplyRequest(Guid? TicketId);

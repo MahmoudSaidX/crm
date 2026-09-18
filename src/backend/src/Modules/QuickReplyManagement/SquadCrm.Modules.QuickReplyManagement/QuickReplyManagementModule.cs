@@ -29,10 +29,14 @@ public sealed class QuickReplyManagementModule : IModule
                     QuickReplyManagementSchema.Name)));
         services.AddScoped<QuickReplyService>();
         services.AddScoped<IGlobalQuickReplyAuthorizer, GlobalQuickReplyAuthorizer>();
+        services.AddScoped<ITicketAccessAuthorizer, TicketAccessAuthorizer>();
 
-        // ICurrentUserAccessor is already registered by StaffIdentityModule and
-        // IAuditRecorder by AuditModule; DI resolves those same registrations.
-        // IHttpContextAccessor is registered by the host (Program.cs).
+        // ICurrentUserAccessor and IStaffSubjectReferenceReader are already
+        // registered by StaffIdentityModule, IAuditRecorder by AuditModule,
+        // ITicketReferenceReader by TicketManagementModule and
+        // ICustomerNameReader by CustomerManagementModule; DI resolves those
+        // same registrations. IHttpContextAccessor is registered by the host
+        // (Program.cs).
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints) =>

@@ -44,6 +44,7 @@ public sealed class TicketManagementModule : IModule
         services.AddScoped<TicketTimelineService>();
         services.AddScoped<TicketCollaborationService>();
         services.AddScoped<ITicketExistsLookup, TicketExistsLookup>();
+        services.AddScoped<ITicketReferenceReader, TicketReferenceReader>();
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule;
         // IDepartmentActiveLookup/IBranchActiveLookup are already registered

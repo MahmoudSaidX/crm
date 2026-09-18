@@ -38,6 +38,16 @@ export interface UpdateQuickReplyRequest {
 }
 
 /**
+ * A token in `unresolvedVariables` was left as its literal `{{Token}}` text
+ * in the content above — never blanked, never dropped (CRM-146).
+ */
+export interface ResolvedQuickReply {
+  readonly arabicContent: string | null;
+  readonly englishContent: string | null;
+  readonly unresolvedVariables: readonly string[];
+}
+
+/**
  * Quick reply templates (CRM-145). The list this returns is already scoped by
  * the backend to global templates plus the caller's own personal ones — the
  * client never asks for an owner, and could not widen the result if it did.
@@ -46,10 +56,10 @@ export interface UpdateQuickReplyRequest {
 export class QuickRepliesService {
   private readonly http = inject(HttpClient);
 
-  list(page: number, pageSize: number): Promise<PagedResult<QuickReply>> {
+  list(page: number, pageSize: number, activeOnly = false): Promise<PagedResult<QuickReply>> {
     return firstValueFrom(
       this.http.get<PagedResult<QuickReply>>('/api/v1/quick-replies', {
-        params: { page, pageSize },
+        params: { page, pageSize, activeOnly },
       }),
     );
   }
@@ -72,5 +82,16 @@ export class QuickRepliesService {
 
   deactivate(id: string): Promise<QuickReply> {
     return firstValueFrom(this.http.post<QuickReply>(`/api/v1/quick-replies/${id}/deactivate`, {}));
+  }
+
+  /**
+   * `ticketId` is optional: omitting it (or lacking access to that ticket)
+   * simply leaves ticket-scoped variables unresolved rather than failing the
+   * call (CRM-146).
+   */
+  resolve(id: string, ticketId: string | null): Promise<ResolvedQuickReply> {
+    return firstValueFrom(
+      this.http.post<ResolvedQuickReply>(`/api/v1/quick-replies/${id}/resolve`, { ticketId }),
+    );
   }
 }

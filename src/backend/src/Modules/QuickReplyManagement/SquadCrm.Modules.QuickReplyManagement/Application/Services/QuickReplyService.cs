@@ -1,12 +1,17 @@
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using SquadCrm.BuildingBlocks.Http;
 using SquadCrm.BuildingBlocks.Security;
 using SquadCrm.Modules.Audit.Contracts;
+using SquadCrm.Modules.CustomerManagement.Contracts;
 using SquadCrm.Modules.QuickReplyManagement.Domain.Entities;
 using SquadCrm.Modules.QuickReplyManagement.Infrastructure.Authorization;
 using SquadCrm.Modules.QuickReplyManagement.Infrastructure.Persistence;
 using SquadCrm.Modules.QuickReplyManagement.Presentation.Requests;
+using SquadCrm.Modules.QuickReplyManagement.Presentation.Responses;
+using SquadCrm.Modules.StaffIdentity.Contracts;
+using SquadCrm.Modules.TicketManagement.Contracts;
 
 namespace SquadCrm.Modules.QuickReplyManagement.Application.Services;
 
@@ -46,6 +51,15 @@ public readonly record struct QuickReplyMutationResult(QuickReply? QuickReply, Q
     public static QuickReplyMutationResult Failed(QuickReplyMutationFailure failure) => new(null, failure);
 }
 
+public readonly record struct QuickReplyResolutionResult(
+    ResolvedQuickReplyResponse? Resolved, QuickReplyMutationFailure Failure)
+{
+    public static QuickReplyResolutionResult Success(ResolvedQuickReplyResponse resolved) =>
+        new(resolved, QuickReplyMutationFailure.None);
+
+    public static QuickReplyResolutionResult Failed(QuickReplyMutationFailure failure) => new(null, failure);
+}
+
 /// <summary>
 /// Owns the CRM-145 authorization model, which is enforced here — in the
 /// application layer — and not merely hidden in the UI (Business Rule):
@@ -62,8 +76,25 @@ internal sealed class QuickReplyService(
     QuickReplyManagementDbContext dbContext,
     ICurrentUserAccessor currentUserAccessor,
     IGlobalQuickReplyAuthorizer globalAuthorizer,
-    IAuditRecorder auditRecorder)
+    IAuditRecorder auditRecorder,
+    IStaffSubjectReferenceReader staffSubjectReferenceReader,
+    ITicketAccessAuthorizer ticketAccessAuthorizer,
+    ITicketReferenceReader ticketReferenceReader,
+    ICustomerNameReader customerNameReader)
 {
+    /// <summary>
+    /// Matches any <c>{{Token}}</c>-shaped text, not only the three supported
+    /// names — an unsupported token (typo, or a placeholder some future story
+    /// hasn't implemented yet) must still be reported in
+    /// <c>UnresolvedVariables</c> rather than silently passing through
+    /// unflagged (AC: "surfaced safely"). <see cref="Substitute"/>'s variable
+    /// dictionary is the actual allow-list — an unknown name simply has no
+    /// entry, so it is never substituted. This pattern only locates
+    /// candidates; it never causes anything to be evaluated or executed, so
+    /// "no arbitrary expression evaluation" (CRM-145's Business Rule for
+    /// template content) still holds.
+    /// </summary>
+    private static readonly Regex VariablePattern = new("{{\\s*(\\w+)\\s*}}", RegexOptions.Compiled);
     /// <summary>
     /// Postgres unique-violation SQLSTATE, used to translate a lost duplicate-name
     /// race into the same duplicate result the pre-check produces, rather than
@@ -198,6 +229,94 @@ internal sealed class QuickReplyService(
         return quickReply is null
             ? QuickReplyMutationResult.Failed(QuickReplyMutationFailure.NotFound)
             : QuickReplyMutationResult.Success(quickReply);
+    }
+
+    /// <summary>
+    /// Resolves the allow-listed variables in a visible, active template
+    /// (CRM-146). Ticket-scoped tokens (<c>TicketNumber</c>,
+    /// <c>CustomerName</c>) are resolved only when <paramref name="ticketId"/>
+    /// is supplied AND the caller holds <c>tickets.view</c>; either gap simply
+    /// leaves those tokens unresolved rather than failing the call — resolving
+    /// produces draft text, not a read of the ticket record.
+    /// </summary>
+    public async Task<QuickReplyResolutionResult> ResolveAsync(
+        Guid id, Guid? ticketId, CancellationToken cancellationToken)
+    {
+        if (!TryResolveCaller(out Guid callerId))
+        {
+            return QuickReplyResolutionResult.Failed(QuickReplyMutationFailure.CallerUnresolved);
+        }
+
+        QuickReply? quickReply = await FindVisibleAsync(id, callerId, tracked: false, cancellationToken);
+        if (quickReply is null || !quickReply.IsActive)
+        {
+            return QuickReplyResolutionResult.Failed(QuickReplyMutationFailure.NotFound);
+        }
+
+        string? agentName = await ResolveAgentNameAsync(callerId, cancellationToken);
+        string? ticketNumber = null;
+        string? customerName = null;
+        if (ticketId is { } id2 && await ticketAccessAuthorizer.CanViewTicketsAsync(cancellationToken))
+        {
+            TicketReference? ticket = await ticketReferenceReader.GetAsync(id2, cancellationToken);
+            if (ticket is not null)
+            {
+                ticketNumber = ticket.TicketNumber;
+                CustomerName? customer = await customerNameReader.GetAsync(ticket.CustomerId, cancellationToken);
+                if (customer is not null)
+                {
+                    customerName = $"{customer.FirstName} {customer.LastName}";
+                }
+            }
+        }
+
+        Dictionary<string, string?> variables = new()
+        {
+            ["AgentName"] = agentName,
+            ["TicketNumber"] = ticketNumber,
+            ["CustomerName"] = customerName,
+        };
+
+        HashSet<string> unresolved = [];
+        string? arabicContent = Substitute(quickReply.ArabicContent, variables, unresolved);
+        string? englishContent = Substitute(quickReply.EnglishContent, variables, unresolved);
+
+        return QuickReplyResolutionResult.Success(
+            new ResolvedQuickReplyResponse(arabicContent, englishContent, unresolved.ToList()));
+    }
+
+    private async Task<string?> ResolveAgentNameAsync(Guid callerId, CancellationToken cancellationToken)
+    {
+        StaffSubjectReference? staff = await staffSubjectReferenceReader.FindByIdAsync(callerId, cancellationToken);
+        return staff?.DisplayName ?? staff?.NormalizedEmail;
+    }
+
+    /// <summary>
+    /// Replaces only tokens matched by <see cref="VariablePattern"/> AND whose
+    /// resolved value is non-null; every other match — unresolved variable, or
+    /// missing value — is left as its original literal text and recorded in
+    /// <paramref name="unresolved"/>, per the "surfaced safely, never blanked"
+    /// AC.
+    /// </summary>
+    private static string? Substitute(
+        string? content, IReadOnlyDictionary<string, string?> variables, HashSet<string> unresolved)
+    {
+        if (content is null)
+        {
+            return null;
+        }
+
+        return VariablePattern.Replace(content, match =>
+        {
+            string name = match.Groups[1].Value;
+            if (variables.TryGetValue(name, out string? value) && value is not null)
+            {
+                return value;
+            }
+
+            unresolved.Add(name);
+            return match.Value;
+        });
     }
 
     /// <summary>
