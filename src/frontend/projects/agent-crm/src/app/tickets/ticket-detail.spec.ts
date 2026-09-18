@@ -776,13 +776,11 @@ describe('TicketDetail', () => {
   });
 
   it('inserts a resolved quick reply into the note body as editable text', async () => {
-    const quickReplyResolve = jasmine
-      .createSpy()
-      .and.resolveTo({
-        arabicContent: null,
-        englishContent: 'Hello Sara Ali',
-        unresolvedVariables: [],
-      });
+    const quickReplyResolve = jasmine.createSpy().and.resolveTo({
+      arabicContent: null,
+      englishContent: 'Hello Sara Ali',
+      unresolvedVariables: [],
+    });
     configure({ permissions: ['tickets.collaborate'], quickReplyResolve });
     const fixture = await createComponent();
 
