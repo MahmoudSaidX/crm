@@ -13,7 +13,7 @@ public sealed class StaffSubjectReferenceReader(StaffIdentityDbContext dbContext
         dbContext.StaffUsers
             .AsNoTracking()
             .Where(user => user.NormalizedEmail == normalizedEmail)
-            .Select(user => new StaffSubjectReference(user.Id, user.IsActive))
+            .Select(user => new StaffSubjectReference(user.Id, user.IsActive, user.DisplayName, user.NormalizedEmail))
             .SingleOrDefaultAsync(cancellationToken);
 
     public Task<StaffSubjectReference?> FindByIdAsync(
@@ -22,6 +22,6 @@ public sealed class StaffSubjectReferenceReader(StaffIdentityDbContext dbContext
         dbContext.StaffUsers
             .AsNoTracking()
             .Where(user => user.Id == id)
-            .Select(user => new StaffSubjectReference(user.Id, user.IsActive))
+            .Select(user => new StaffSubjectReference(user.Id, user.IsActive, user.DisplayName, user.NormalizedEmail))
             .SingleOrDefaultAsync(cancellationToken);
 }

@@ -8,6 +8,7 @@ import { CustomersService } from '../customers/customers.service';
 import { DepartmentsService } from '../departments/departments.service';
 import { BranchesService } from '../branches/branches.service';
 import { StaffUsersService } from '../staff-users/staff-users.service';
+import { QuickRepliesService } from '../quick-replies/quick-replies.service';
 import { AuthorizationState } from '../auth/authorization.state';
 import {
   AppConfigStore,
@@ -95,6 +96,8 @@ describe('TicketDetail', () => {
     removeWatcher?: jasmine.Spy;
     staffList?: jasmine.Spy;
     departmentList?: jasmine.Spy;
+    quickReplyList?: jasmine.Spy;
+    quickReplyResolve?: jasmine.Spy;
     permissions?: readonly string[];
   }): void {
     TestBed.configureTestingModule({
@@ -204,6 +207,26 @@ describe('TicketDetail', () => {
                 page: 1,
                 pageSize: 100,
                 totalCount: 2,
+              }),
+          },
+        },
+        {
+          provide: QuickRepliesService,
+          useValue: {
+            list:
+              options.quickReplyList ??
+              jasmine.createSpy().and.resolveTo({
+                items: [{ id: 'quick-reply-1', name: 'Greeting', isActive: true }],
+                page: 1,
+                pageSize: 100,
+                totalCount: 1,
+              }),
+            resolve:
+              options.quickReplyResolve ??
+              jasmine.createSpy().and.resolveTo({
+                arabicContent: null,
+                englishContent: 'Hello Sara Ali',
+                unresolvedVariables: [],
               }),
           },
         },
@@ -750,6 +773,47 @@ describe('TicketDetail', () => {
     expect(fixture.componentInstance.addingNote()).toBeFalse();
     // Reloaded once on load and once after the write.
     expect(listNotes).toHaveBeenCalledTimes(2);
+  });
+
+  it('inserts a resolved quick reply into the note body as editable text', async () => {
+    const quickReplyResolve = jasmine
+      .createSpy()
+      .and.resolveTo({
+        arabicContent: null,
+        englishContent: 'Hello Sara Ali',
+        unresolvedVariables: [],
+      });
+    configure({ permissions: ['tickets.collaborate'], quickReplyResolve });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.startAddNote();
+    fixture.componentInstance.onQuickReplySelected('quick-reply-1');
+    await fixture.componentInstance.insertQuickReply();
+
+    expect(quickReplyResolve).toHaveBeenCalledWith('quick-reply-1', 'ticket-1');
+    expect(fixture.componentInstance.noteForm.controls.body.value).toBe('Hello Sara Ali');
+    expect(fixture.componentInstance.quickReplyWarningKey()).toBeNull();
+    // Never sends by itself — the note dialog still requires an explicit submit.
+    expect(fixture.componentInstance.addingNote()).toBeTrue();
+  });
+
+  it('surfaces a warning, and leaves the placeholder literal, when a variable cannot be resolved', async () => {
+    const quickReplyResolve = jasmine.createSpy().and.resolveTo({
+      arabicContent: null,
+      englishContent: 'Ticket {{TicketNumber}}',
+      unresolvedVariables: ['TicketNumber'],
+    });
+    configure({ permissions: ['tickets.collaborate'], quickReplyResolve });
+    const fixture = await createComponent();
+
+    await fixture.componentInstance.startAddNote();
+    fixture.componentInstance.onQuickReplySelected('quick-reply-1');
+    await fixture.componentInstance.insertQuickReply();
+
+    expect(fixture.componentInstance.noteForm.controls.body.value).toBe('Ticket {{TicketNumber}}');
+    expect(fixture.componentInstance.quickReplyWarningKey()).toBe(
+      'tickets.notes.quickReply.unresolvedWarning',
+    );
   });
 
   it('reports an ineligible mention instead of clearing the form', async () => {

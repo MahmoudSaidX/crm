@@ -33,6 +33,7 @@ public sealed class CustomerManagementModule : IModule
         services.AddScoped<CustomerAttachmentService>();
         services.AddScoped<CustomerTimelineService>();
         services.AddScoped<ICustomerExistsLookup, CustomerExistsLookup>();
+        services.AddScoped<ICustomerNameReader, CustomerNameReader>();
 
         // ICurrentUserAccessor is already registered by StaffIdentityModule;
         // IDepartmentActiveLookup/IBranchActiveLookup are already registered

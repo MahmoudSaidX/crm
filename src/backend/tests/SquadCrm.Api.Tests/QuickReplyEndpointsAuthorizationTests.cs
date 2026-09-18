@@ -87,4 +87,18 @@ public sealed class QuickReplyEndpointsAuthorizationTests
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Resolve_RejectsAnonymousRequest()
+    {
+        await using SquadCrmApiFactory factory = new();
+        using HttpClient client = factory.CreateClient();
+
+        using HttpResponseMessage response = await client.PostAsJsonAsync(
+            $"/api/v1/quick-replies/{Guid.NewGuid()}/resolve",
+            new { ticketId = (Guid?)null },
+            CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 }

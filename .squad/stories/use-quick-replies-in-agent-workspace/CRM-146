@@ -1,0 +1,56 @@
+# Intake — CRM-146 Use Quick Replies in Agent Workspace
+
+## Scope note (Decision Gate resolutions, 2026-09-18)
+
+Reconciliation against current code found two conflicts between the Linear AC
+and reality. Both were raised to the user and resolved before implementation:
+
+1. **No customer-facing reply composer exists yet.** `ticket-detail.ts`
+   states this is deliberately deferred to CRM-164 (Unified Customer
+   Conversation Model, still Backlog). The only composer-shaped UI today is
+   the CRM-147 internal-notes textarea, which has no customer-visible send
+   path. **Decision: target the internal notes textarea.** A quick reply is
+   inserted as editable draft text into the existing "Add note" dialog
+   (`noteForm.body`). This still satisfies "insert into composer as editable
+   draft, never auto-send" — the note dialog already requires an explicit
+   submit — without waiting on CRM-164. When the real customer-facing
+   composer ships, quick-reply insertion should be wired there too, but that
+   is a future story, not this one.
+2. **`QuickReply` (CRM-145) has no `Channel` field, no variable/placeholder
+   mechanism, and no `Department` scope** (no user-department membership
+   model exists anywhere; CRM-145 deliberately deferred it). **Decision:
+   minimal additive changes** — add a small allow-listed variable catalog
+   (`{{CustomerName}}`, `{{TicketNumber}}`, `{{AgentName}}`) and server-side
+   resolution logic; skip channel filtering entirely (no channel concept to
+   filter by — all active applicable templates are shown); skip Department
+   scope, following CRM-145's own precedent (Global + Personal only).
+
+## Revised Acceptance Criteria (as implemented)
+
+* Agent can browse/search active quick replies applicable to their scope
+  (Global + their own Personal) from within the ticket's internal note
+  composer, reusing the existing CRM-145 list endpoint.
+* Selecting a template resolves `{{CustomerName}}`, `{{TicketNumber}}`,
+  `{{AgentName}}` using only data the agent is already authorized to access
+  (the open ticket + `tickets.view` permission), server-side.
+* Resolved content is inserted into the note body as editable text.
+* Agent can edit or discard the inserted content before submitting the note.
+* A variable that cannot be resolved (unknown token, or no ticket context) is
+  left as its literal `{{Token}}` text and flagged with an inline warning —
+  never silently blanked, never auto-submitted.
+* Submission continues through the existing `TicketCollaborationService`
+  note-add path unchanged — no new message model, no auto-send.
+
+## Business Rules carried over
+
+* Quick reply use never auto-sends (inherited: note submission is already an
+  explicit user action).
+* Scope filtering is enforced server-side (already true of the CRM-145 list
+  endpoint — reused, not rebuilt).
+* Personal templates are owner-only, Global templates need
+  `quickreplies.view`+list visibility (already enforced).
+* Variable values are resolved server-side from data the caller already has
+  authorized access to (the current ticket's own number/customer, and the
+  caller's own display name) — no new unauthorized data exposure.
+* Quick reply use does not create a separate message model — inserts into
+  the existing note body field only.

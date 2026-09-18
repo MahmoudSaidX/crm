@@ -40,6 +40,11 @@ internal static class QuickReplyManagementEndpoints
             .RequireAuthorization(PermissionPolicies.QuickRepliesManage);
         quickReplies.MapPost("/{id:guid}/deactivate", DeactivateAsync)
             .RequireAuthorization(PermissionPolicies.QuickRepliesManage);
+
+        // Resolving is a read operation (CRM-146): it never mutates the
+        // template, so it uses the view floor, not the manage floor.
+        quickReplies.MapPost("/{id:guid}/resolve", ResolveAsync)
+            .RequireAuthorization(PermissionPolicies.QuickRepliesView);
     }
 
     private static async Task<IResult> CreateAsync(
@@ -91,6 +96,19 @@ internal static class QuickReplyManagementEndpoints
     private static async Task<IResult> DeactivateAsync(
         Guid id, QuickReplyService quickReplyService, CancellationToken cancellationToken) =>
         OkOrProblem(await quickReplyService.DeactivateAsync(id, cancellationToken));
+
+    private static async Task<IResult> ResolveAsync(
+        Guid id,
+        ResolveQuickReplyRequest request,
+        QuickReplyService quickReplyService,
+        CancellationToken cancellationToken)
+    {
+        QuickReplyResolutionResult result =
+            await quickReplyService.ResolveAsync(id, request.TicketId, cancellationToken);
+        return result.Failure == QuickReplyMutationFailure.None
+            ? Results.Ok(result.Resolved)
+            : Problem(result.Failure);
+    }
 
     private static IResult OkOrProblem(QuickReplyMutationResult result) =>
         result.Failure == QuickReplyMutationFailure.None

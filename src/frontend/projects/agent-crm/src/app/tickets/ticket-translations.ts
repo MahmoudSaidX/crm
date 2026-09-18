@@ -116,6 +116,14 @@ export const TICKET_TRANSLATIONS: TranslationResources = {
     'tickets.notes.validation.body': 'Enter the note text.',
     'tickets.notes.errors.ineligibleUser': 'One of the mentioned teammates is not an active user.',
     'tickets.notes.errors.failed': 'The note could not be added. Try again.',
+    'tickets.notes.quickReply.label': 'Insert a quick reply',
+    'tickets.notes.quickReply.placeholder': 'Select a quick reply',
+    'tickets.notes.quickReply.insert': 'Insert',
+    'tickets.notes.quickReply.unavailable': 'Quick replies could not be loaded.',
+    'tickets.notes.quickReply.unresolvedWarning':
+      'Some placeholders could not be filled in automatically — review the inserted text before adding the note.',
+    'tickets.notes.quickReply.errors.resolveFailed':
+      'The quick reply could not be inserted. Try again.',
     'tickets.watchers.section': 'Watchers',
     'tickets.watchers.empty': 'No one is watching this ticket.',
     'tickets.watchers.unavailable': 'The watchers could not be loaded.',
@@ -257,6 +265,13 @@ export const TICKET_TRANSLATIONS: TranslationResources = {
     'tickets.notes.validation.body': 'أدخل نص الملاحظة.',
     'tickets.notes.errors.ineligibleUser': 'أحد الزملاء المشار إليهم ليس مستخدمًا نشطًا.',
     'tickets.notes.errors.failed': 'تعذرت إضافة الملاحظة. حاول مرة أخرى.',
+    'tickets.notes.quickReply.label': 'إدراج رد سريع',
+    'tickets.notes.quickReply.placeholder': 'اختر ردًا سريعًا',
+    'tickets.notes.quickReply.insert': 'إدراج',
+    'tickets.notes.quickReply.unavailable': 'تعذر تحميل الردود السريعة.',
+    'tickets.notes.quickReply.unresolvedWarning':
+      'تعذر تعبئة بعض العناصر النائبة تلقائيًا — راجع النص المُدرج قبل إضافة الملاحظة.',
+    'tickets.notes.quickReply.errors.resolveFailed': 'تعذر إدراج الرد السريع. حاول مرة أخرى.',
     'tickets.watchers.section': 'المتابعون',
     'tickets.watchers.empty': 'لا أحد يتابع هذه التذكرة.',
     'tickets.watchers.unavailable': 'تعذر تحميل المتابعين.',
